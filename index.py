@@ -7,43 +7,20 @@ def set_page():
     query_params = st.query_params
     page = query_params.get("page", [""])[0]
     st.session_state["page"] = page
-    return page
 
 def navbar():
-    # Leer el parámetro 'page' directamente de la URL para reflejar el estado real
-    import streamlit as st
-    query_params = st.query_params
-    page = query_params.get("page", [""])[0]
-    st.session_state["page"] = page
-    navbar_html = f'''
-        <style>
-        .navbar {{
-            display: flex;
-            gap: 2rem;
-            background: #f5f5f5;
-            padding: 0.7rem 1rem;
-            border-radius: 8px;
-            margin-bottom: 2rem;
-        }}
-        .navbar a {{
-            text-decoration: none;
-            color: #333;
-            font-weight: bold;
-            padding: 0.5rem 1.2rem;
-            border-radius: 6px;
-            transition: background 0.2s;
-        }}
-        .navbar a.active, .navbar a:hover {{
-            background: #0068c9;
-            color: #fff;
-        }}
-        </style>
-        <div class="navbar">
-            <a href="/" class="{'active' if page in ['', 'inicio'] else ''}">Inicio</a>
-            <a href="/?page=formulario" class="{'active' if page in ['formulario', 'form', 'f'] else ''}">Formulario</a>
-        </div>
-    '''
-    st.markdown(navbar_html, unsafe_allow_html=True)
+    st.sidebar.title("Navegación")
+    page = st.sidebar.radio(
+        "Ir a:",
+        ["Inicio", "Formulario"],
+        index=0 if st.session_state.get("page", "inicio") in ["", "inicio"] else 1
+    )
+    # Actualizar el parámetro de navegación
+    if page == "Inicio":
+        st.session_state["page"] = "inicio"
+    elif page == "Formulario":
+        st.session_state["page"] = "formulario"
+    return st.session_state["page"]
 
 # --- Página de inicio ---
 def pagina_inicio():
@@ -63,13 +40,30 @@ def pagina_inicio():
     for proyecto in proyectos:
         id, nombre, tipo = proyecto
         with st.container():
-            st.markdown(f"<div style='border:1px solid #ddd; border-radius:8px; padding:1rem; margin-bottom:1rem; background:#fff;'>"
-                        f"<b>{nombre}</b> <br><span style='color:#888;'>{tipo}</span>"
-                        f"<br><br>"
-                        f"<a href='/?page=ver&id={id}' style='margin-right:1rem;'>Visualizar</a>"
-                        f"<a href='/?page=editar&id={id}' style='margin-right:1rem;'>Editar</a>"
-                        f"<a href='/?page=eliminar&id={id}' style='color:red;'>Eliminar</a>"
-                        f"</div>", unsafe_allow_html=True)
+            st.markdown(f"""
+                <div style='border:1px solid #ddd; border-radius:8px; padding:1rem; margin-bottom:0.5rem; background:#fff;'>
+                    <b>{nombre}</b> <br><span style='color:#888;'>{tipo}</span>
+                </div>
+            """, unsafe_allow_html=True)
+            cols = st.columns(3)
+            for i, (label, page) in enumerate([("Visualizar", "ver"), ("Editar", "editar"), ("Eliminar", "eliminar")]):
+                with cols[i]:
+                        if label == "Eliminar":
+                            if st.button(label, key=f"eliminar_index_{id}"):
+                                with conn.cursor() as cur:
+                                    # Eliminar primero los registros relacionados en todas las tablas hijas
+                                    cur.execute("DELETE FROM modalidad_oferta WHERE proyecto_id=?", (id,))
+                                    cur.execute("DELETE FROM tendencias WHERE proyecto_id=?", (id,))
+                                    # Luego eliminar el proyecto principal
+                                    cur.execute("DELETE FROM proyectos_tendencias WHERE id=?", (id,))
+                                    conn.commit()
+                                st.success("Proyecto y sus datos relacionados eliminados correctamente.")
+                                st.rerun()
+                        else:
+                            if st.button(label, key=f"{page}_index_{id}"):
+                                st.session_state["page"] = page
+                                st.session_state["id"] = id
+                                st.rerun()
 
 # --- Visualizar proyecto ---
 def pagina_ver(id):
@@ -123,23 +117,22 @@ def pagina_formulario():
 
 # --- Layout principal ---
 def main():
-    navbar()
-    page = set_page()
+    page = navbar()
     # Navegación principal
     if page in ["formulario", "form", "f"]:
         pagina_formulario()
     elif page in ["", "inicio"]:
         pagina_inicio()
     elif page == "ver":
-        id = st.query_params.get("id", [None])[0]
+        id = st.session_state.get("id", None)
         if id:
             pagina_ver(id)
     elif page == "editar":
-        id = st.query_params.get("id", [None])[0]
+        id = st.session_state.get("id", None)
         if id:
             pagina_editar(id)
     elif page == "eliminar":
-        id = st.query_params.get("id", [None])[0]
+        id = st.session_state.get("id", None)
         if id:
             pagina_eliminar(id)
 

@@ -15,8 +15,17 @@ def mostrar_proyectos():
         with st.container():
             st.markdown(f"<div style='border:1px solid #ddd; border-radius:8px; padding:1rem; margin-bottom:1rem; background:#fff;'>"
                         f"<b>{nombre}</b> <br><span style='color:#888;'>{tipo}</span>"
-                        f"<br><br>"
-                        f"<a href='/?page=ver&id={id}' style='margin-right:1rem;'>Visualizar</a>"
-                        f"<a href='/?page=editar&id={id}' style='margin-right:1rem;'>Editar</a>"
-                        f"<a href='/?page=eliminar&id={id}' style='color:red;'>Eliminar</a>"
                         f"</div>", unsafe_allow_html=True)
+            cols = st.columns(3)
+            if cols[0].button("Visualizar", key=f"ver_{id}"):
+                st.session_state["page"] = "ver"
+                st.session_state["id"] = id
+                st.experimental_rerun()
+            if cols[1].button("Editar", key=f"editar_{id}"):
+                st.session_state["page"] = "editar"
+                st.session_state["id"] = id
+                st.experimental_rerun()
+            if cols[2].button("Eliminar", key=f"eliminar_{id}"):
+                st.session_state["page"] = "eliminar"
+                st.session_state["id"] = id
+                st.experimental_rerun()

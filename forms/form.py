@@ -4,53 +4,39 @@ import sys
 sys.path.append("..")
 from conexion import conn, cursor
 sys.path.append("../..")
-from codigos import obtener_codigos_ciiu, obtener_valor_por_codigo
+from codigos import obtener_codigos_ciiu
 import re
 import pandas as pd
 
-# --- Lista de carreras ---
-carreras_nivel = [
-    {"Nivel": "Pregrado", "Carrera": "Ingeniería en Software"},
-    {"Nivel": "Pregrado", "Carrera": "Derecho"},
-    {"Nivel": "Pregrado", "Carrera": "Medicina"},
-    {"Nivel": "Pregrado", "Carrera": "Odontología"},
-    {"Nivel": "Pregrado", "Carrera": "Psicología"},
-    {"Nivel": "Pregrado", "Carrera": "Enfermería"},
-    {"Nivel": "Pregrado", "Carrera": "Multimedia y Prod. Audiov"},
-    {"Nivel": "Pregrado", "Carrera": "Arquitectura"},
-    {"Nivel": "Pregrado", "Carrera": "Negocios Internacionales"},
-    {"Nivel": "Pregrado", "Carrera": "Relaciones Internacionales"},
-    {"Nivel": "Pregrado", "Carrera": "Gastronomía"},
-    {"Nivel": "Pregrado", "Carrera": "Artes Musicales"},
-    {"Nivel": "Posgrado", "Carrera": "Maestria en gerencia politica, gobernanza y gobernabilidad"},
-    {"Nivel": "Posgrado", "Carrera": "Maestria en administracion de empresas mba"},
-    {"Nivel": "Posgrado", "Carrera": "Maestria en psicoterapia"},
-    {"Nivel": "Posgrado", "Carrera": "Maestria en diseño arquitectonico avanzado"},
-    {"Nivel": "Posgrado", "Carrera": "Maestria en neuromarketing"},
-    {"Nivel": "Posgrado", "Carrera": "Maestria en direccion y postproduccion audiovisual"},
-    {"Nivel": "Posgrado", "Carrera": "Maestria en derecho procesal constitucional"},
-    {"Nivel": "Posgrado", "Carrera": "Maestria en transformacion digital y gestion de la innovacion"},
-    {"Nivel": "Posgrado", "Carrera": "Especialidad en ortodoncia"},
-    {"Nivel": "Posgrado", "Carrera": "Maestria en enfermeria"}
-]
-
+# --- Función para obtener carreras desde la base de datos ---
+def obtener_carreras_por_nivel(nivel):
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT Carrera FROM carreras_facultad WHERE Nivel = ?", nivel)
+            rows = cur.fetchall()
+            return [row[0] for row in rows]
+    except Exception as e:
+        st.error(f"Error al consultar carreras: {e}")
+        return []
 
 def mostrar_formulario():
     st.title("Formulario de Proyectos y Tendencias")
 
     # Tipo de carpeta fuera del formulario para actualización en tiempo real
+
     tipo_carpeta = st.selectbox("Tipo de carpeta", ["Seleccione un tipo...", "POSGRADOS TENDENCIA", "CARRERAS PREGRADO"])
 
     with st.form("form_proyectos"):
         # --- Proyecto 1: Carrera Referencia ---
         st.subheader("Carrera Referencia")
+
         tipo_carpeta_lower = tipo_carpeta.lower()
         carreras_filtradas = []
         if tipo_carpeta != "Seleccione un tipo...":
             if "pregrado" in tipo_carpeta_lower:
-                carreras_filtradas = [c["Carrera"] for c in carreras_nivel if c["Nivel"].lower() == "pregrado"]
+                carreras_filtradas = obtener_carreras_por_nivel("Pregrado")
             elif "posgrado" in tipo_carpeta_lower:
-                carreras_filtradas = [c["Carrera"] for c in carreras_nivel if c["Nivel"].lower() == "posgrado"]
+                carreras_filtradas = obtener_carreras_por_nivel("Posgrado")
         if carreras_filtradas:
             nombre_proyecto_1 = st.selectbox("Nombre de la Carrera Referencia", ["Seleccione una carrera..."] + carreras_filtradas)
         else:
@@ -128,56 +114,20 @@ def mostrar_formulario():
                 for err in errores:
                     st.warning(err)
             else:
-                # Comprobar CIIU y mostrar tabla
-                try:
-                    ingresos_2023 = obtener_valor_por_codigo(codigo_ciiu, hoja='Total Ingresos', columna_codigo='ACTIVIDAD ECONÓMICA', columna_valor='2023')
-                    ventas12_2023 = obtener_valor_por_codigo(codigo_ciiu, hoja='Ventas 12', columna_codigo='ACTIVIDAD ECONÓMICA', columna_valor='2023')
-                    ventas0_2023 = obtener_valor_por_codigo(codigo_ciiu, hoja='Ventas 0', columna_codigo='ACTIVIDAD ECONÓMICA', columna_valor='2023')
-                    st.session_state["ingresos_2023"] = ingresos_2023
-                    st.session_state["ventas12_2023"] = ventas12_2023
-                    st.session_state["ventas0_2023"] = ventas0_2023
-                    df_ciiu = pd.DataFrame([
-                        ["Ingresos 2023", ingresos_2023],
-                        ["Ventas 12 2023", ventas12_2023],
-                        ["Ventas 0 2023", ventas0_2023]
-                    ], columns=["Concepto", "Valor"])
-                    df_ciiu["Valor"] = df_ciiu["Valor"].map(lambda x: f"{x:.2f}" if isinstance(x, (int, float)) else x)
-                    st.table(df_ciiu)
-                except Exception as e:
-                    st.error(f"Error al obtener valores CIIU: {e}")
-
-                st.success("✅ Datos guardados correctamente")
-                datos_para_bd = {
-                    "tipo_carpeta": tipo_carpeta,
-                    "carrera_referencia": nombre_proyecto_1,
-                    "carrera_estudio": nombre_proyecto_2,
-                    "palabra_semrush": palabra_semrush,
-                    "trends": df_trends.to_dict("records"),
-                    "codigo_ciiu": codigo_ciiu,
-                    "modalidad_oferta": df_modalidad.to_dict("records"),
-                    "ingresos_2023": st.session_state.get("ingresos_2023", None),
-                    "ventas12_2023": st.session_state.get("ventas12_2023", None),
-                    "ventas0_2023": st.session_state.get("ventas0_2023", None)
-                }
-                st.write("Datos para la base de datos:", datos_para_bd)
-
                 # Guardar en la base de datos
                 try:
                     # Usar un cursor exclusivo para la transacción
                     with conn.cursor() as cur:
                         cur.execute('''
                             INSERT INTO proyectos_tendencias (
-                                tipo_carpeta, carrera_referencia, carrera_estudio, palabra_semrush, codigo_ciiu, ingresos_2023, ventas12_2023, ventas0_2023
-                            ) OUTPUT INSERTED.id VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                                tipo_carpeta, carrera_referencia, carrera_estudio, palabra_semrush, codigo_ciiu
+                            ) OUTPUT INSERTED.id VALUES (?, ?, ?, ?, ?)
                         ''',
                             tipo_carpeta,
                             nombre_proyecto_1,
                             nombre_proyecto_2,
                             palabra_semrush,
-                            codigo_ciiu,
-                            st.session_state.get("ingresos_2023", None),
-                            st.session_state.get("ventas12_2023", None),
-                            st.session_state.get("ventas0_2023", None)
+                            codigo_ciiu
                         )
                         proyecto_id_row = cur.fetchone()
                         if proyecto_id_row is None or proyecto_id_row[0] is None:

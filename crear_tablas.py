@@ -14,10 +14,7 @@ def crear_tablas():
             carrera_referencia NVARCHAR(200),
             carrera_estudio NVARCHAR(200),
             palabra_semrush NVARCHAR(200),
-            codigo_ciiu NVARCHAR(50),
-            ingresos_2023 FLOAT,
-            ventas12_2023 FLOAT,
-            ventas0_2023 FLOAT
+            codigo_ciiu NVARCHAR(50)
         )
     END
     ''')
