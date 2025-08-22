@@ -1,4 +1,147 @@
+# --- Formulario de edición de proyecto ---
+def mostrar_formulario_edicion(id):
+    st.title("Editar Proyecto y Tendencias")
+    # Obtener datos actuales del proyecto
+    with conn.cursor() as cur:
+        cur.execute("SELECT tipo_carpeta, carrera_referencia, carrera_estudio, palabra_semrush, codigo_ciiu FROM proyectos_tendencias WHERE id=?", id)
+        proyecto = cur.fetchone()
+        if not proyecto:
+            st.error("Proyecto no encontrado.")
+            return
+        tipo_carpeta, carrera_referencia, carrera_estudio, palabra_semrush, codigo_ciiu = proyecto
 
+    # Tendencias
+    with conn.cursor() as cur:
+        cur.execute("SELECT palabra, promedio FROM tendencias WHERE proyecto_id=?", id)
+        tendencias = cur.fetchall()
+
+    # Modalidad de oferta
+    with conn.cursor() as cur:
+        cur.execute("SELECT presencial, virtual FROM modalidad_oferta WHERE proyecto_id=?", id)
+        modalidad = cur.fetchall()
+
+    # --- Formulario ---
+    tipo_carpeta = st.selectbox("Tipo de carpeta", ["POSGRADOS TENDENCIA", "CARRERAS PREGRADO"], index=0 if "POSGRADOS" in tipo_carpeta else 1)
+    # Carrera referencia
+    tipo_carpeta_lower = tipo_carpeta.lower()
+    carreras_filtradas = []
+    if "pregrado" in tipo_carpeta_lower:
+        carreras_filtradas = obtener_carreras_por_nivel("Pregrado")
+    elif "posgrado" in tipo_carpeta_lower:
+        carreras_filtradas = obtener_carreras_por_nivel("Posgrado")
+    if carreras_filtradas:
+        nombre_proyecto_1 = st.selectbox("Nombre de la Carrera Referencia", carreras_filtradas, index=carreras_filtradas.index(carrera_referencia) if carrera_referencia in carreras_filtradas else 0)
+    else:
+        nombre_proyecto_1 = st.selectbox("Nombre de la Carrera Referencia", [carrera_referencia])
+    # Carrera estudio
+    nombre_proyecto_2 = st.text_input("Nombre de la Carrera Estudio", value=carrera_estudio)
+    # SEMRUSH
+    palabra_semrush = st.text_input("Palabra clave", value=palabra_semrush)
+    # Trends
+    st.subheader("Trends (palabras y promedios)")
+    try:
+        tendencias_limpias = [list(row) for row in tendencias]
+        if tendencias_limpias and all(len(row) == 2 for row in tendencias_limpias):
+            df_trends = pd.DataFrame(tendencias_limpias, columns=["Palabra", "Promedio"])
+        elif tendencias_limpias and all(len(row) == 1 for row in tendencias_limpias):
+            st.warning("Advertencia: Las tendencias tienen solo una columna. Se mostrará solo 'Palabra'.")
+            df_trends = pd.DataFrame([(row[0], "") for row in tendencias_limpias], columns=["Palabra", "Promedio"])
+        else:
+            df_trends = pd.DataFrame({"Palabra": [""], "Promedio": [""]})
+        df_trends = st.data_editor(df_trends, num_rows="dynamic", use_container_width=True, hide_index=True, key=f"trends_editor_{id}")
+    except Exception as e:
+        st.error(f"ERROR al crear DataFrame de tendencias: {e}")
+    # Código CIIU
+    codigos_ciiu = obtener_codigos_ciiu()
+    codigo_ciiu = st.selectbox("Seleccione el código CIIU", codigos_ciiu, index=codigos_ciiu.index(codigo_ciiu) if codigo_ciiu in codigos_ciiu else 0)
+    # Modalidad de oferta
+    st.subheader("Modalidad de Oferta")
+    modalidad_limpia = [list(row) for row in modalidad]
+    if modalidad_limpia and all(len(row) == 2 for row in modalidad_limpia):
+        df_modalidad = pd.DataFrame(modalidad_limpia, columns=["Presencial", "Virtual"])
+    elif modalidad_limpia and all(len(row) == 1 for row in modalidad_limpia):
+        st.warning("Advertencia: Modalidad tiene solo una columna. Se mostrará solo 'Presencial'.")
+        df_modalidad = pd.DataFrame([(row[0], "") for row in modalidad_limpia], columns=["Presencial", "Virtual"])
+    else:
+        df_modalidad = pd.DataFrame({"Presencial": [""], "Virtual": [""]})
+    df_modalidad = st.data_editor(df_modalidad, num_rows="fixed", use_container_width=True, hide_index=True, key=f"modalidad_oferta_editor_{id}")
+    # Botón de guardar cambios
+    guardado = st.button("Guardar cambios")
+    if guardado:
+        errores = []
+        if not nombre_proyecto_1:
+            errores.append("El campo 'Carrera Referencia' es obligatorio.")
+        if not nombre_proyecto_2.strip():
+            errores.append("El campo 'Carrera Estudio' es obligatorio.")
+        if not palabra_semrush.strip():
+            errores.append("El campo 'Palabra clave' es obligatorio.")
+        if not codigo_ciiu:
+            errores.append("El campo 'Código CIIU' es obligatorio.")
+        trends_validas = [
+            row for row in df_trends.to_dict("records")
+            if str(row.get("Palabra", "")).strip() and str(row.get("Promedio", "")).strip()
+        ]
+        if not trends_validas:
+            errores.append("Debe ingresar al menos una palabra y promedio en 'Trends'.")
+        modalidad_valida = False
+        if df_modalidad.shape[0] > 0:
+            presencial = df_modalidad.iloc[0].get("Presencial", "").strip()
+            virtual = df_modalidad.iloc[0].get("Virtual", "").strip()
+            modalidad_valida = presencial and virtual
+        if not modalidad_valida:
+            errores.append("Debe ingresar modalidad presencial y virtual.")
+        if errores:
+            for err in errores:
+                st.warning(err)
+        else:
+            try:
+                # Actualizar proyecto principal
+                with conn.cursor() as cur:
+                    cur.execute('''
+                        UPDATE proyectos_tendencias SET
+                            tipo_carpeta=?, carrera_referencia=?, carrera_estudio=?, palabra_semrush=?, codigo_ciiu=?
+                        WHERE id=?
+                    ''', tipo_carpeta, nombre_proyecto_1, nombre_proyecto_2, palabra_semrush, codigo_ciiu, id)
+
+                # Eliminar tendencias
+                with conn.cursor() as cur:
+                    cur.execute("DELETE FROM tendencias WHERE proyecto_id=?", id)
+
+                # Insertar tendencias
+                for row in df_trends.to_dict("records"):
+                    palabra = row.get("Palabra", "")
+                    promedio = row.get("Promedio", None)
+                    if palabra:
+                        try:
+                            promedio_float = float(promedio)
+                        except:
+                            promedio_float = None
+                        with conn.cursor() as cur:
+                            cur.execute('''
+                                INSERT INTO tendencias (proyecto_id, palabra, promedio)
+                                VALUES (?, ?, ?)
+                            ''', id, palabra, promedio_float)
+
+                # Eliminar modalidad de oferta
+                with conn.cursor() as cur:
+                    cur.execute("DELETE FROM modalidad_oferta WHERE proyecto_id=?", id)
+
+                # Insertar modalidad de oferta
+                if df_modalidad.shape[0] > 0:
+                    presencial = df_modalidad.iloc[0].get("Presencial", "")
+                    virtual = df_modalidad.iloc[0].get("Virtual", "")
+                    with conn.cursor() as cur:
+                        cur.execute('''
+                            INSERT INTO modalidad_oferta (proyecto_id, presencial, virtual)
+                            VALUES (?, ?, ?)
+                        ''', id, presencial, virtual)
+
+                conn.commit()
+                st.success("Cambios guardados correctamente.")
+            except Exception as e:
+                st.error(f"Error al guardar cambios: {e}")
+
+# VISTA DEL FORMUALRIO 
 import streamlit as st
 import sys
 sys.path.append("..")
@@ -20,8 +163,6 @@ def obtener_carreras_por_nivel(nivel):
         return []
 
 def mostrar_formulario():
-    st.title("Formulario de Proyectos y Tendencias")
-
     # Tipo de carpeta fuera del formulario para actualización en tiempo real
 
     tipo_carpeta = st.selectbox("Tipo de carpeta", ["Seleccione un tipo...", "POSGRADOS TENDENCIA", "CARRERAS PREGRADO"])
@@ -143,6 +284,7 @@ def mostrar_formulario():
                                     promedio_float = float(promedio)
                                 except:
                                     promedio_float = None
+                                # Guardar como valores nativos, no como string
                                 cur.execute('''
                                     INSERT INTO tendencias (proyecto_id, palabra, promedio)
                                     VALUES (?, ?, ?)
@@ -152,6 +294,7 @@ def mostrar_formulario():
                         if df_modalidad.shape[0] > 0:
                             presencial = df_modalidad.iloc[0].get("Presencial", "")
                             virtual = df_modalidad.iloc[0].get("Virtual", "")
+                            # Guardar como valores nativos, no como string
                             cur.execute('''
                                 INSERT INTO modalidad_oferta (proyecto_id, presencial, virtual)
                                 VALUES (?, ?, ?)
