@@ -58,7 +58,7 @@ def pagina_inicio():
             transform: translateY(-50%);
             width: 20px;
             height: 20px;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' fill='red' class='bi bi-search' viewBox='0 0 16 16'%3E%3Cpath d='M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85zm-5.442 1.398a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11z'/%3E%3C/svg%3E");
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' fill='%23ff0000' class='bi bi-search' viewBox='0 0 16 16'%3E%3Cpath d='M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85zm-5.442 1.398a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11z'/%3E%3C/svg%3E");
             background-repeat: no-repeat;
             background-size: 20px 20px;
             pointer-events: none;
@@ -73,29 +73,22 @@ def pagina_inicio():
         }
         /* Botones personalizados por columna */
         div[data-testid="stButton"] button[data-testid="stBaseButton-secondary"] {
-            min-width: 100px;
+            min-width: 160px;
             height: 40px;
-            border-radius: 8px !important;
+            border-radius: 10px !important;
             font-weight: 600;
             font-size: 15px;
             margin: 0 2px;
-        }
-        /* Colores por columna */
-        div[data-testid="stColumn"]:nth-child(1) button[data-testid="stBaseButton-secondary"] {
-            background-color: #0d6efd !important;
-            color: #fff !important;
-        }
-        div[data-testid="stColumn"]:nth-child(2) button[data-testid="stBaseButton-secondary"] {
-            background-color: #ffc107 !important;
+            background-color: #f8f9fa !important;
             color: #222 !important;
+            border: 1px solid #ddd !important;
+            box-shadow: none !important;
         }
-        div[data-testid="stColumn"]:nth-child(3) button[data-testid="stBaseButton-secondary"] {
-            background-color: #dc3545 !important;
-            color: #fff !important;
-        }
+        /* Solo el botón Eliminar será rojo */
         div[data-testid="stColumn"]:nth-child(4) button[data-testid="stBaseButton-secondary"] {
-            background-color: #198754 !important;
+            background-color: #ff0000 !important;
             color: #fff !important;
+            border: 1px solid #ff0000 !important;
         }
         </style>
         """, unsafe_allow_html=True)
@@ -115,6 +108,10 @@ def pagina_inicio():
 
     for proyecto in proyectos:
         id, nombre, tipo = proyecto
+        # Línea negra de separación
+        st.markdown("""
+            <hr style='border: none; border-top: 3px solid #222; margin: 1.2rem 0 1.5rem 0;'>
+        """, unsafe_allow_html=True)
 
         # Card estilo Material
         st.markdown(f"""
@@ -132,7 +129,7 @@ def pagina_inicio():
         """, unsafe_allow_html=True)
 
         col1, col2, col3, col4 = st.columns(4)
-        # Botones con color y tamaño uniforme
+        # Nuevo orden: Ver, Editar, Reporte, Eliminar
         with col1:
             if st.button("Ver", key=f"ver_{id}"):
                 st.session_state["page"] = "ver"
@@ -144,23 +141,45 @@ def pagina_inicio():
                 st.session_state["id"] = id
                 st.rerun()
         with col3:
+            if st.button("Reporte", key=f"reporte_{id}"):
+                st.session_state["page"] = "reporte"
+                st.session_state["id"] = id
+                st.rerun()
+        with col4:
             if st.button("Eliminar", key=f"eliminar_{id}"):
+                st.session_state["confirmar_eliminar_id"] = id
+                st.session_state["confirmar_eliminar_nombre"] = nombre
+                st.session_state["confirmar_eliminar_tipo"] = tipo
+                st.session_state["mostrar_confirmacion_eliminar"] = True
+
+        # Mostrar advertencia de confirmación si corresponde
+        if st.session_state.get("mostrar_confirmacion_eliminar") and st.session_state.get("confirmar_eliminar_id") == id:
+            st.warning(f"¿Está seguro que desea eliminar el proyecto '{nombre}' ({tipo})? Esta acción no se puede deshacer.")
+            confirmar = st.button("Sí, eliminar definitivamente", key=f"confirmar_eliminar_{id}")
+            cancelar = st.button("Cancelar", key=f"cancelar_eliminar_{id}")
+            if confirmar:
                 with conn.cursor() as cur:
                     cur.execute("DELETE FROM modalidad_oferta WHERE proyecto_id=?", (id,))
                     cur.execute("DELETE FROM tendencias WHERE proyecto_id=?", (id,))
                     cur.execute("DELETE FROM proyectos_tendencias WHERE id=?", (id,))
                     conn.commit()
                 st.success("Proyecto eliminado correctamente")
+                st.session_state["mostrar_confirmacion_eliminar"] = False
                 st.rerun()
-        with col4:
-            if st.button("Reporte", key=f"reporte_{id}"):
-                st.session_state["page"] = "reporte"
-                st.session_state["id"] = id
+            elif cancelar:
+                st.session_state["mostrar_confirmacion_eliminar"] = False
+                st.session_state["confirmar_eliminar_id"] = None
+                st.session_state["confirmar_eliminar_nombre"] = None
+                st.session_state["confirmar_eliminar_tipo"] = None
                 st.rerun()
+
 
 # --- Visualizar proyecto ---
 def pagina_ver(id):
     st.title("Visualizar Proyecto")
+    if st.button("Regresar al inicio", key="volver_inicio_ver"):
+        st.session_state["page"] = "inicio"
+        st.rerun()
     with conn.cursor() as cur:
         # Datos principales del proyecto
         cur.execute("SELECT * FROM proyectos_tendencias WHERE id=?", (id,))
@@ -197,6 +216,9 @@ def pagina_ver(id):
 
 # --- Editar proyecto ---
 def pagina_editar(id):
+    if st.button("Regresar al inicio", key="volver_inicio_editar"):
+        st.session_state["page"] = "inicio"
+        st.rerun()
     try:
         import sys
         sys.path.append(".")
@@ -245,11 +267,14 @@ def pagina_formulario():
 
 # --- Layout principal ---
 def main():
-    page = mostrar_navegacion("nav_main")
-    if page in ["formulario", "form", "f"]:
-        pagina_formulario()
-    elif page in ["", "inicio"]:
-        pagina_inicio()
+    page = st.session_state.get("page", "inicio")
+    # Solo mostrar navegación en inicio y formulario
+    if page in ["inicio", "formulario", "form", "f"]:
+        page = mostrar_navegacion("nav_main")
+        if page in ["formulario", "form", "f"]:
+            pagina_formulario()
+        else:
+            pagina_inicio()
     elif page == "ver":
         id = st.session_state.get("id", None)
         if id:
