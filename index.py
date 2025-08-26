@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import time
 from streamlit_option_menu import option_menu
 from conexion import conn, cursor
 
@@ -27,6 +28,9 @@ def mostrar_navegacion(key):
         key=key 
     )
     # Solo actualiza la página si no está en una acción especial
+    # Si se acaba de guardar exitosamente, no sobrescribir la página
+    if st.session_state.get("exito_guardado"):
+        return "inicio"
     if st.session_state.get("page", "inicio") in ["inicio", "formulario", "form", "f"]:
         st.session_state["page"] = selected.lower()
     return st.session_state["page"]
@@ -34,6 +38,27 @@ def mostrar_navegacion(key):
 
 # --- Página de inicio ---
 def pagina_inicio():
+    # Mostrar mensaje de éxito si viene de guardar en el formulario
+    if st.session_state.get("exito_guardado"):
+        st.success("Datos guardados en la base de datos correctamente.")
+        # Deshabilitar botones mientras el mensaje está activo
+        st.session_state["botones_deshabilitados"] = True
+        # Limpiar la bandera después de mostrar el mensaje y esperar 2 segundos
+        st.session_state["exito_guardado"] = False
+        st.query_params.clear()  # <-- reemplazo aquí
+        st.markdown(
+            """
+            <script>
+            setTimeout(function() {
+                window.location.reload();
+            }, 2000);
+            </script>
+            """,
+            unsafe_allow_html=True
+        )
+        return  # No mostrar botones ni proyectos mientras el mensaje está activo
+
+    st.session_state["botones_deshabilitados"] = False
     st.title("Proyectos en la Base de Datos")
     
     st.markdown("""
@@ -96,7 +121,7 @@ def pagina_inicio():
     search_query = st.text_input("Buscar proyecto por nombre o tipo de carpeta", key="search_query", label_visibility="collapsed")
     
     with conn.cursor() as cur:
-        cur.execute("SELECT id, carrera_referencia, tipo_carpeta FROM proyectos_tendencias")
+        cur.execute("SELECT id, carrera_estudio, tipo_carpeta FROM proyectos_tendencias")
         proyectos = cur.fetchall()
 
     if not proyectos:
@@ -130,23 +155,28 @@ def pagina_inicio():
 
         col1, col2, col3, col4 = st.columns(4)
         # Nuevo orden: Ver, Editar, Reporte, Eliminar
+        disabled = st.session_state.get("botones_deshabilitados", False)
         with col1:
-            if st.button("Ver", key=f"ver_{id}"):
+            st.button("Ver", key=f"ver_{id}", disabled=disabled)
+            if not disabled and st.session_state.get(f"ver_{id}"):
                 st.session_state["page"] = "ver"
                 st.session_state["id"] = id
                 st.rerun()
         with col2:
-            if st.button("Editar", key=f"editar_{id}"):
+            st.button("Editar", key=f"editar_{id}", disabled=disabled)
+            if not disabled and st.session_state.get(f"editar_{id}"):
                 st.session_state["page"] = "editar"
                 st.session_state["id"] = id
                 st.rerun()
         with col3:
-            if st.button("Reporte", key=f"reporte_{id}"):
+            st.button("Reporte", key=f"reporte_{id}", disabled=disabled)
+            if not disabled and st.session_state.get(f"reporte_{id}"):
                 st.session_state["page"] = "reporte"
                 st.session_state["id"] = id
                 st.rerun()
         with col4:
-            if st.button("Eliminar", key=f"eliminar_{id}"):
+            st.button("Eliminar", key=f"eliminar_{id}", disabled=disabled)
+            if not disabled and st.session_state.get(f"eliminar_{id}"):
                 st.session_state["confirmar_eliminar_id"] = id
                 st.session_state["confirmar_eliminar_nombre"] = nombre
                 st.session_state["confirmar_eliminar_tipo"] = tipo
@@ -236,7 +266,7 @@ def pagina_editar(id):
 def pagina_eliminar(id):
     st.title("Eliminar Proyecto")
     with conn.cursor() as cur:
-        cur.execute("SELECT carrera_referencia FROM proyectos_tendencias WHERE id=?", id)
+        cur.execute("SELECT carrera_estudio FROM proyectos_tendencias WHERE id=?", id)
         proyecto = cur.fetchone()
     if not proyecto:
         st.error("Proyecto no encontrado.")
@@ -252,6 +282,13 @@ def pagina_eliminar(id):
 
 # --- Formulario ---
 def pagina_formulario():
+    # Limpiar los campos del formulario al entrar
+    if st.session_state.get("limpiar_formulario", True):
+        import pandas as pd
+        st.session_state["df_trends"] = pd.DataFrame({"Palabra": [""], "Promedio": [""]})
+        st.session_state["modalidad_oferta"] = pd.DataFrame({"Presencial": [""], "Virtual": [""]})
+        st.session_state["search_query"] = ""
+        st.session_state["limpiar_formulario"] = False
     st.title("Formulario de Proyectos y Tendencias")
     try:
         import sys
@@ -272,6 +309,7 @@ def main():
     if page in ["inicio", "formulario", "form", "f"]:
         page = mostrar_navegacion("nav_main")
         if page in ["formulario", "form", "f"]:
+            st.session_state["limpiar_formulario"] = True
             pagina_formulario()
         else:
             pagina_inicio()

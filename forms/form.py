@@ -301,7 +301,13 @@ def mostrar_formulario():
                             ''', proyecto_id, presencial, virtual)
 
                         conn.commit()
-                    st.success("Datos guardados en la base de datos correctamente.")
+                    # Guardar bandera de éxito y limpiar datos
+                    st.session_state["exito_guardado"] = True
+                    st.session_state["df_trends"] = pd.DataFrame({"Palabra": [""], "Promedio": [""]})
+                    st.session_state["modalidad_oferta"] = pd.DataFrame({"Presencial": [""], "Virtual": [""]})
+                    st.session_state["search_query"] = ""
+                    st.session_state["page"] = "inicio"
+                    st.rerun()
                 except Exception as e:
                     st.error(f"Error al guardar en la base de datos: {e}")
 
