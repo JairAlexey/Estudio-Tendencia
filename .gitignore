@@ -1,0 +1,14 @@
+# Ignorar el entorno virtual
+.venv/
+
+# Ignorar las carpetas pycache
+**/__pycache__/
+
+# Ignorar variables de entorno
+/.env
+
+# Ignorar archivos excel
+*.xlsx
+
+# Ignorar perfil de chrome
+profile/
