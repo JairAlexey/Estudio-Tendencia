@@ -1,7 +1,6 @@
-from scrapers.linkedin_modules.linkedin_excel import (
+from scrapers.linkedin_modules.linkedin_database import (
     extraer_datos_tabla,
-    guardar_datos_excel,
-    obtener_rutas_excel,
+    guardar_datos_sql,
 )
 from scrapers.linkedin_modules.linkedin_report import extraer_datos_reporte
 from scrapers.linkedin_modules.linkedin_project import buscar_proyecto_en_pagina
@@ -41,6 +40,8 @@ def linkedin_scraper():
     # -----------------------------------------------------------------------------
     # CONFIGURACIÓN: Cargar variables de entorno y definir parámetros iniciales
     # -----------------------------------------------------------------------------
+
+    import sys
     load_dotenv()
     EMAIL = os.getenv("LINKEDIN_USER")
     PASSWORD = os.getenv("LINKEDIN_PASS")
@@ -49,131 +50,123 @@ def linkedin_scraper():
         print("❌ Faltan credenciales de LinkedIn. Verifica las variables de entorno LINKEDIN_USER y LINKEDIN_PASS.")
         return
 
-    # Obtener todas las rutas de Excel configuradas
-    try:
-        rutas_excel = obtener_rutas_excel()
-        print(f"📂 Se procesarán {len(rutas_excel)} archivo(s) Excel:")
-        for i, ruta in enumerate(rutas_excel, 1):
-            print(f"   {i}. {ruta}")
-    except ValueError as e:
-        print(e)
+    if len(sys.argv) < 2:
+        print("Uso: python linkedin.py <proyecto_id>")
         return
+    proyecto_id = int(sys.argv[1])
 
     UBICACIONES = ["Ecuador", "América Latina"]
-
-    # CONFIGURACIÓN DEL NAVEGADOR USANDO EL MÓDULO
     user_data_dir = r"C:\Users\User\Documents\TRABAJO - UDLA\Scraping-Tendencias\profile"
     profile_directory = "Default"
-
     limpiar_singleton_lock(user_data_dir, profile_directory)
     options = crear_opciones_chrome(user_data_dir, profile_directory)
     driver = iniciar_driver(options)
-
-    # INICIAR SESIÓN EN LINKEDIN USANDO EL MÓDULO
     if not login_linkedin(driver, EMAIL, PASSWORD):
         return
-
-    # -------------------------------------------------------------------------
-    # ACCEDER A INSIGHTS
-    # -------------------------------------------------------------------------
     url = "https://www.linkedin.com/insights/saved?reportType=talent&tab=folders"
     driver.get(url)
     time.sleep(TIEMPO_ESPERA_MEDIO)
 
-    # Procesar cada archivo Excel
-    for i, ruta_excel in enumerate(rutas_excel, 1):
-        print(f"\n{'='*60}")
-        print(f"📊 Procesando archivo {i}/{len(rutas_excel)}: {os.path.basename(ruta_excel)}")
-        print(f"{'='*60}")
 
-        # Extraer reportes para este archivo específico
-        reportes = extraer_datos_tabla("reporteLinkedin", ruta_excel)
-        if not reportes:
-            print(f"❌ No se encontraron reportes en el archivo {ruta_excel}")
-            continue
+    # Extraer configuración del proyecto desde la base de datos
+    reportes = extraer_datos_tabla("reporteLinkedin", proyecto_id)
+    if not reportes:
+        print(f"❌ No se encontraron datos para el proyecto {proyecto_id}")
+        return
 
-        # Lista para almacenar los resultados finales de este archivo
-        resultados_finales = []
-        elementos_fallidos = []  # Nueva lista para rastrear elementos que fallaron
 
-        # -----------------------------------------------------------------------------
-        # PROCESAR CADA ELEMENTO DEL REPORTE (Carpeta + Proyecto) para este archivo
-        # -----------------------------------------------------------------------------
-        for elemento in reportes:
-            # Se esperan las claves "Carpeta" y "Proyecto" en cada elemento
-            if isinstance(elemento, dict):
-                carpeta_buscar = elemento.get("Carpeta")
-                proyecto_buscar = elemento.get("Proyecto")
-            else:
-                print(f"❌ Formato inesperado en elemento de reportes: {elemento}")
-                continue
+    resultados_finales = []
+    elementos_fallidos = []
 
-            print(
-                f"\n=== Buscando carpeta '{carpeta_buscar}' y proyecto '{proyecto_buscar}' ==="
-            )
+    def normalizar_resultado(datos, tipo, ubicacion):
+        def to_int(val):
+            if val is None or str(val).strip() in ["", "--"]:
+                return None
+            return int(str(val).replace('.', '').replace(',', '').strip())
+        profesionales = to_int(datos.get("profesionales"))
+        anuncios = to_int(datos.get("anuncios_empleo") or datos.get("anuncios"))
+        porcentaje = round((anuncios / profesionales) * 100, 2) if profesionales and anuncios else None
+        return {
+            "Tipo": tipo,
+            "Region": ubicacion,
+            "Profesionales": profesionales,
+            "AnunciosEmpleo": anuncios,
+            "PorcentajeAnunciosProfesionales": porcentaje,
+            "DemandaContratacion": datos.get("demanda_contratacion"),
+        }
+
+    for elemento in reportes:
+        carpeta_buscar = elemento.get("Carpeta")
+        for tipo, carrera in [("Referencia", elemento.get("ProyectoReferencia")), ("Estudio", elemento.get("ProyectoEstudio"))]:
+            print(f"\n=== Buscando carpeta '{carpeta_buscar}' y proyecto '{carrera}' ({tipo}) ===")
             encontrada = paginar_y_buscar_carpeta(driver, carpeta_buscar, buscar_carpeta_en_pagina, url, TIEMPO_ESPERA_CORTO, TIEMPO_ESPERA_MEDIO)
             if not encontrada:
                 print(f"❌ No se encontró la carpeta '{carpeta_buscar}'")
                 elementos_fallidos.append({
                     'elemento': elemento,
                     'carpeta': carpeta_buscar,
-                    'proyecto': proyecto_buscar,
+                    'proyecto': carrera,
                     'razon': f"Carpeta '{carpeta_buscar}' no encontrada"
                 })
                 driver.get(url)
                 time.sleep(TIEMPO_ESPERA_CORTO)
                 continue
 
+            # Usar paginar_y_buscar_proyecto para buscar y extraer datos
+            resultados_temp = []
             proyecto_encontrado = paginar_y_buscar_proyecto(
-                driver, proyecto_buscar, UBICACIONES, carpeta_buscar, resultados_finales,
+                driver, carrera, UBICACIONES, carpeta_buscar, resultados_temp,
                 buscar_proyecto_en_pagina, extraer_datos_reporte, TIEMPO_ESPERA_CORTO, TIEMPO_ESPERA_PAGINA
             )
             if not proyecto_encontrado:
-                print(
-                    f"❌ No se encontró el proyecto '{proyecto_buscar}' dentro de la carpeta '{carpeta_buscar}'."
-                )
+                print(f"❌ No se encontró el proyecto '{carrera}' dentro de la carpeta '{carpeta_buscar}'.")
                 elementos_fallidos.append({
                     'elemento': elemento,
                     'carpeta': carpeta_buscar,
-                    'proyecto': proyecto_buscar,
-                    'razon': f"Proyecto '{proyecto_buscar}' no encontrado en carpeta '{carpeta_buscar}'"
+                    'proyecto': carrera,
+                    'razon': f"Proyecto '{carrera}' no encontrado en carpeta '{carpeta_buscar}'"
                 })
+            else:
+                # Normalizar los resultados extraídos antes de guardar
+                for ubicacion, datos in zip(UBICACIONES, resultados_temp):
+                    if datos:
+                        resultado = normalizar_resultado(datos, tipo, ubicacion)
+                        resultados_finales.append(resultado)
+                    else:
+                        print(f"❌ No se obtuvieron datos para {carrera} - {ubicacion}")
             driver.get(url)
             time.sleep(TIEMPO_ESPERA_PAGINA)
 
-        # -----------------------------------------------------------------------------
-        # REINTENTO DE ELEMENTOS FALLIDOS (segunda oportunidad)
-        # -----------------------------------------------------------------------------
-        reintentar_elementos_fallidos(
-            driver, elementos_fallidos, url, UBICACIONES,
-            buscar_carpeta_en_pagina, buscar_proyecto_en_pagina, extraer_datos_reporte,
-            TIEMPO_ESPERA_CORTO, TIEMPO_ESPERA_MEDIO, TIEMPO_ESPERA_PAGINA
-        )
+    # Reintento de elementos fallidos
+    reintentar_elementos_fallidos(
+        driver, elementos_fallidos, url, UBICACIONES,
+        buscar_carpeta_en_pagina, buscar_proyecto_en_pagina, extraer_datos_reporte,
+        TIEMPO_ESPERA_CORTO, TIEMPO_ESPERA_MEDIO, TIEMPO_ESPERA_PAGINA
+    )
 
-        # -----------------------------------------------------------------------------
-        # Exportar resultados a Excel para este archivo
-        # -----------------------------------------------------------------------------
-        if resultados_finales:
-            guardar_datos_excel(resultados_finales, plataforma="LinkedIn", ruta_excel=ruta_excel)
-            print(f"✅ Datos guardados correctamente para {os.path.basename(ruta_excel)}")
-        else:
-            print(f"ℹ️ No se obtuvieron resultados para {os.path.basename(ruta_excel)}.")
-        
-        # Resumen final del archivo procesado
-        total_elementos = len(reportes)
-        elementos_exitosos = total_elementos - len(elementos_fallidos)
-        if elementos_fallidos:
-            print(f"\n📊 RESUMEN para {os.path.basename(ruta_excel)}:")
-            print(f"   ✅ Exitosos: {elementos_exitosos}/{total_elementos}")
-            print(f"   ❌ Fallidos: {len(elementos_fallidos)}/{total_elementos}")
-            print(f"   📋 Elementos que no se pudieron procesar:")
-            for fallido in elementos_fallidos:
-                print(f"      - {fallido['carpeta']} -> {fallido['proyecto']} ({fallido['razon']})")
-        else:
-            print(f"\n🎉 Todos los elementos procesados exitosamente para {os.path.basename(ruta_excel)} ({elementos_exitosos}/{total_elementos})")
+    # Guardar resultados en la base de datos
+    if resultados_finales:
+        # Asignar correctamente el campo Tipo antes de guardar
+        for r in resultados_finales:
+            if "Tipo" not in r:
+                r["Tipo"] = "Referencia" if r.get("proyecto") == elemento.get("ProyectoReferencia") else "Estudio"
+        guardar_datos_sql(resultados_finales, "linkedin", proyecto_id)
+        print(f"✅ Datos guardados correctamente para el proyecto {proyecto_id}")
+    else:
+        print(f"ℹ️ No se obtuvieron resultados para el proyecto {proyecto_id}.")
 
-    # RESUMEN FINAL COMPLETO DE TODO EL PROCESAMIENTO
-    mostrar_resumen_final(rutas_excel, extraer_datos_tabla)
+    # Resumen final
+    total_elementos = len(reportes) * 2
+    elementos_exitosos = total_elementos - len(elementos_fallidos)
+    if elementos_fallidos:
+        print(f"\n📊 RESUMEN para proyecto {proyecto_id}:")
+        print(f"   ✅ Exitosos: {elementos_exitosos}/{total_elementos}")
+        print(f"   ❌ Fallidos: {len(elementos_fallidos)}/{total_elementos}")
+        print(f"   📋 Elementos que no se pudieron procesar:")
+        for fallido in elementos_fallidos:
+            print(f"      - {fallido['carpeta']} -> {fallido['proyecto']} ({fallido['razon']})")
+    else:
+        print(f"\n🎉 Todos los elementos procesados exitosamente para el proyecto {proyecto_id} ({elementos_exitosos}/{total_elementos})")
 
 if __name__ == "__main__":
     linkedin_scraper()

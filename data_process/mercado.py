@@ -1,5 +1,5 @@
 import pandas as pd
-from scrapers.linkedin_modules.linkedin_excel import (
+from scrapers.linkedin_modules.linkedin_database import (
     extraer_datos_tabla,
     obtener_id_carrera,
     obtener_codigos_por_id_carrera,

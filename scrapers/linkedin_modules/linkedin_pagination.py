@@ -63,6 +63,9 @@ def paginar_y_buscar_proyecto(driver, proyecto_buscar, UBICACIONES, carpeta_busc
                 By.CSS_SELECTOR,
                 "div.artdeco-models-table-pagination__pagination-cmpt ul.artdeco-pagination__pages li",
             )
+            if i >= len(paginacion_reports):
+                print(f"⚠️ Índice {i} fuera de rango para paginacion_reports (tamaño: {len(paginacion_reports)})")
+                break
             li = paginacion_reports[i]
             class_attr = li.get_attribute("class")
             if class_attr and "selected" in class_attr:

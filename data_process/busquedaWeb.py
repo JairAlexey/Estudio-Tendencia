@@ -1,6 +1,6 @@
 import pandas as pd
 import os
-from scrapers.linkedin_modules.linkedin_excel import obtener_id_carrera, extraer_datos_tabla
+from scrapers.linkedin_modules.linkedin_database import obtener_id_carrera, extraer_datos_tabla
 
 SEMRUSH = 0.15
 TRENDS = 0.20

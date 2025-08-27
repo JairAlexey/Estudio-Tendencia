@@ -50,7 +50,7 @@ def crear_tablas():
                 Profesionales int NULL,
                 AnunciosEmpleo int NULL,
                 PorcentajeAnunciosProfesionales decimal(10,2) NULL,
-                DemandaContratacion int NULL,
+                DemandaContratacion nvarchar(50),
                 CONSTRAINT PK_linkedin PRIMARY KEY (id),
                 CONSTRAINT FK_linkedin_proyecto FOREIGN KEY (proyecto_id) REFERENCES proyectos_tendencias(id)
             )

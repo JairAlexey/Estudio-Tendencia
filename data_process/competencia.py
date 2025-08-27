@@ -1,6 +1,6 @@
 import pandas as pd
 from data_process.busquedaWeb import calc_busquedaWeb
-from scrapers.linkedin_modules.linkedin_excel import extraer_datos_tabla
+from scrapers.linkedin_modules.linkedin_database import extraer_datos_tabla
 
 # Calcular resultado para competencia virtual y presencial
 def obtener_resultado(busqueda, competencia):
