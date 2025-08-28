@@ -11,7 +11,7 @@ def limpiar_singleton_lock(user_data_dir, profile_directory):
     full_profile_path = os.path.join(user_data_dir, profile_directory)
     singleton_lock = os.path.join(full_profile_path, "SingletonLock")
     if os.path.exists(singleton_lock):
-        print("🧯 Eliminando archivo de bloqueo previo (SingletonLock)...")
+        print("Eliminando archivo de bloqueo previo (SingletonLock)...")
         os.remove(singleton_lock)
 
 def crear_opciones_chrome(user_data_dir, profile_directory):
@@ -37,12 +37,12 @@ def iniciar_driver(options):
     return uc.Chrome(options=options)
 
 def login_linkedin(driver, email, password):
-    print("🌐 Abriendo LinkedIn Login...")
+    print("Abriendo LinkedIn Login...")
     driver.get("https://www.linkedin.com/login")
     time.sleep(TIEMPO_ESPERA_CORTO)
 
     if "login" in driver.current_url:
-        print("🔐 Iniciando sesión en LinkedIn...")
+        print("Iniciando sesión en LinkedIn...")
         try:
             campo_usuario = driver.find_element(By.ID, "username")
             campo_contrasena = driver.find_element(By.ID, "password")
@@ -52,16 +52,16 @@ def login_linkedin(driver, email, password):
             campo_contrasena.send_keys(password + Keys.RETURN)
             time.sleep(TIEMPO_ESPERA_CORTO)
             if "linkedin.com/feed" in driver.current_url:
-                print("✅ Sesión iniciada correctamente.")
+                print("Sesión iniciada correctamente.")
                 return True
             else:
-                print("❌ No se redirigió al feed. Login fallido o requiere verificación.")
+                print("No se redirigió al feed. Login fallido o requiere verificación.")
                 driver.quit()
                 return False
         except Exception as e:
-            print(f"❌ Error durante el login: {e}")
+            print(f"Error durante el login: {e}")
             driver.quit()
             return False
     else:
-        print("✅ Ya estabas logueado. Redirigido automáticamente.")
+        print("Ya estabas logueado. Redirigido automáticamente.")
         return True

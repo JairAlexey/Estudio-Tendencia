@@ -32,7 +32,7 @@ def paginar_y_buscar_carpeta(driver, carpeta_buscar, buscar_carpeta_en_pagina, u
                 if buscar_carpeta_en_pagina(driver, carpeta_buscar):
                     return True
             except Exception as e:
-                print("⚠️ Error al cambiar página de carpetas:", e)
+                print("Error al cambiar página de carpetas:", e)
                 continue
     return False
 
@@ -53,7 +53,7 @@ def paginar_y_buscar_proyecto(driver, proyecto_buscar, UBICACIONES, carpeta_busc
             "div.artdeco-models-table-pagination__pagination-cmpt ul.artdeco-pagination__pages li",
         )
     except Exception as e:
-        print("❌ Error al localizar la sección de reportes:", e)
+        print("Error al localizar la sección de reportes:", e)
         paginacion_reports = []
 
     if paginacion_reports:
@@ -64,7 +64,7 @@ def paginar_y_buscar_proyecto(driver, proyecto_buscar, UBICACIONES, carpeta_busc
                 "div.artdeco-models-table-pagination__pagination-cmpt ul.artdeco-pagination__pages li",
             )
             if i >= len(paginacion_reports):
-                print(f"⚠️ Índice {i} fuera de rango para paginacion_reports (tamaño: {len(paginacion_reports)})")
+                print(f"Índice {i} fuera de rango para paginacion_reports (tamaño: {len(paginacion_reports)})")
                 break
             li = paginacion_reports[i]
             class_attr = li.get_attribute("class")
@@ -84,7 +84,7 @@ def paginar_y_buscar_proyecto(driver, proyecto_buscar, UBICACIONES, carpeta_busc
                 ):
                     return True
             except Exception as e:
-                print("⚠️ Error al cambiar página de reportes:", e)
+                print("Error al cambiar página de reportes:", e)
                 continue
     return False
 
@@ -95,14 +95,14 @@ def reintentar_elementos_fallidos(driver, elementos_fallidos, url, UBICACIONES, 
     if not elementos_fallidos:
         return
 
-    print(f"\n🔄 REINTENTANDO {len(elementos_fallidos)} elemento(s) que fallaron:")
+    print(f"\nREINTENTANDO {len(elementos_fallidos)} elemento(s) que fallaron:")
     for i, fallido in enumerate(elementos_fallidos.copy(), 1):
         elemento = fallido['elemento']
         carpeta_buscar = fallido['carpeta']
         proyecto_buscar = fallido['proyecto']
         razon = fallido['razon']
 
-        print(f"\n🔄 Reintento {i}/{len(elementos_fallidos)}: {carpeta_buscar} -> {proyecto_buscar}")
+        print(f"\nReintento {i}/{len(elementos_fallidos)}: {carpeta_buscar} -> {proyecto_buscar}")
         print(f"   Razón del fallo anterior: {razon}")
 
         driver.get(url)
@@ -110,7 +110,7 @@ def reintentar_elementos_fallidos(driver, elementos_fallidos, url, UBICACIONES, 
 
         encontrada = paginar_y_buscar_carpeta(driver, carpeta_buscar, buscar_carpeta_en_pagina, url, TIEMPO_ESPERA_CORTO, TIEMPO_ESPERA_MEDIO)
         if not encontrada:
-            print(f"❌ Reintento fallido: Carpeta '{carpeta_buscar}' sigue sin encontrarse")
+            print(f"Reintento fallido: Carpeta '{carpeta_buscar}' sigue sin encontrarse")
             continue
 
         proyecto_encontrado = paginar_y_buscar_proyecto(
@@ -118,7 +118,7 @@ def reintentar_elementos_fallidos(driver, elementos_fallidos, url, UBICACIONES, 
             buscar_proyecto_en_pagina, extraer_datos_reporte, TIEMPO_ESPERA_CORTO, TIEMPO_ESPERA_PAGINA
         )
         if proyecto_encontrado:
-            print(f"✅ Reintento exitoso: '{proyecto_buscar}' procesado correctamente")
+            print(f"Reintento exitoso: '{proyecto_buscar}' procesado correctamente")
             elementos_fallidos.remove(fallido)
         else:
-            print(f"❌ Reintento fallido: '{proyecto_buscar}' sigue sin encontrarse")
+            print(f"Reintento fallido: '{proyecto_buscar}' sigue sin encontrarse")

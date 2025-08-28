@@ -137,6 +137,12 @@ def mostrar_formulario_edicion(id):
                         ''', id, presencial, virtual)
 
                 conn.commit()
+                try:
+                    from scrapers.linkedin_modules.linkedin_database import enqueue_scraper_job
+                    enqueue_scraper_job(id)
+                    st.info("Scraper encolado para este proyecto.")
+                except Exception as e:
+                    st.warning(f"No se pudo encolar el scraper: {e}")
                 st.success("Cambios guardados correctamente.")
             except Exception as e:
                 st.error(f"Error al guardar cambios: {e}")
@@ -301,6 +307,13 @@ def mostrar_formulario():
                             ''', proyecto_id, presencial, virtual)
 
                         conn.commit()
+                    # Encolar job para el nuevo proyecto
+                    try:
+                        from scrapers.linkedin_modules.linkedin_database import enqueue_scraper_job
+                        enqueue_scraper_job(proyecto_id)
+                        st.info("Scraper encolado para el nuevo proyecto.")
+                    except Exception as e:
+                        st.warning(f"No se pudo encolar el scraper: {e}")
                     # Guardar bandera de éxito y limpiar datos
                     st.session_state["exito_guardado"] = True
                     st.session_state["df_trends"] = pd.DataFrame({"Palabra": [""], "Promedio": [""]})

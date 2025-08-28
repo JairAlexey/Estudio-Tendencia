@@ -23,19 +23,19 @@ def buscar_proyecto_en_pagina(
             texto = span.text.strip()
             print("🔍 Revisando reporte:", texto)
             if texto.lower() == proyecto_buscar.lower():
-                print("✅ Proyecto encontrado:", texto)
+                print("Proyecto encontrado:", texto)
                 enlace = row.find_element(
                     By.CSS_SELECTOR,
                     "td.saved-reports-table__table-cell--display-name a",
                 )
                 href = enlace.get_attribute("href")
-                print("🔗 Navegando a:", href)
+                print("Navegando a:", href)
                 driver.get(href)
                 time.sleep(TIEMPO_ESPERA_MEDIO)
                 resultados_ubicacion = []
                 ubicaciones_exitosas = 0
                 for UBICACION in ubicaciones:
-                    print(f"\n🌍 Aplicando ubicación: {UBICACION}")
+                    print(f"\nAplicando ubicación: {UBICACION}")
                     datos = extraer_datos_reporte(
                         driver, UBICACION, carpeta_nombre, texto
                     )
@@ -45,11 +45,11 @@ def buscar_proyecto_en_pagina(
                 if resultados_ubicacion:
                     resultados_finales.extend(resultados_ubicacion)
                     if ubicaciones_exitosas < len(ubicaciones):
-                        print(f"⚠️ Solo {ubicaciones_exitosas}/{len(ubicaciones)} ubicaciones procesadas exitosamente para '{texto}'")
+                        print(f"Solo {ubicaciones_exitosas}/{len(ubicaciones)} ubicaciones procesadas exitosamente para '{texto}'")
                 else:
-                    print(f"❌ Ninguna ubicación pudo ser procesada para '{texto}'")
+                    print(f"Ninguna ubicación pudo ser procesada para '{texto}'")
                 return True
         except Exception as e:
-            print("⚠️ Error revisando fila de reporte:", e)
+            print("Error revisando fila de reporte:", e)
             continue
     return False

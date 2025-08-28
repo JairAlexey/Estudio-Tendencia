@@ -9,7 +9,7 @@ def esperar_resultados_o_banner(driver, hay_banner_error, TIEMPO_ESPERA_LARGO=4)
     end_time = time.time() + TIEMPO_ESPERA_LARGO
     while time.time() < end_time:
         if hay_banner_error(driver, timeout=0.5):
-            print("🚨 Banner de error detectado")
+            print("Banner de error detectado")
             return 'banner'
         top_cards = driver.find_elements(By.CSS_SELECTOR, "li.overview-layout__top-card")
         if top_cards and len(top_cards) > 0:

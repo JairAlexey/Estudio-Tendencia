@@ -22,12 +22,12 @@ def esperar_y_refrescar_si_banner(
             return False
     while hay_banner_error(driver) and intento < max_intentos:
         intento += 1
-        print(f"🔄 Banner error - Refrescando... ({intento}/{max_intentos})")
+        print(f"Banner error - Refrescando... ({intento}/{max_intentos})")
         time.sleep(espera_seg)
         driver.refresh()
         time.sleep(TIEMPO_ESPERA_PAGINA * 2)
         if hay_banner_error(driver):
-            print(f"⚠️ Banner aún presente después del refresh {intento}")
+            print(f"Banner aún presente después del refresh {intento}")
             continue
         filtro_ok = False
         for intento_filtro in range(5):
@@ -41,7 +41,7 @@ def esperar_y_refrescar_si_banner(
                     pass
             time.sleep(TIEMPO_ESPERA_MEDIO)
         if not filtro_ok:
-            print(f"❌ Filtro de ubicación no disponible después de refresh {intento}")
+            print(f"Filtro de ubicación no disponible después de refresh {intento}")
             return False
         try:
             time.sleep(TIEMPO_ESPERA_MEDIO)
@@ -62,12 +62,12 @@ def esperar_y_refrescar_si_banner(
                 else:
                     print(f"ℹ️ No hay filtros que limpiar tras refresh")
             except Exception as e:
-                print(f"⚠️ No se pudieron limpiar filtros tras refresh: {e}")
+                print(f"No se pudieron limpiar filtros tras refresh: {e}")
         except Exception as e:
-            print(f"⚠️ Error general limpiando filtros tras refresh: {e}")
+            print(f"Error general limpiando filtros tras refresh: {e}")
         if re_aplicar_filtro and ubicacion:
             if hay_banner_error(driver):
-                print(f"⚠️ Banner detectado antes de re-aplicar filtro")
+                print(f"Banner detectado antes de re-aplicar filtro")
                 return False
             if not re_aplicar_filtro(driver, ubicacion):
                 return False

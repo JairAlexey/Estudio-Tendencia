@@ -123,6 +123,18 @@ def pagina_inicio():
     with conn.cursor() as cur:
         cur.execute("SELECT id, carrera_estudio, tipo_carpeta FROM proyectos_tendencias")
         proyectos = cur.fetchall()
+        # Traer último estado de scraper por proyecto
+        cur.execute(
+            """
+            SELECT proyecto_id, status
+            FROM (
+                SELECT proyecto_id, status,
+                       ROW_NUMBER() OVER (PARTITION BY proyecto_id ORDER BY created_at DESC) rn
+                FROM scraper_queue
+            ) t WHERE rn = 1
+            """
+        )
+        estados = {row[0]: row[1] for row in cur.fetchall()}
 
     if not proyectos:
         st.info("No hay proyectos registrados.")
@@ -150,6 +162,7 @@ def pagina_inicio():
             '>
                 <h4 style='margin:0'>{nombre}</h4>
                 <p style='margin:0; color:#555;'>{tipo}</p>
+                <div style='margin-top:0.25rem; font-size: 0.9rem;'>Estado cola: <b>{estados.get(id, '—')}</b></div>
             </div>
         """, unsafe_allow_html=True)
 
@@ -302,6 +315,43 @@ def pagina_formulario():
     except Exception as e:
         st.error(f"ERROR: {e}")
 
+# --- Visualizar proyecto ---
+def pagina_reporte(id):
+    st.title("Reporte del Proyecto")
+    if st.button("Regresar al inicio", key="volver_inicio_reporte"):
+        st.session_state["page"] = "inicio"
+        st.rerun()
+    # Importar la lógica de reporte desde app.py
+    try:
+        import sys
+        sys.path.append(".")
+        from scrapers.linkedin_modules.linkedin_database import listar_proyectos
+        from app import procesar_proyecto
+        proyectos = listar_proyectos()
+        proyecto = next((p for p in proyectos if p["id"] == id), None)
+        if not proyecto:
+            st.error("Proyecto no encontrado.")
+            return
+        nombre_pestana = f"{proyecto['id']} - {proyecto['carrera_referencia']} vs {proyecto['carrera_estudio']}"
+        st.subheader("Evaluación")
+        procesar_proyecto(id, nombre_pestana)
+        # Mostrar rango de evaluación final
+        import pandas as pd
+        st.subheader("Rango Evaluación Final")
+        df_rango = pd.DataFrame(
+            {
+                "Rango": ["0% - 60%", "61% - 70%", "71% - 100%"],
+                "Evaluación": [
+                    "Definitivamente No Viable",
+                    "Para revisión adicional",
+                    "Viable",
+                ],
+            }
+        )
+        st.dataframe(df_rango, use_container_width=True, hide_index=True)
+    except Exception as e:
+        st.error(f"ERROR mostrando reporte: {e}")
+
 # --- Layout principal ---
 def main():
     page = st.session_state.get("page", "inicio")
@@ -328,8 +378,7 @@ def main():
     elif page == "reporte":
         id = st.session_state.get("id", None)
         if id:
-            st.title("Reporte del Proyecto")
-            st.info(f"Aquí puedes mostrar el reporte para el proyecto con ID {id}.")
+            pagina_reporte(id)
 
 if __name__ == "__main__":
     main()

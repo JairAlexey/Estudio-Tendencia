@@ -170,7 +170,7 @@ def linkedin_scraper():
                 if "Tipo" not in r:
                     r["Tipo"] = "Referencia" if r.get("proyecto") == elemento.get("ProyectoReferencia") else "Estudio"
             guardar_datos_sql(resultados_finales, "linkedin", proyecto_id)
-            print(f"✅ Datos guardados correctamente para el proyecto {proyecto_id}")
+            print(f"Datos guardados correctamente para el proyecto {proyecto_id}")
         else:
             print(f"ℹ️ No se obtuvieron resultados para el proyecto {proyecto_id}.")
 
@@ -178,14 +178,14 @@ def linkedin_scraper():
         total_elementos = len(reportes) * 2
         elementos_exitosos = total_elementos - len(elementos_fallidos)
         if elementos_fallidos:
-            print(f"\n📊 RESUMEN para proyecto {proyecto_id}:")
-            print(f"   ✅ Exitosos: {elementos_exitosos}/{total_elementos}")
-            print(f"   ❌ Fallidos: {len(elementos_fallidos)}/{total_elementos}")
-            print(f"   📋 Elementos que no se pudieron procesar:")
+            print(f"\nRESUMEN para proyecto {proyecto_id}:")
+            print(f"   Exitosos: {elementos_exitosos}/{total_elementos}")
+            print(f"   Fallidos: {len(elementos_fallidos)}/{total_elementos}")
+            print(f"   Elementos que no se pudieron procesar:")
             for fallido in elementos_fallidos:
                 print(f"      - {fallido['carpeta']} -> {fallido['proyecto']} ({fallido['razon']})")
         else:
-            print(f"\n🎉 Todos los elementos procesados exitosamente para el proyecto {proyecto_id} ({elementos_exitosos}/{total_elementos})")
+            print(f"\nTodos los elementos procesados exitosamente para el proyecto {proyecto_id} ({elementos_exitosos}/{total_elementos})")
     finally:
         try:
             driver.quit()

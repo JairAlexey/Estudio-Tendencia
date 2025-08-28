@@ -1,8 +1,25 @@
 import os
+from pathlib import Path
 import pandas as pd
 
-# Ruta al archivo Excel
-EXCEL_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), 'extract/db/mercado.xlsx'))
+def _resolver_ruta_excel():
+    # 1) Variable de entorno explícita
+    env_path = os.getenv("MERCADO_XLSX")
+    if env_path and Path(env_path).exists():
+        return str(Path(env_path).resolve())
+
+    # 2) Ruta relativa al proyecto: <raiz>/db/mercado.xlsx (este archivo vive en la raíz del proyecto)
+    proyecto_root = Path(__file__).resolve().parent
+    por_defecto = proyecto_root / 'db' / 'mercado.xlsx'
+    if por_defecto.exists():
+        return str(por_defecto)
+
+    # 3) Fallback: cwd/db/mercado.xlsx
+    cwd_path = Path.cwd() / 'db' / 'mercado.xlsx'
+    return str(cwd_path)
+
+# Ruta al archivo Excel (resuelta de forma robusta)
+EXCEL_PATH = _resolver_ruta_excel()
 
 # Función para obtener los códigos CIIU únicos
 def obtener_codigos_ciiu():
@@ -11,7 +28,7 @@ def obtener_codigos_ciiu():
         codigos = df['ACTIVIDAD ECONÓMICA'].dropna().unique().tolist()
         return codigos
     except Exception as e:
-        print(f"ERROR al leer códigos CIIU: {e}")
+        print(f"ERROR al leer códigos CIIU desde '{EXCEL_PATH}': {e}")
         return []
 
 # Ejemplo de uso:

@@ -26,7 +26,7 @@ def extraer_datos_reporte(driver, UBICACION, carpeta_nombre, proyecto_nombre,
         try:
             # VERIFICACIÓN INICIAL DE BANNER antes de cualquier interacción
             if hay_banner_error(driver):
-                print(f"🚨 Banner detectado al inicio de aplicar_filtro para '{UBICACION}'")
+                print(f"Banner detectado al inicio de aplicar_filtro para '{UBICACION}'")
                 return False
             
             div_ubicacion = None
@@ -38,21 +38,21 @@ def extraer_datos_reporte(driver, UBICACION, carpeta_nombre, proyecto_nombre,
                 except StaleElementReferenceException:
                     continue
             if not div_ubicacion:
-                print("❌ No se encontró el filtro de ubicación para aplicar.")
+                print("No se encontró el filtro de ubicación para aplicar.")
                 return False
             driver.execute_script("arguments[0].scrollIntoView(true);", div_ubicacion)
             time.sleep(TIEMPO_ESPERA_MEDIO)
             
             # VERIFICACIÓN DE BANNER después de localizar elementos
             if hay_banner_error(driver):
-                print(f"🚨 Banner detectado después de localizar filtro para '{UBICACION}'")
+                print(f"Banner detectado después de localizar filtro para '{UBICACION}'")
                 return False
             # --- Comprobar si la ubicación ya está aplicada ---
             # Verificar solo en la barra de filtros (método más confiable)
             ubicaciones_aplicadas = []
             ub_comparar = normalizar_texto(UBICACION)
             
-            print(f"🔍 Verificando barra de filtros para '{UBICACION}'...")
+            print(f"Verificando barra de filtros para '{UBICACION}'...")
             
             # Múltiples intentos para leer elementos de la barra de filtros
             filters_bar_elements = []
@@ -62,7 +62,7 @@ def extraer_datos_reporte(driver, UBICACION, carpeta_nombre, proyecto_nombre,
                     time.sleep(TIEMPO_ESPERA_MEDIO)
                     
                     filters_bar_elements = driver.find_elements(By.CSS_SELECTOR, 'span.filters-bar__filter-item[data-test-talent-filters-bar-location-filter]')
-                    print(f"   Intento {intento_lectura + 1}: Encontrados {len(filters_bar_elements)} elementos")
+                    print(f"Intento {intento_lectura + 1}: Encontrados {len(filters_bar_elements)} elementos")
                     
                     if filters_bar_elements:
                         # Verificar si al menos uno tiene texto no vacío
@@ -75,19 +75,19 @@ def extraer_datos_reporte(driver, UBICACION, carpeta_nombre, proyecto_nombre,
                                 continue
                         
                         if elementos_con_texto > 0:
-                            print(f"   ✅ {elementos_con_texto} elementos con texto encontrados")
+                            print(f"   {elementos_con_texto} elementos con texto encontrados")
                             break
                         else:
-                            print(f"   ⚠️ Elementos encontrados pero todos están vacíos, esperando más...")
+                            print(f"Elementos encontrados pero todos están vacíos, esperando más...")
                             if intento_lectura < 4:  # No esperar en el último intento
                                 time.sleep(TIEMPO_ESPERA_LARGO)
                     else:
-                        print(f"   ⚠️ No se encontraron elementos, esperando más...")
+                        print(f"No se encontraron elementos, esperando más...")
                         if intento_lectura < 4:  # No esperar en el último intento
                             time.sleep(TIEMPO_ESPERA_LARGO)
                             
                 except Exception as e:
-                    print(f"   ⚠️ Error en intento {intento_lectura + 1}: {e}")
+                    print(f"Error en intento {intento_lectura + 1}: {e}")
                     if intento_lectura < 4:
                         time.sleep(TIEMPO_ESPERA_MEDIO)
                     continue
@@ -117,45 +117,45 @@ def extraer_datos_reporte(driver, UBICACION, carpeta_nombre, proyecto_nombre,
                             clean_text = normalizar_texto(filter_text)
                             # Verificar coincidencia exacta con la ubicación buscada
                             if ub_comparar == clean_text:
-                                print(f"   ✅ Coincidencia exacta encontrada: '{filter_text}' = '{UBICACION}'")
+                                print(f"Coincidencia exacta encontrada: '{filter_text}' = '{UBICACION}'")
                                 ubicaciones_aplicadas.append(clean_text)
                             else:
-                                print(f"   ❌ No coincide: '{clean_text}' ≠ '{ub_comparar}'")
+                                print(f"No coincide: '{clean_text}' ≠ '{ub_comparar}'")
                         else:
-                            print(f"   ⚠️ Elemento {i+1} está vacío después de múltiples intentos")
+                            print(f"Elemento {i+1} está vacío después de múltiples intentos")
                             
                     except Exception as e:
-                        print(f"   ⚠️ Error procesando elemento {i+1}: {e}")
+                        print(f"Error procesando elemento {i+1}: {e}")
                         continue
             else:
-                print(f"   ❌ No se encontraron elementos de barra de filtros después de múltiples intentos")
+                print(f"No se encontraron elementos de barra de filtros después de múltiples intentos")
             
             # Mostrar filtros detectados para debugging
             if ubicaciones_aplicadas:
-                print(f"🔎 Filtros aplicados: {ubicaciones_aplicadas}")
+                print(f"Filtros aplicados: {ubicaciones_aplicadas}")
             else:
-                print(f"🔎 Filtros aplicados: [''] (ningún filtro detectado)")
+                print(f"Filtros aplicados: [''] (ningún filtro detectado)")
             
             # SIEMPRE limpiar filtros antes de aplicar uno nuevo (excepto si es exactamente el mismo)
             if len(ubicaciones_aplicadas) == 1 and ub_comparar in ubicaciones_aplicadas:
-                print(f"✅ Filtro '{UBICACION}' ya aplicado correctamente")
+                print(f"Filtro '{UBICACION}' ya aplicado correctamente")
                 return True
             else:
                 # VERIFICACIÓN DE BANNER antes de limpiar filtros
                 if hay_banner_error(driver):
-                    print(f"🚨 Banner detectado antes de limpiar filtros para '{UBICACION}'")
+                    print(f"Banner detectado antes de limpiar filtros para '{UBICACION}'")
                     return False
                 
                 # Limpiar TODOS los filtros existentes
-                print(f"🧹 Limpiando filtros existentes antes de aplicar '{UBICACION}'")
+                print(f"Limpiando filtros existentes antes de aplicar '{UBICACION}'")
                 try:
                     boton_borrar = div_ubicacion.find_element(By.CSS_SELECTOR, "button[data-test-clear-all]")
                     if boton_borrar and boton_borrar.is_displayed():
                         boton_borrar.click()
                         time.sleep(TIEMPO_ESPERA_MEDIO)
-                        print(f"✅ Filtros limpiados")
+                        print(f"Filtros limpiados")
                 except NoSuchElementException:
-                    print(f"ℹ️ No se encontró botón de limpiar todo, intentando limpiar individualmente")
+                    print(f"No se encontró botón de limpiar todo, intentando limpiar individualmente")
                     # Intentar método alternativo: hacer clic en las X de cada chip
                     try:
                         chips_remove = div_ubicacion.find_elements(By.CSS_SELECTOR, "button.facet-pill__remove")
@@ -164,13 +164,13 @@ def extraer_datos_reporte(driver, UBICACION, carpeta_nombre, proyecto_nombre,
                                 if chip_remove.is_displayed():
                                     chip_remove.click()
                                     time.sleep(0.5)
-                            print(f"✅ Filtros limpiados individualmente")
+                            print(f"Filtros limpiados individualmente")
                         else:
-                            print(f"ℹ️ No hay filtros que limpiar")
+                            print(f"ℹNo hay filtros que limpiar")
                     except Exception as e2:
-                        print(f"⚠️ No se pudieron limpiar filtros individualmente: {e2}")
+                        print(f"No se pudieron limpiar filtros individualmente: {e2}")
                 except Exception as e:
-                    print(f"⚠️ Error general limpiando filtros: {e}")
+                    print(f"Error general limpiando filtros: {e}")
                     # Intentar método alternativo: hacer clic en las X de cada chip
                     try:
                         chips_remove = div_ubicacion.find_elements(By.CSS_SELECTOR, "button.facet-pill__remove")
@@ -179,9 +179,9 @@ def extraer_datos_reporte(driver, UBICACION, carpeta_nombre, proyecto_nombre,
                                 if chip_remove.is_displayed():
                                     chip_remove.click()
                                     time.sleep(0.5)
-                            print(f"✅ Filtros limpiados individualmente")
+                            print(f"Filtros limpiados individualmente")
                     except Exception as e2:
-                        print(f"⚠️ No se pudieron limpiar filtros individualmente: {e2}")
+                        print(f"No se pudieron limpiar filtros individualmente: {e2}")
             
             # Asegurar que el input esté limpio y visible
             try:
@@ -194,14 +194,14 @@ def extraer_datos_reporte(driver, UBICACION, carpeta_nombre, proyecto_nombre,
             
             # VERIFICACIÓN DE BANNER antes de intentar escribir en el campo
             if hay_banner_error(driver):
-                print(f"🚨 Banner detectado antes de escribir en campo para '{UBICACION}'")
+                print(f"Banner detectado antes de escribir en campo para '{UBICACION}'")
                 return False
             
             # Limpiar e ingresar nueva ubicación
             try:
                 input_field = div_ubicacion.find_element(By.CSS_SELECTOR, "input.artdeco-typeahead__input")
                 if not input_field:
-                    print(f"❌ No se encontró el campo de entrada")
+                    print(f"No se encontró el campo de entrada")
                     return False
                 
                 # Asegurar que el campo esté completamente limpio
@@ -211,19 +211,19 @@ def extraer_datos_reporte(driver, UBICACION, carpeta_nombre, proyecto_nombre,
                 input_field.send_keys(Keys.DELETE)  # Borrar
                 time.sleep(0.5)
                 
-                print(f"📝 Escribiendo '{UBICACION}' en el campo de ubicación")
+                print(f"Escribiendo '{UBICACION}' en el campo de ubicación")
                 input_field.send_keys(UBICACION)
                 time.sleep(TIEMPO_ESPERA_MEDIO)
             except NoSuchElementException:
-                print(f"❌ Campo de entrada no encontrado, posible problema de carga de página")
+                print(f"Campo de entrada no encontrado, posible problema de carga de página")
                 # Verificar si hay banner que esté causando el problema
                 if hay_banner_error(driver):
-                    print(f"🚨 Banner detectado cuando falta campo de entrada")
+                    print(f"Banner detectado cuando falta campo de entrada")
                     return False
                 # Si no hay banner, podría ser un problema de timing, devolver False para reintentar
                 return False
             except Exception as e:
-                print(f"❌ Error al interactuar con el campo de entrada: {e}")
+                print(f"Error al interactuar con el campo de entrada: {e}")
                 return False
             
             # Buscar y seleccionar sugerencia
@@ -236,7 +236,7 @@ def extraer_datos_reporte(driver, UBICACION, carpeta_nombre, proyecto_nombre,
                 sugerencias = div_ubicacion.find_elements(By.CSS_SELECTOR, "ul.artdeco-typeahead__results-list li")
                 match = False
                 
-                print(f"🔍 Buscando coincidencia para '{UBICACION}' entre {len(sugerencias)} sugerencias")
+                print(f"Buscando coincidencia para '{UBICACION}' entre {len(sugerencias)} sugerencias")
                 
                 for i, sug in enumerate(sugerencias):
                     try:
@@ -245,7 +245,7 @@ def extraer_datos_reporte(driver, UBICACION, carpeta_nombre, proyecto_nombre,
                         
                         # Coincidencia exacta o si la ubicación está contenida en la sugerencia
                         if UBICACION.lower() == txt_sug or UBICACION.lower() in txt_sug:
-                            print(f"✅ Coincidencia encontrada: '{txt_sug}'")
+                            print(f"Coincidencia encontrada: '{txt_sug}'")
                             time.sleep(TIEMPO_ESPERA_CORTO)
                             
                             # Seleccionar sugerencia con ActionChains
@@ -254,19 +254,19 @@ def extraer_datos_reporte(driver, UBICACION, carpeta_nombre, proyecto_nombre,
                                 time.sleep(TIEMPO_ESPERA_MEDIO)
                                 match = True
                             except Exception as e:
-                                print(f"❌ Error seleccionando sugerencia: {e}")
+                                print(f"Error seleccionando sugerencia: {e}")
                                 continue
                             
                             break
                     except Exception as e:
-                        print(f"   Error procesando sugerencia {i+1}: {e}")
+                        print(f"Error procesando sugerencia {i+1}: {e}")
                         continue
                 
                 if not match:
-                    print(f"❌ No se encontró coincidencia para '{UBICACION}'")
+                    print(f"No se encontró coincidencia para '{UBICACION}'")
                     return False
                     
-                print(f"✅ Sugerencia seleccionada para '{UBICACION}'")
+                print(f"Sugerencia seleccionada para '{UBICACION}'")
                 
                 # Buscar y hacer clic en cualquier botón de confirmación que pueda aparecer
                 try:
@@ -288,7 +288,7 @@ def extraer_datos_reporte(driver, UBICACION, carpeta_nombre, proyecto_nombre,
                         try:
                             btn_confirmar_inmediato = div_ubicacion.find_element(By.CSS_SELECTOR, selector_boton)
                             if btn_confirmar_inmediato and btn_confirmar_inmediato.is_displayed() and btn_confirmar_inmediato.is_enabled():
-                                print(f"🔄 Confirmando selección con botón: {selector_boton}")
+                                print(f"Confirmando selección con botón: {selector_boton}")
                                 btn_confirmar_inmediato.click()
                                 time.sleep(TIEMPO_ESPERA_MEDIO)
                                 confirmacion_encontrada = True
@@ -309,10 +309,10 @@ def extraer_datos_reporte(driver, UBICACION, carpeta_nombre, proyecto_nombre,
                 except Exception:
                     pass
             except TimeoutException:
-                print(f"⏱️ Timeout esperando sugerencias para '{UBICACION}'")
+                print(f"Timeout esperando sugerencias para '{UBICACION}'")
                 return False
             except Exception as e:
-                print(f"❌ Error al seleccionar sugerencia: {e}")
+                print(f"Error al seleccionar sugerencia: {e}")
                 return False
             
             time.sleep(TIEMPO_ESPERA_LARGO)  # Esperar para que se procese la selección
@@ -341,7 +341,7 @@ def extraer_datos_reporte(driver, UBICACION, carpeta_nombre, proyecto_nombre,
             try:
                 btn_confirmar = div_ubicacion.find_element(By.CSS_SELECTOR, "button.artdeco-pill__button")
                 if btn_confirmar and btn_confirmar.is_displayed():
-                    print(f"🔄 Confirmando selección de '{UBICACION}' con botón principal")
+                    print(f"Confirmando selección de '{UBICACION}' con botón principal")
                     btn_confirmar.click()
                     time.sleep(TIEMPO_ESPERA_LARGO)
             except Exception:
@@ -349,7 +349,7 @@ def extraer_datos_reporte(driver, UBICACION, carpeta_nombre, proyecto_nombre,
                 pass
             
             # Verificar que el filtro se aplicó correctamente antes de proceder
-            print(f"🔄 Verificando que el filtro '{UBICACION}' se aplicó correctamente...")
+            print(f"Verificando que el filtro '{UBICACION}' se aplicó correctamente...")
             filtro_aplicado_correctamente = False
             
             # Intentar verificar hasta 5 veces con esperas incrementales
@@ -378,7 +378,7 @@ def extraer_datos_reporte(driver, UBICACION, carpeta_nombre, proyecto_nombre,
                     print(f"   Intento {intento_verificacion + 1}: Filtros actuales: {ubicaciones_verificacion}")
                     
                     if ub_verificar in ubicaciones_verificacion:
-                        print(f"✅ Filtro '{UBICACION}' aplicado correctamente")
+                        print(f"Filtro '{UBICACION}' aplicado correctamente")
                         filtro_aplicado_correctamente = True
                         break
                     else:
@@ -391,7 +391,7 @@ def extraer_datos_reporte(driver, UBICACION, carpeta_nombre, proyecto_nombre,
                     continue
             
             if not filtro_aplicado_correctamente:
-                print(f"❌ Filtro '{UBICACION}' no se aplicó correctamente después de 5 verificaciones")
+                print(f"Filtro '{UBICACION}' no se aplicó correctamente después de 5 verificaciones")
                 return False
             # Aplicar filtro
             try:
@@ -414,10 +414,10 @@ def extraer_datos_reporte(driver, UBICACION, carpeta_nombre, proyecto_nombre,
                     if resultado == 'resultados':
                         return True
                     elif resultado == 'banner':
-                        print(f"🚨 Error en búsqueda para '{UBICACION}' - Banner detectado")
+                        print(f"Error en búsqueda para '{UBICACION}' - Banner detectado")
                         return False
                     else:
-                        print(f"⏱️ Timeout esperando resultados para '{UBICACION}'")
+                        print(f"Timeout esperando resultados para '{UBICACION}'")
                         return False
                 else:
                     # Fallback: esperar a que aparezcan tarjetas de resultados o se detecte banner
@@ -431,20 +431,20 @@ def extraer_datos_reporte(driver, UBICACION, carpeta_nombre, proyecto_nombre,
                     except Exception:
                         pass
                     if hay_banner_error(driver):
-                        print(f"🚨 Error en búsqueda para '{UBICACION}' - Banner detectado")
+                        print(f"Error en búsqueda para '{UBICACION}' - Banner detectado")
                         return False
                     # Si hay tarjetas, continuar; de lo contrario, considerar timeout pero continuar para reintentos externos
                     top_cards_presentes = driver.find_elements(By.CSS_SELECTOR, "li.overview-layout__top-card")
                     if top_cards_presentes:
                         return True
-                    print(f"⏱️ Timeout esperando resultados para '{UBICACION}'")
+                    print(f"Timeout esperando resultados para '{UBICACION}'")
                     return False
             except (TimeoutException, ElementClickInterceptedException, NoSuchElementException, StaleElementReferenceException):
                 return False
             
             return True
         except Exception as e:
-            print(f"❌ Error aplicando filtro de ubicación: {e}")
+            print(f"Error aplicando filtro de ubicación: {e}")
             return False
     try:
         intentos = 0
@@ -453,7 +453,7 @@ def extraer_datos_reporte(driver, UBICACION, carpeta_nombre, proyecto_nombre,
         
         while intentos < max_intentos:
             intentos += 1
-            print(f"� Aplicando '{UBICACION}' (Intento {intentos}/{max_intentos})")
+            print(f"Aplicando '{UBICACION}' (Intento {intentos}/{max_intentos})")
             
             resultado_filtro = aplicar_filtro(driver, UBICACION)
             
@@ -475,35 +475,35 @@ def extraer_datos_reporte(driver, UBICACION, carpeta_nombre, proyecto_nombre,
                         exito = True
                         break
                     else:
-                        print(f"⚠️ Sin datos válidos para '{UBICACION}', esperando {TIEMPO_ESPERA_BANNER}s, refrescando y reintentando...")
+                        print(f"Sin datos válidos para '{UBICACION}', esperando {TIEMPO_ESPERA_BANNER}s, refrescando y reintentando...")
                         time.sleep(TIEMPO_ESPERA_BANNER)
-                        print(f"🔄 Refrescando página tras espera...")
+                        print(f"Refrescando página tras espera...")
                         driver.refresh()
                         time.sleep(TIEMPO_ESPERA_PAGINA)
                         
                         # Verificar que el filtro de ubicación esté disponible tras refresh
                         div_ubicacion_check = esperar_elemento(driver, By.CSS_SELECTOR, 'div.query-facet[data-query-type="LOCATION"]', timeout=TIEMPO_ESPERA_LARGO)
                         if not div_ubicacion_check:
-                            print(f"❌ Filtro de ubicación no disponible tras refresh")
+                            print(f"Filtro de ubicación no disponible tras refresh")
                             continue
                 else:
-                    print(f"⚠️ Sin resultados para '{UBICACION}', esperando {TIEMPO_ESPERA_BANNER}s, refrescando y reintentando...")
+                    print(f"Sin resultados para '{UBICACION}', esperando {TIEMPO_ESPERA_BANNER}s, refrescando y reintentando...")
                     time.sleep(TIEMPO_ESPERA_BANNER)
-                    print(f"🔄 Refrescando página tras espera...")
+                    print(f"Refrescando página tras espera...")
                     driver.refresh()
                     time.sleep(TIEMPO_ESPERA_PAGINA)
                     
                     # Verificar que el filtro de ubicación esté disponible tras refresh
                     div_ubicacion_check = esperar_elemento(driver, By.CSS_SELECTOR, 'div.query-facet[data-query-type="LOCATION"]', timeout=TIEMPO_ESPERA_LARGO)
                     if not div_ubicacion_check:
-                        print(f"❌ Filtro de ubicación no disponible tras refresh")
+                        print(f"Filtro de ubicación no disponible tras refresh")
                         continue
                 continue
             else:
-                print(f"❌ Fallo en intento {intentos}")
+                print(f"Fallo en intento {intentos}")
                 # Si hay banner de error, esperar 40s antes de refrescar
                 if hay_banner_error(driver):
-                    print(f"🚨 Banner detectado tras fallo, esperando {TIEMPO_ESPERA_BANNER}s antes de refrescar...")
+                    print(f"Banner detectado tras fallo, esperando {TIEMPO_ESPERA_BANNER}s antes de refrescar...")
                     if callable(esperar_y_refrescar_si_banner):
                         if not esperar_y_refrescar_si_banner(
                             driver,
@@ -522,12 +522,12 @@ def extraer_datos_reporte(driver, UBICACION, carpeta_nombre, proyecto_nombre,
                             continue
         
         if not exito:
-            print(f"🔴 OMITIDO: '{UBICACION}' tras {max_intentos} intentos")
+            print(f"OMITIDO: '{UBICACION}' tras {max_intentos} intentos")
             return None
             
         # Verificación final de banner antes de extraer datos
         if hay_banner_error(driver):
-            print(f"🚨 Banner detectado antes de extraer datos, esperando {TIEMPO_ESPERA_BANNER}s antes de refrescar...")
+            print(f"Banner detectado antes de extraer datos, esperando {TIEMPO_ESPERA_BANNER}s antes de refrescar...")
             if callable(esperar_y_refrescar_si_banner):
                 if not esperar_y_refrescar_si_banner(
                     driver,
@@ -536,22 +536,22 @@ def extraer_datos_reporte(driver, UBICACION, carpeta_nombre, proyecto_nombre,
                     ubicacion=UBICACION,
                     re_aplicar_filtro=aplicar_filtro,
                 ):
-                    print(f"🔴 OMITIDO: '{UBICACION}' por errores persistentes")
+                    print(f"OMITIDO: '{UBICACION}' por errores persistentes")
                     return None
             else:
                 time.sleep(TIEMPO_ESPERA_BANNER)
                 driver.refresh()
                 time.sleep(TIEMPO_ESPERA_PAGINA)
                 if not aplicar_filtro(driver, UBICACION):
-                    print(f"🔴 OMITIDO: '{UBICACION}' por errores persistentes")
+                    print(f"OMITIDO: '{UBICACION}' por errores persistentes")
                     return None
         
         time.sleep(TIEMPO_ESPERA_CORTO)
-        print(f"📊 Extrayendo datos para '{UBICACION}'...")
+        print(f"Extrayendo datos para '{UBICACION}'...")
         
         # Verificar una vez más que no aparezca el banner durante la extracción
         if hay_banner_error(driver):
-            print(f"🔴 OMITIDO: '{UBICACION}' - Banner aparece durante extracción")
+            print(f"OMITIDO: '{UBICACION}' - Banner aparece durante extracción")
             return None
         
         # Extraer datos de las tarjetas
@@ -607,15 +607,15 @@ def extraer_datos_reporte(driver, UBICACION, carpeta_nombre, proyecto_nombre,
         
         # Resultado final de la extracción
         if datos_extraidos:
-            print(f"✅ EXTRACCIÓN EXITOSA '{UBICACION}': {', '.join(datos_extraidos)}")
+            print(f"EXTRACCIÓN EXITOSA '{UBICACION}': {', '.join(datos_extraidos)}")
             if datos_faltantes:
-                print(f"⚠️ Datos faltantes: {', '.join(datos_faltantes)}")
+                print(f"Datos faltantes: {', '.join(datos_faltantes)}")
         else:
-            print(f"❌ EXTRACCIÓN FALLIDA '{UBICACION}': No se obtuvieron datos válidos")
+            print(f"EXTRACCIÓN FALLIDA '{UBICACION}': No se obtuvieron datos válidos")
             
         time.sleep(TIEMPO_ESPERA_CORTO)
         return datos
         
     except Exception as e:
-        print(f"❌ ERROR: {UBICACION} - {str(e)[:50]}...")
+        print(f"ERROR: {UBICACION} - {str(e)[:50]}...")
         return None

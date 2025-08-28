@@ -15,7 +15,7 @@ def buscar_carpeta_en_pagina(driver, carpeta_buscar, TIEMPO_ESPERA_MEDIO=2):
             nombre_carpeta = link_title.text.strip()
             href_carpeta = link_title.get_attribute("href")
             if nombre_carpeta.lower() == carpeta_buscar.lower():
-                print(f"✅ Carpeta encontrada: {nombre_carpeta}")
+                print(f"Carpeta encontrada: {nombre_carpeta}")
                 driver.get(href_carpeta)
                 time.sleep(TIEMPO_ESPERA_MEDIO)
                 return True

@@ -71,7 +71,7 @@ def guardar_datos_sql(data, plataforma, proyecto_id):
             """, proyecto_id, item.get("Tipo"), item.get("Region"), item.get("Profesionales"),
                  item.get("AnunciosEmpleo"), item.get("PorcentajeAnunciosProfesionales"), item.get("DemandaContratacion"))
         conn.commit()
-        print("✅ Datos guardados en la tabla 'linkedin'.")
+        print("Datos guardados en la tabla 'linkedin'.")
 
     elif plataforma.lower() == "semrush":
         for item in data:
@@ -80,7 +80,7 @@ def guardar_datos_sql(data, plataforma, proyecto_id):
                 VALUES (?, ?, ?, ?)
             """, proyecto_id, item.get("VisionGeneral"), item.get("Palabras"), item.get("Volumen"))
         conn.commit()
-        print("✅ Datos guardados en la tabla 'semrush'.")
+        print("Datos guardados en la tabla 'semrush'.")
 
     elif plataforma.lower() == "modalidad_oferta":
         for item in data:
@@ -89,7 +89,7 @@ def guardar_datos_sql(data, plataforma, proyecto_id):
                 VALUES (?, ?, ?)
             """, proyecto_id, item.get("presencial"), item.get("virtual"))
         conn.commit()
-        print("✅ Datos guardados en la tabla 'modalidad_oferta'.")
+        print("Datos guardados en la tabla 'modalidad_oferta'.")
 
     elif plataforma.lower() == "tendencias":
         for item in data:
@@ -98,7 +98,7 @@ def guardar_datos_sql(data, plataforma, proyecto_id):
                 VALUES (?, ?, ?)
             """, proyecto_id, item.get("palabra"), item.get("promedio"))
         conn.commit()
-        print("✅ Datos guardados en la tabla 'tendencias'.")
+        print("Datos guardados en la tabla 'tendencias'.")
 
     else:
         raise ValueError(f"Plataforma '{plataforma}' no está configurada.")
@@ -156,3 +156,71 @@ def listar_proyectos():
         }
         for r in rows
     ]
+
+# --- Cola de Scrapers ---
+def enqueue_scraper_job(proyecto_id):
+    cursor.execute(
+        """
+        INSERT INTO scraper_queue (proyecto_id, status)
+        VALUES (?, 'queued')
+        """,
+        proyecto_id,
+    )
+    conn.commit()
+
+def fetch_next_job():
+    cursor.execute(
+        """
+        SELECT TOP 1 id, proyecto_id
+        FROM scraper_queue
+        WHERE status IN ('queued', 'retry')
+        ORDER BY created_at ASC
+        """
+    )
+    row = cursor.fetchone()
+    if not row:
+        return None
+    return {"id": row.id, "proyecto_id": row.proyecto_id}
+
+def mark_job_running(job_id):
+    cursor.execute(
+        """
+        UPDATE scraper_queue
+        SET status = 'running', started_at = GETDATE()
+        WHERE id = ?
+        """,
+        job_id,
+    )
+    conn.commit()
+
+def mark_job_completed(job_id):
+    cursor.execute(
+        """
+        UPDATE scraper_queue
+        SET status = 'completed', finished_at = GETDATE(), error = NULL
+        WHERE id = ?
+        """,
+        job_id,
+    )
+    conn.commit()
+
+def mark_job_failed(job_id, error_message, max_retries=3):
+    cursor.execute(
+        """
+        SELECT tries FROM scraper_queue WHERE id = ?
+        """,
+        job_id,
+    )
+    row = cursor.fetchone()
+    tries = row.tries if row else 0
+    tries += 1
+    new_status = 'failed' if tries >= max_retries else 'retry'
+    cursor.execute(
+        """
+        UPDATE scraper_queue
+        SET status = ?, tries = ?, error = ?, finished_at = CASE WHEN ? = 'failed' THEN GETDATE() ELSE NULL END
+        WHERE id = ?
+        """,
+        new_status, tries, str(error_message)[:4000], new_status, job_id,
+    )
+    conn.commit()
