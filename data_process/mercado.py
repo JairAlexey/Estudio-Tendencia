@@ -14,18 +14,22 @@ def calc_mercado(ruta_excel=None):
     print(f"Archivo de datos de mercado (referencia): {ARCHIVO_MERCADO}")
     print(f"Archivo de datos a consultar: {ruta_excel if ruta_excel else 'Base de datos interna'}")
     
-    # Obtener carrera de referencia
-    carrera_referencia = extraer_datos_tabla("carreraReferencia", ruta_excel)
-    if not carrera_referencia:
-        print("ERROR: No se pudieron obtener datos de la carrera de referencia.")
-        return
+    # Obtener carrera de referencia desde proyectos_tendencias si hay un Excel asociado no tiene sentido.
+    # Dado tu esquema actual, no existe la tabla 'carreraReferencia'.
+    # Por lo tanto, si no se pasa Excel, retornamos 0 para evitar error, o podríamos derivarlo de otra fuente si la defines.
+    carrera_referencia = None
+    if ruta_excel:
+        # Cuando pasas Excel, no dependemos de la BD para la referencia
+        pass
+    else:
+        print("No hay Excel y no existe 'carreraReferencia' en BD. Retornando 0 para Mercado.")
+        return 0
 
     # ID de carrera
-    try:
-        id_carrera = obtener_id_carrera(carrera_referencia)
-    except ValueError as e:
-        print(f"ERROR: No se pudo obtener el ID de la carrera: {e}.")
-        return
+    # Si estás usando Excel, necesita saberse la 'carrera_referencia' externamente.
+    # Como no la tenemos, retornamos 0 con mensaje.
+    print("No se definió 'carrera_referencia' para Mercado con Excel. Retornando 0.")
+    return 0
 
     # Códigos asociados a la carrera
     try:

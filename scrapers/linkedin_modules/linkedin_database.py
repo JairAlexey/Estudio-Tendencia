@@ -42,6 +42,16 @@ def extraer_datos_tabla(nombre_tabla, proyecto_id):
         """, proyecto_id)
         rows = cursor.fetchall()
         return [dict(zip([column[0] for column in cursor.description], row)) for row in rows]
+    elif nombre_tabla == "linkedin":
+        cursor.execute("""
+            SELECT Tipo, Region, Profesionales, AnunciosEmpleo, PorcentajeAnunciosProfesionales, DemandaContratacion
+            FROM linkedin WHERE proyecto_id = ?
+        """, proyecto_id)
+        rows = cursor.fetchall()
+        return [
+            dict(zip([column[0] for column in cursor.description], row))
+            for row in rows
+        ]
     else:
         raise ValueError(f"Tabla '{nombre_tabla}' no está permitida.")
 
@@ -106,3 +116,43 @@ def obtener_codigos_por_id_carrera(id_carrera):
     if not rows:
         raise ValueError(f"No se encontraron códigos para ID '{id_carrera}'.")
     return [r.Codigo for r in rows]
+
+def obtener_semrush_base_por_id(id_carrera):
+    cursor.execute("""
+        SELECT Vision_General, Palabras, Volumen FROM semrush_base WHERE ID_Carrera = ?
+    """, id_carrera)
+    row = cursor.fetchone()
+    if not row:
+        raise ValueError(f"No se encontró semrush_base para ID_Carrera '{id_carrera}'.")
+    return {
+        "VisionGeneral": row.Vision_General,
+        "Palabras": row.Palabras,
+        "Volumen": row.Volumen,
+    }
+
+def obtener_trends_base_por_id(id_carrera):
+    cursor.execute("""
+        SELECT Palabra, Cantidad FROM tendencias_carrera WHERE ID_Carrera = ?
+    """, id_carrera)
+    rows = cursor.fetchall()
+    if not rows:
+        raise ValueError(f"No se encontraron tendencias base para ID_Carrera '{id_carrera}'.")
+    return [
+        {"Palabra": r.Palabra, "Cantidad": r.Cantidad}
+        for r in rows
+    ]
+
+def listar_proyectos():
+    cursor.execute("""
+        SELECT id, tipo_carpeta, carrera_referencia, carrera_estudio FROM proyectos_tendencias ORDER BY id
+    """)
+    rows = cursor.fetchall()
+    return [
+        {
+            "id": r.id,
+            "tipo_carpeta": r.tipo_carpeta,
+            "carrera_referencia": r.carrera_referencia,
+            "carrera_estudio": r.carrera_estudio,
+        }
+        for r in rows
+    ]

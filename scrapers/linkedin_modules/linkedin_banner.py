@@ -15,6 +15,11 @@ def esperar_y_refrescar_si_banner(
     if espera_seg is None:
         espera_seg = TIEMPO_ESPERA_BANNER
     intento = 0
+    # Si no se pasa una función válida para re_aplicar_filtro, usar una dummy
+    if re_aplicar_filtro is None:
+        def re_aplicar_filtro(driver, ubicacion):
+            print("No hay función de re-aplicación de filtro definida.")
+            return False
     while hay_banner_error(driver) and intento < max_intentos:
         intento += 1
         print(f"🔄 Banner error - Refrescando... ({intento}/{max_intentos})")

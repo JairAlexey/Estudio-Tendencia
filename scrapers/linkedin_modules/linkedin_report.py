@@ -408,14 +408,35 @@ def extraer_datos_reporte(driver, UBICACION, carpeta_nombre, proyecto_nombre,
                 btn_aplicar.click()
                 time.sleep(TIEMPO_ESPERA_MEDIO)
                 
-                # Esperar un poco más para que se procese la búsqueda
-                resultado = esperar_resultados_o_banner(driver, timeout=TIEMPO_ESPERA_LARGO * 2)
-                if resultado == 'resultados':
-                    return True
-                elif resultado == 'banner':
-                    print(f"🚨 Error en búsqueda para '{UBICACION}' - Banner detectado")
-                    return False
+                # Esperar a que se procese la búsqueda (manejar callback opcional)
+                if callable(esperar_resultados_o_banner):
+                    resultado = esperar_resultados_o_banner(driver, timeout=TIEMPO_ESPERA_LARGO * 2)
+                    if resultado == 'resultados':
+                        return True
+                    elif resultado == 'banner':
+                        print(f"🚨 Error en búsqueda para '{UBICACION}' - Banner detectado")
+                        return False
+                    else:
+                        print(f"⏱️ Timeout esperando resultados para '{UBICACION}'")
+                        return False
                 else:
+                    # Fallback: esperar a que aparezcan tarjetas de resultados o se detecte banner
+                    try:
+                        WebDriverWait(driver, TIEMPO_ESPERA_LARGO * 2).until(
+                            lambda d: (
+                                hay_banner_error(d) or
+                                len(d.find_elements(By.CSS_SELECTOR, "li.overview-layout__top-card")) > 0
+                            )
+                        )
+                    except Exception:
+                        pass
+                    if hay_banner_error(driver):
+                        print(f"🚨 Error en búsqueda para '{UBICACION}' - Banner detectado")
+                        return False
+                    # Si hay tarjetas, continuar; de lo contrario, considerar timeout pero continuar para reintentos externos
+                    top_cards_presentes = driver.find_elements(By.CSS_SELECTOR, "li.overview-layout__top-card")
+                    if top_cards_presentes:
+                        return True
                     print(f"⏱️ Timeout esperando resultados para '{UBICACION}'")
                     return False
             except (TimeoutException, ElementClickInterceptedException, NoSuchElementException, StaleElementReferenceException):
@@ -483,8 +504,22 @@ def extraer_datos_reporte(driver, UBICACION, carpeta_nombre, proyecto_nombre,
                 # Si hay banner de error, esperar 40s antes de refrescar
                 if hay_banner_error(driver):
                     print(f"🚨 Banner detectado tras fallo, esperando {TIEMPO_ESPERA_BANNER}s antes de refrescar...")
-                    if not esperar_y_refrescar_si_banner(driver, max_intentos=1, espera_seg=TIEMPO_ESPERA_BANNER, ubicacion=UBICACION, re_aplicar_filtro=aplicar_filtro):
-                        continue
+                    if callable(esperar_y_refrescar_si_banner):
+                        if not esperar_y_refrescar_si_banner(
+                            driver,
+                            max_intentos=1,
+                            espera_seg=TIEMPO_ESPERA_BANNER,
+                            ubicacion=UBICACION,
+                            re_aplicar_filtro=aplicar_filtro,
+                        ):
+                            continue
+                    else:
+                        # Fallback básico: esperar, refrescar y volver a intentar aplicar filtro
+                        time.sleep(TIEMPO_ESPERA_BANNER)
+                        driver.refresh()
+                        time.sleep(TIEMPO_ESPERA_PAGINA)
+                        if not aplicar_filtro(driver, UBICACION):
+                            continue
         
         if not exito:
             print(f"🔴 OMITIDO: '{UBICACION}' tras {max_intentos} intentos")
@@ -493,9 +528,23 @@ def extraer_datos_reporte(driver, UBICACION, carpeta_nombre, proyecto_nombre,
         # Verificación final de banner antes de extraer datos
         if hay_banner_error(driver):
             print(f"🚨 Banner detectado antes de extraer datos, esperando {TIEMPO_ESPERA_BANNER}s antes de refrescar...")
-            if not esperar_y_refrescar_si_banner(driver, max_intentos=2, espera_seg=TIEMPO_ESPERA_BANNER, ubicacion=UBICACION, re_aplicar_filtro=aplicar_filtro):
-                print(f"🔴 OMITIDO: '{UBICACION}' por errores persistentes")
-                return None
+            if callable(esperar_y_refrescar_si_banner):
+                if not esperar_y_refrescar_si_banner(
+                    driver,
+                    max_intentos=2,
+                    espera_seg=TIEMPO_ESPERA_BANNER,
+                    ubicacion=UBICACION,
+                    re_aplicar_filtro=aplicar_filtro,
+                ):
+                    print(f"🔴 OMITIDO: '{UBICACION}' por errores persistentes")
+                    return None
+            else:
+                time.sleep(TIEMPO_ESPERA_BANNER)
+                driver.refresh()
+                time.sleep(TIEMPO_ESPERA_PAGINA)
+                if not aplicar_filtro(driver, UBICACION):
+                    print(f"🔴 OMITIDO: '{UBICACION}' por errores persistentes")
+                    return None
         
         time.sleep(TIEMPO_ESPERA_CORTO)
         print(f"📊 Extrayendo datos para '{UBICACION}'...")
