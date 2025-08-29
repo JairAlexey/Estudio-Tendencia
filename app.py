@@ -90,8 +90,10 @@ def calcular_valor_general(parametro, proyecto_id):
         elif parametro == "LinkedIN":
             return calc_linkedin(proyecto_id)
         elif parametro == "Mercado":
-            # Mantener comportamiento actual de mercado (Excel) hasta migración
-            return calc_mercado(None)
+            resultado = calc_mercado(proyecto_id)
+            if resultado == 0:
+                st.warning("No se encontraron datos de Mercado en el archivo Excel.")
+            return resultado
         return 0
     except Exception as e:
         st.error(f"Error calculando {parametro}: {e}")
@@ -173,6 +175,23 @@ def procesar_proyecto(proyecto_id, nombre_archivo):
 
 # Procesar el proyecto seleccionado
 st.subheader("Evaluación")
+procesar_proyecto(proyecto_id, certificacion_seleccionada)
+
+# Mostrar rango de evaluación
+st.subheader("Rango Evaluación Final")
+
+df_rango = pd.DataFrame(
+    {
+        "Rango": ["0% - 60%", "61% - 70%", "71% - 100%"],
+        "Evaluación": [
+            "Definitivamente No Viable",
+            "Para revisión adicional",
+            "Viable",
+        ],
+    }
+)
+
+st.dataframe(df_rango, use_container_width=True, hide_index=True)
 procesar_proyecto(proyecto_id, certificacion_seleccionada)
 
 # Mostrar rango de evaluación
