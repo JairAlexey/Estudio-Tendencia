@@ -136,6 +136,14 @@ def pagina_inicio():
         )
         estados = {row[0]: row[1] for row in cur.fetchall()}
 
+    # Diccionario de traducción y color/ícono
+    estado_traducido = {
+        "pending": ("En cola", "#6c757d", "⏳"),      # Gris
+        "running": ("Procesando", "#ffc107", "🟡"),  # Amarillo
+        "completed": ("Completado", "#28a745", "🟢"),# Verde
+        "error": ("Error", "#dc3545", "🔴"),         # Rojo
+    }
+
     if not proyectos:
         st.info("No hay proyectos registrados.")
         return
@@ -150,7 +158,14 @@ def pagina_inicio():
             <hr style='border: none; border-top: 3px solid #222; margin: 1.2rem 0 1.5rem 0;'>
         """, unsafe_allow_html=True)
 
-        # Card estilo Material
+        # Card estilo Material con estado traducido y color
+        estado = estados.get(id, None)
+        if estado in estado_traducido:
+            texto, color, icono = estado_traducido[estado]
+            estado_html = f"<span style='color:{color}; font-weight:bold;'>{icono} {texto}</span>"
+        else:
+            estado_html = "<span style='color:#222;'>—</span>"
+
         st.markdown(f"""
             <div style='
                 border:1px solid #ddd; 
@@ -162,7 +177,7 @@ def pagina_inicio():
             '>
                 <h4 style='margin:0'>{nombre}</h4>
                 <p style='margin:0; color:#555;'>{tipo}</p>
-                <div style='margin-top:0.25rem; font-size: 0.9rem;'>Estado cola: <b>{estados.get(id, '—')}</b></div>
+                <div style='margin-top:0.25rem; font-size: 0.9rem;'>Estado: {estado_html}</div>
             </div>
         """, unsafe_allow_html=True)
 

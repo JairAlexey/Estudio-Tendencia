@@ -26,6 +26,7 @@ def crear_opciones_chrome(user_data_dir, profile_directory):
     options.add_argument("--disable-popup-blocking")
     options.add_argument("--disable-background-networking")
     options.add_argument("--disable-features=EnableChromeSignin")
+
     prefs = {
         "credentials_enable_service": False,
         "profile.password_manager_enabled": False,

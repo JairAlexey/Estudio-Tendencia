@@ -1,12 +1,14 @@
 import xlwings as xw
 import pandas as pd
 import os
-from conexion import conn, cursor
+from conexion import conn, cursor, ensure_connection
+import datetime
 
 def extraer_datos_tabla(nombre_tabla, proyecto_id):
     """
     Extrae datos de una tabla específica de la base de datos para el proyecto dado.
     """
+    ensure_connection()
     if nombre_tabla == "reporteLinkedin":
         # Ejemplo: podrías tener una tabla 'proyectos_tendencias' con la configuración del proyecto
         cursor.execute("""
@@ -56,6 +58,7 @@ def extraer_datos_tabla(nombre_tabla, proyecto_id):
         raise ValueError(f"Tabla '{nombre_tabla}' no está permitida.")
 
 def guardar_datos_sql(data, plataforma, proyecto_id):
+    ensure_connection()
     """
     Inserta resultados en la tabla correspondiente de la base de datos.
     """
@@ -104,6 +107,7 @@ def guardar_datos_sql(data, plataforma, proyecto_id):
         raise ValueError(f"Plataforma '{plataforma}' no está configurada.")
 
 def obtener_id_carrera(nombre_carrera):
+    ensure_connection()
     cursor.execute("SELECT ID FROM carreras_facultad WHERE Carrera = ?", nombre_carrera)
     row = cursor.fetchone()
     if not row:
@@ -111,6 +115,7 @@ def obtener_id_carrera(nombre_carrera):
     return row.ID
 
 def obtener_codigos_por_id_carrera(id_carrera):
+    ensure_connection()
     cursor.execute("SELECT Codigo FROM codigos_carrera WHERE ID_Carrera = ?", id_carrera)
     rows = cursor.fetchall()
     if not rows:
@@ -118,6 +123,7 @@ def obtener_codigos_por_id_carrera(id_carrera):
     return [r.Codigo for r in rows]
 
 def obtener_semrush_base_por_id(id_carrera):
+    ensure_connection()
     cursor.execute("""
         SELECT Vision_General, Palabras, Volumen FROM semrush_base WHERE ID_Carrera = ?
     """, id_carrera)
@@ -131,6 +137,7 @@ def obtener_semrush_base_por_id(id_carrera):
     }
 
 def obtener_trends_base_por_id(id_carrera):
+    ensure_connection()
     cursor.execute("""
         SELECT Palabra, Cantidad FROM tendencias_carrera WHERE ID_Carrera = ?
     """, id_carrera)
@@ -143,6 +150,7 @@ def obtener_trends_base_por_id(id_carrera):
     ]
 
 def listar_proyectos():
+    ensure_connection()
     cursor.execute("""
         SELECT id, tipo_carpeta, carrera_referencia, carrera_estudio FROM proyectos_tendencias ORDER BY id
     """)
@@ -159,6 +167,7 @@ def listar_proyectos():
 
 # --- Cola de Scrapers ---
 def enqueue_scraper_job(proyecto_id):
+    ensure_connection()
     cursor.execute(
         """
         INSERT INTO scraper_queue (proyecto_id, status)
@@ -169,6 +178,8 @@ def enqueue_scraper_job(proyecto_id):
     conn.commit()
 
 def fetch_next_job():
+    ensure_connection()
+    # Buscar jobs en 'queued' o 'retry'
     cursor.execute(
         """
         SELECT TOP 1 id, proyecto_id
@@ -178,11 +189,36 @@ def fetch_next_job():
         """
     )
     row = cursor.fetchone()
-    if not row:
-        return None
-    return {"id": row.id, "proyecto_id": row.proyecto_id}
+    if row:
+        return {"id": row.id, "proyecto_id": row.proyecto_id}
+    # Si no hay jobs en cola, buscar jobs 'running' atascados (>10 min)
+    cursor.execute(
+        """
+        SELECT TOP 1 id, proyecto_id, started_at
+        FROM scraper_queue
+        WHERE status = 'running'
+        ORDER BY started_at ASC
+        """
+    )
+    row = cursor.fetchone()
+    if row:
+        started_at = row.started_at
+        if started_at:
+            # Si lleva más de 10 minutos en 'running', lo pasamos a 'retry'
+            delta = datetime.datetime.now() - started_at
+            if delta.total_seconds() > 600:
+                cursor.execute(
+                    """
+                    UPDATE scraper_queue SET status = 'retry', tries = ISNULL(tries,0)+1 WHERE id = ?
+                    """,
+                    row.id,
+                )
+                conn.commit()
+                return {"id": row.id, "proyecto_id": row.proyecto_id}
+    return None
 
 def mark_job_running(job_id):
+    ensure_connection()
     cursor.execute(
         """
         UPDATE scraper_queue
@@ -194,6 +230,7 @@ def mark_job_running(job_id):
     conn.commit()
 
 def mark_job_completed(job_id):
+    ensure_connection()
     cursor.execute(
         """
         UPDATE scraper_queue
@@ -205,6 +242,7 @@ def mark_job_completed(job_id):
     conn.commit()
 
 def mark_job_failed(job_id, error_message, max_retries=3):
+    ensure_connection()
     cursor.execute(
         """
         SELECT tries FROM scraper_queue WHERE id = ?
