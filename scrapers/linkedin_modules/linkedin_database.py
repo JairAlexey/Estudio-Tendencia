@@ -10,9 +10,8 @@ def extraer_datos_tabla(nombre_tabla, proyecto_id):
     """
     ensure_connection()
     if nombre_tabla == "reporteLinkedin":
-        # Ejemplo: podrías tener una tabla 'proyectos_tendencias' con la configuración del proyecto
         cursor.execute("""
-            SELECT tipo_carpeta, carrera_referencia, carrera_estudio, palabra_semrush, codigo_ciiu
+            SELECT tipo_carpeta, carrera_referencia, carrera_estudio, palabra_semrush, codigo_ciiu, carrera_linkedin
             FROM proyectos_tendencias WHERE id = ?
         """, proyecto_id)
         row = cursor.fetchone()
@@ -22,7 +21,8 @@ def extraer_datos_tabla(nombre_tabla, proyecto_id):
                 "ProyectoReferencia": row.carrera_referencia,
                 "ProyectoEstudio": row.carrera_estudio,
                 "PalabraSemrush": row.palabra_semrush,
-                "CodigoCIIU": row.codigo_ciiu
+                "CodigoCIIU": row.codigo_ciiu,
+                "CarreraLinkedin": row.carrera_linkedin
             }]
         else:
             return []

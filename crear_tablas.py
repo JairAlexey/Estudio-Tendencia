@@ -34,6 +34,7 @@ def crear_tablas():
                 carrera_estudio nvarchar(200) COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
                 palabra_semrush nvarchar(200) COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
                 codigo_ciiu nvarchar(50) COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
+                carrera_linkedin nvarchar(200) COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
                 CONSTRAINT PK_proyectos_tendencias PRIMARY KEY (id)
             )
         END''',
@@ -129,6 +130,18 @@ def crear_tablas():
                 CONSTRAINT FK_scraper_queue_proyecto FOREIGN KEY (proyecto_id) REFERENCES proyectos_tendencias(id)
             )
         END'''
+        # sistema_estado
+        '''IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'sistema_estado')
+        BEGIN
+            CREATE TABLE sistema_estado (
+                id int IDENTITY(1,1) NOT NULL,
+                tipo nvarchar(50) COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
+                mensaje nvarchar(500) COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
+                fecha_actualizacion datetime NOT NULL DEFAULT GETDATE(),
+                CONSTRAINT PK_sistema_estado PRIMARY KEY (id)
+            )
+            INSERT INTO sistema_estado (tipo, mensaje) VALUES (NULL, NULL)
+        END''',
     ]
     for sql in tablas:
         cursor.execute(sql)

@@ -78,7 +78,6 @@ def linkedin_scraper():
             print(f"❌ No se encontraron datos para el proyecto {proyecto_id}")
             return
 
-
         resultados_finales = []
         elementos_fallidos = []
 
@@ -89,7 +88,14 @@ def linkedin_scraper():
                 return int(str(val).replace('.', '').replace(',', '').strip())
             profesionales = to_int(datos.get("profesionales"))
             anuncios = to_int(datos.get("anuncios_empleo") or datos.get("anuncios"))
-            porcentaje = round((anuncios / profesionales) * 100, 2) if profesionales and anuncios else None
+            # Normalizar anuncios: si es None o 0, poner 1
+            if anuncios is None or anuncios == 0:
+                anuncios = 1
+            # Evitar división por cero
+            if profesionales and profesionales > 0 and anuncios is not None:
+                porcentaje = round((anuncios / profesionales) * 100, 2)
+            else:
+                porcentaje = 0
             return {
                 "Tipo": tipo,
                 "Region": ubicacion,
@@ -102,7 +108,10 @@ def linkedin_scraper():
         
         for elemento in reportes:
             carpeta_buscar = elemento.get("Carpeta")
-            for tipo, carrera in [("Referencia", elemento.get("ProyectoReferencia")), ("Estudio", elemento.get("ProyectoEstudio"))]:
+            carrera_linkedin = elemento.get("CarreraLinkedin") if "CarreraLinkedin" in elemento else elemento.get("carrera_linkedin")
+            if not carrera_linkedin:
+                carrera_linkedin = elemento.get("ProyectoReferencia")
+            for tipo, carrera in [("Referencia", carrera_linkedin), ("Estudio", elemento.get("ProyectoEstudio"))]:
                 print(f"\n=== Buscando carpeta '{carpeta_buscar}' y proyecto '{carrera}' ({tipo}) ===")
                 encontrada = paginar_y_buscar_carpeta(driver, carpeta_buscar, buscar_carpeta_en_pagina, url, TIEMPO_ESPERA_CORTO, TIEMPO_ESPERA_MEDIO)
                 if not encontrada:

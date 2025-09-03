@@ -51,18 +51,6 @@ if pref_id is not None:
 # Título principal
 st.title("Certificaciones")
 
-# Selector de certificación
-certificacion_seleccionada = st.selectbox(
-    "Selecciona una certificación:",
-    nombres_pestanas,
-    index=preselected_index
-)
-
-# Obtener el proyecto seleccionado
-indice_seleccionado = nombres_pestanas.index(certificacion_seleccionada)
-proyecto_seleccionado = proyectos[indice_seleccionado]
-proyecto_id = proyecto_seleccionado["id"]
-
 # Lista de parámetros
 parametros = ["Búsqueda Web", "LinkedIN", "Competencia", "Mercado", "Total"]
 
@@ -173,13 +161,6 @@ def procesar_proyecto(proyecto_id, nombre_archivo):
 
     st.dataframe(styled_df, use_container_width=True, hide_index=True)
 
-# Procesar el proyecto seleccionado
-st.subheader("Evaluación")
-procesar_proyecto(proyecto_id, certificacion_seleccionada)
-
-# Mostrar rango de evaluación
-st.subheader("Rango Evaluación Final")
-
 df_rango = pd.DataFrame(
     {
         "Rango": ["0% - 60%", "61% - 70%", "71% - 100%"],
@@ -190,22 +171,3 @@ df_rango = pd.DataFrame(
         ],
     }
 )
-
-st.dataframe(df_rango, use_container_width=True, hide_index=True)
-procesar_proyecto(proyecto_id, certificacion_seleccionada)
-
-# Mostrar rango de evaluación
-st.subheader("Rango Evaluación Final")
-
-df_rango = pd.DataFrame(
-    {
-        "Rango": ["0% - 60%", "61% - 70%", "71% - 100%"],
-        "Evaluación": [
-            "Definitivamente No Viable",
-            "Para revisión adicional",
-            "Viable",
-        ],
-    }
-)
-
-st.dataframe(df_rango, use_container_width=True, hide_index=True)

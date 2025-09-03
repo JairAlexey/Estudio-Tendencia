@@ -197,8 +197,9 @@ def pagina_inicio():
                 st.session_state["id"] = id
                 st.rerun()
         with col3:
-            st.button("Reporte", key=f"reporte_{id}", disabled=disabled)
-            if not disabled and st.session_state.get(f"reporte_{id}"):
+            reporte_disabled = disabled or estado != "completed"
+            st.button("Reporte", key=f"reporte_{id}", disabled=reporte_disabled)
+            if not reporte_disabled and st.session_state.get(f"reporte_{id}"):
                 st.session_state["page"] = "reporte"
                 st.session_state["id"] = id
                 st.rerun()
@@ -216,14 +217,19 @@ def pagina_inicio():
             confirmar = st.button("Sí, eliminar definitivamente", key=f"confirmar_eliminar_{id}")
             cancelar = st.button("Cancelar", key=f"cancelar_eliminar_{id}")
             if confirmar:
-                with conn.cursor() as cur:
-                    cur.execute("DELETE FROM modalidad_oferta WHERE proyecto_id=?", (id,))
-                    cur.execute("DELETE FROM tendencias WHERE proyecto_id=?", (id,))
-                    cur.execute("DELETE FROM proyectos_tendencias WHERE id=?", (id,))
-                    conn.commit()
-                st.success("Proyecto eliminado correctamente")
-                st.session_state["mostrar_confirmacion_eliminar"] = False
-                st.rerun()
+                    with conn.cursor() as cur:
+                        # Eliminar de todas las tablas relacionadas
+                        cur.execute("DELETE FROM modalidad_oferta WHERE proyecto_id=?", (id,))
+                        cur.execute("DELETE FROM tendencias WHERE proyecto_id=?", (id,))
+                        cur.execute("DELETE FROM linkedin WHERE proyecto_id=?", (id,))
+                        cur.execute("DELETE FROM semrush WHERE proyecto_id=?", (id,))
+                        cur.execute("DELETE FROM scraper_queue WHERE proyecto_id=?", (id,))
+                        # Eliminar el proyecto principal
+                        cur.execute("DELETE FROM proyectos_tendencias WHERE id=?", (id,))
+                        conn.commit()
+                    st.success("Proyecto eliminado correctamente")
+                    st.session_state["mostrar_confirmacion_eliminar"] = False
+                    st.rerun()
             elif cancelar:
                 st.session_state["mostrar_confirmacion_eliminar"] = False
                 st.session_state["confirmar_eliminar_id"] = None
@@ -369,6 +375,19 @@ def pagina_reporte(id):
 
 # --- Layout principal ---
 def main():
+    # Consultar mensaje global del sistema
+    with conn.cursor() as cur:
+        cur.execute("SELECT tipo, mensaje FROM sistema_estado WHERE id=1")
+        row = cur.fetchone()
+        if row and row[1]:
+            st.error(row[1])
+            if st.button("Limpiar mensaje de error y continuar", key="limpiar_mensaje_global"):
+                with conn.cursor() as cur2:
+                    cur2.execute("UPDATE sistema_estado SET tipo=NULL, mensaje=NULL, fecha_actualizacion=GETDATE() WHERE id=1")
+                    conn.commit()
+                st.rerun()
+            st.stop()
+
     page = st.session_state.get("page", "inicio")
     # Solo mostrar navegación en inicio y formulario
     if page in ["inicio", "formulario", "form", "f"]:

@@ -24,11 +24,19 @@ def calc_linkedin(proyecto_id):
     # Convertir todos los valores a float
     profesionalesRefEc = float(data_ecuadorRef["Profesionales"][0])
     empleoRefEc = float(data_ecuadorRef["AnunciosEmpleo"][0])
+    if empleoRefEc is None or empleoRefEc == 0:
+        empleoRefEc = 1
     anuncios_profesionalesRefEc = float(data_ecuadorRef["PorcentajeAnunciosProfesionales"][0])
+    if anuncios_profesionalesRefEc is None or anuncios_profesionalesRefEc == 0:
+        anuncios_profesionalesRefEc = 1
 
     profesionalesConEc = float(data_ecuadorCon["Profesionales"][0])
     empleoConEc = float(data_ecuadorCon["AnunciosEmpleo"][0])
+    if empleoConEc is None or empleoConEc == 0:
+        empleoConEc = 1
     anuncios_profesionalesConEc = float(data_ecuadorCon["PorcentajeAnunciosProfesionales"][0])
+    if anuncios_profesionalesConEc is None or anuncios_profesionalesConEc == 0:
+        anuncios_profesionalesConEc = 1
 
     resProfesionalesEc = ((profesionalesConEc * ECU) / profesionalesRefEc) * 100
     resEmpleoEc = ((empleoConEc * ECU) / empleoRefEc) * 100
@@ -45,11 +53,19 @@ def calc_linkedin(proyecto_id):
 
     profesionalesRefLat = float(data_latamRef["Profesionales"][0])
     empleoRefLat = float(data_latamRef["AnunciosEmpleo"][0])
+    if empleoRefLat is None or empleoRefLat == 0:
+        empleoRefLat = 1
     anuncios_profesionalesRefLat = float(data_latamRef["PorcentajeAnunciosProfesionales"][0])
+    if anuncios_profesionalesRefLat is None or anuncios_profesionalesRefLat == 0:
+        anuncios_profesionalesRefLat = 1
 
     profesionalesConLat = float(data_latamCon["Profesionales"][0])
     empleoConLat = float(data_latamCon["AnunciosEmpleo"][0])
+    if empleoConLat is None or empleoConLat == 0:
+        empleoConLat = 1
     anuncios_profesionalesConLat = float(data_latamCon["PorcentajeAnunciosProfesionales"][0])
+    if anuncios_profesionalesConLat is None or anuncios_profesionalesConLat == 0:
+        anuncios_profesionalesConLat = 1
 
     resProfesionalesLat = ((profesionalesConLat * LATAM) / profesionalesRefLat) * 100
     resEmpleoLat = ((empleoConLat * LATAM) / empleoRefLat) * 100

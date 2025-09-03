@@ -47,6 +47,7 @@ def calc_mercado(proyecto_id):
     resultados_carreraReferencia = {}
     resultados_carreraConsultar = {}
 
+
     for hoja in HOJAS:
         print(f"\n--- Procesando hoja: {hoja} ---")
         try:
@@ -67,22 +68,63 @@ def calc_mercado(proyecto_id):
             resultados_carreraConsultar[hoja] = 0
             continue
 
+        columna_valor = "2023" if "2023" in df.columns else None
+        print(f"Año/columna de referencia: {columna_valor}")
+
+        # Mostrar códigos buscados y valores para referencia
+        print(f"Códigos referencia buscados: {codigos_referencia}")
+        codigos_ref_encontrados = []
+        codigos_ref_no_encontrados = []
+        valores_ref_codigos = []
+        for codigo in codigos_referencia:
+            filas_codigo = df[df["ACTIVIDAD ECONÓMICA"] == codigo]
+            if not filas_codigo.empty and columna_valor:
+                valor = filas_codigo[columna_valor].values[0]
+                codigos_ref_encontrados.append(codigo)
+                valores_ref_codigos.append(valor)
+                print(f"  Código referencia {codigo}: valor = {valor}")
+                if pd.isna(valor) or valor == 0:
+                    print(f"    -> ADVERTENCIA: Valor para código referencia {codigo} es NaN o 0")
+            else:
+                codigos_ref_no_encontrados.append(codigo)
+                print(f"  Código referencia {codigo}: NO ENCONTRADO")
+
+        # Mostrar códigos buscados y valores para consulta
+        print(f"Códigos consulta buscados: {codigos_consultar}")
+        codigos_cons_encontrados = []
+        codigos_cons_no_encontrados = []
+        valores_cons_codigos = []
+        for codigo in codigos_consultar:
+            filas_codigo = df[df["ACTIVIDAD ECONÓMICA"] == codigo]
+            if not filas_codigo.empty and columna_valor:
+                valor = filas_codigo[columna_valor].values[0]
+                codigos_cons_encontrados.append(codigo)
+                valores_cons_codigos.append(valor)
+                print(f"  Código consulta {codigo}: valor = {valor}")
+                if pd.isna(valor) or valor == 0:
+                    print(f"    -> ADVERTENCIA: Valor para código consulta {codigo} es NaN o 0")
+            else:
+                codigos_cons_no_encontrados.append(codigo)
+                print(f"  Código consulta {codigo}: NO ENCONTRADO")
+
         # Referencia: sumar valores para todos los códigos de la carrera referencia
         df_ref = df[df["ACTIVIDAD ECONÓMICA"].isin(codigos_referencia)]
-        total_ref = df_ref["2024"].sum() if "2024" in df_ref.columns else 0
+        total_ref = df_ref[columna_valor].sum() if columna_valor else 0
         resultados_carreraReferencia[hoja] = total_ref
 
         # Consulta: sumar valores para el código CIIU de la carrera a consultar
         df_cons = df[df["ACTIVIDAD ECONÓMICA"].isin(codigos_consultar)]
-        total_cons = df_cons["2024"].sum() if "2024" in df_cons.columns else 0
+        total_cons = df_cons[columna_valor].sum() if columna_valor else 0
         resultados_carreraConsultar[hoja] = total_cons
 
-        print(f"Referencia - códigos encontrados: {df_ref['ACTIVIDAD ECONÓMICA'].tolist()}")
-        print(f"Referencia - valores 2024: {df_ref['2024'].tolist() if '2024' in df_ref.columns else []}")
+        print(f"Referencia - códigos encontrados: {codigos_ref_encontrados}")
+        print(f"Referencia - códigos NO encontrados: {codigos_ref_no_encontrados}")
+        print(f"Referencia - valores por código: {valores_ref_codigos}")
         print(f"Total referencia para {hoja}: {total_ref}")
 
-        print(f"Consulta - códigos encontrados: {df_cons['ACTIVIDAD ECONÓMICA'].tolist()}")
-        print(f"Consulta - valores 2024: {df_cons['2024'].tolist() if '2024' in df_cons.columns else []}")
+        print(f"Consulta - códigos encontrados: {codigos_cons_encontrados}")
+        print(f"Consulta - códigos NO encontrados: {codigos_cons_no_encontrados}")
+        print(f"Consulta - valores por código: {valores_cons_codigos}")
         print(f"Total consulta para {hoja}: {total_cons}")
 
     print(f"\n=== RESUMEN DE VALORES ===")
