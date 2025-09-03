@@ -191,10 +191,28 @@ def linkedin_scraper():
             print(f"   Exitosos: {elementos_exitosos}/{total_elementos}")
             print(f"   Fallidos: {len(elementos_fallidos)}/{total_elementos}")
             print(f"   Elementos que no se pudieron procesar:")
+            mensaje_error = "No se encontraron los siguientes proyectos o carpetas en LinkedIn:\n"
             for fallido in elementos_fallidos:
                 print(f"      - {fallido['carpeta']} -> {fallido['proyecto']} ({fallido['razon']})")
+                mensaje_error += f"- Carpeta: {fallido['carpeta']} | Proyecto: {fallido['proyecto']} ({fallido['razon']})\n"
+            # Guardar mensaje en la columna mensaje_error del proyecto
+            try:
+                from conexion import conn
+                with conn.cursor() as cur:
+                    cur.execute("UPDATE proyectos_tendencias SET mensaje_error=? WHERE id=?", (mensaje_error, proyecto_id))
+                    conn.commit()
+            except Exception as e:
+                print(f"Error actualizando mensaje_error en proyectos_tendencias: {e}")
         else:
             print(f"\nTodos los elementos procesados exitosamente para el proyecto {proyecto_id} ({elementos_exitosos}/{total_elementos})")
+            # Limpiar mensaje de error si todo fue exitoso
+            try:
+                from conexion import conn
+                with conn.cursor() as cur:
+                    cur.execute("UPDATE proyectos_tendencias SET mensaje_error=NULL WHERE id=?", (proyecto_id,))
+                    conn.commit()
+            except Exception as e:
+                print(f"Error limpiando mensaje_error en proyectos_tendencias: {e}")
     finally:
         try:
             driver.quit()

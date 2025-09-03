@@ -35,6 +35,7 @@ def crear_tablas():
                 palabra_semrush nvarchar(200) COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
                 codigo_ciiu nvarchar(50) COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
                 carrera_linkedin nvarchar(200) COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
+                mensaje_error nvarchar(500) COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
                 CONSTRAINT PK_proyectos_tendencias PRIMARY KEY (id)
             )
         END''',

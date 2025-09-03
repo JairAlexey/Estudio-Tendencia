@@ -68,6 +68,10 @@ def guardar_datos_sql(data, plataforma, proyecto_id):
 
     if plataforma.lower() == "linkedin":
         for item in data:
+            # Eliminar duplicados previos
+            cursor.execute("""
+                DELETE FROM linkedin WHERE proyecto_id=? AND Tipo=? AND Region=?
+            """, proyecto_id, item.get("Tipo"), item.get("Region"))
             cursor.execute("""
                 INSERT INTO linkedin (proyecto_id, Tipo, Region, Profesionales, AnunciosEmpleo, PorcentajeAnunciosProfesionales, DemandaContratacion)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -79,6 +83,9 @@ def guardar_datos_sql(data, plataforma, proyecto_id):
     elif plataforma.lower() == "semrush":
         for item in data:
             cursor.execute("""
+                DELETE FROM semrush WHERE proyecto_id=? AND VisionGeneral=? AND Palabras=? AND Volumen=?
+            """, proyecto_id, item.get("VisionGeneral"), item.get("Palabras"), item.get("Volumen"))
+            cursor.execute("""
                 INSERT INTO semrush (proyecto_id, VisionGeneral, Palabras, Volumen)
                 VALUES (?, ?, ?, ?)
             """, proyecto_id, item.get("VisionGeneral"), item.get("Palabras"), item.get("Volumen"))
@@ -88,6 +95,9 @@ def guardar_datos_sql(data, plataforma, proyecto_id):
     elif plataforma.lower() == "modalidad_oferta":
         for item in data:
             cursor.execute("""
+                DELETE FROM modalidad_oferta WHERE proyecto_id=? AND presencial=? AND virtual=?
+            """, proyecto_id, item.get("presencial"), item.get("virtual"))
+            cursor.execute("""
                 INSERT INTO modalidad_oferta (proyecto_id, presencial, virtual)
                 VALUES (?, ?, ?)
             """, proyecto_id, item.get("presencial"), item.get("virtual"))
@@ -96,6 +106,9 @@ def guardar_datos_sql(data, plataforma, proyecto_id):
 
     elif plataforma.lower() == "tendencias":
         for item in data:
+            cursor.execute("""
+                DELETE FROM tendencias WHERE proyecto_id=? AND palabra=? AND promedio=?
+            """, proyecto_id, item.get("palabra"), item.get("promedio"))
             cursor.execute("""
                 INSERT INTO tendencias (proyecto_id, palabra, promedio)
                 VALUES (?, ?, ?)

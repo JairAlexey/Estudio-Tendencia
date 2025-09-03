@@ -9,7 +9,6 @@ from scrapers.linkedin_modules.linkedin_database import (
     mark_job_completed,
     mark_job_failed,
 )
-from scrapers.utils import check_chrome_compatibility
 from conexion import conn
 
 
@@ -67,24 +66,6 @@ def process_job(job):
 def main():
     print("Worker iniciado. Escuchando cola 'scraper_queue'...")
     while True:
-        # Verificar compatibilidad Chrome/ChromeDriver en cada ciclo
-        compatible, chrome_version, chromedriver_version = check_chrome_compatibility()
-        if not compatible:
-            mensaje = (
-                "Versión de Chrome incompatible. Abre tu aplicación de escritorio de Chrome y verifica que esté actualizada. "
-                "Si el problema persiste, descarga el ChromeDriver correspondiente a tu versión de Chrome."
-            )
-            with conn.cursor() as cur:
-                cur.execute("UPDATE sistema_estado SET tipo=?, mensaje=?, fecha_actualizacion=GETDATE() WHERE id=1", ("error_chrome", mensaje))
-                conn.commit()
-            print("[worker] ERROR: " + mensaje)
-            time.sleep(60)  # Esperar y no procesar trabajos hasta que se resuelva
-            continue
-        else:
-            # Limpiar mensaje si todo está bien
-            with conn.cursor() as cur:
-                cur.execute("UPDATE sistema_estado SET tipo=NULL, mensaje=NULL, fecha_actualizacion=GETDATE() WHERE id=1")
-                conn.commit()
         job = fetch_next_job()
         if not job:
             time.sleep(SLEEP_SECONDS)

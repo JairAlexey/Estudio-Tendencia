@@ -121,7 +121,7 @@ def pagina_inicio():
     search_query = st.text_input("Buscar proyecto por nombre o tipo de carpeta", key="search_query", label_visibility="collapsed")
     
     with conn.cursor() as cur:
-        cur.execute("SELECT id, carrera_estudio, tipo_carpeta FROM proyectos_tendencias")
+        cur.execute("SELECT id, carrera_estudio, tipo_carpeta, mensaje_error FROM proyectos_tendencias")
         proyectos = cur.fetchall()
         # Traer último estado de scraper por proyecto
         cur.execute(
@@ -152,7 +152,7 @@ def pagina_inicio():
         proyectos = [p for p in proyectos if search_query.lower() in p[1].lower() or search_query.lower() in p[2].lower()]
 
     for proyecto in proyectos:
-        id, nombre, tipo = proyecto
+        id, nombre, tipo, mensaje_error = proyecto
         # Línea negra de separación
         st.markdown("""
             <hr style='border: none; border-top: 3px solid #222; margin: 1.2rem 0 1.5rem 0;'>
@@ -164,8 +164,11 @@ def pagina_inicio():
             texto, color, icono = estado_traducido[estado]
             estado_html = f"<span style='color:{color}; font-weight:bold;'>{icono} {texto}</span>"
         else:
-            estado_html = "<span style='color:#222;'>—</span>"
+            estado_html = "<span style='color:#800080;'>🟣 En espera</span>"
 
+        error_icon_html = ""
+        if mensaje_error:
+            error_icon_html = "<span style='color:#dc3545; font-size:1.2em;' title='Error en scraper'>❗</span>"
         st.markdown(f"""
             <div style='
                 border:1px solid #ddd; 
@@ -175,11 +178,15 @@ def pagina_inicio():
                 background:#f8f9fa;
                 box-shadow: 2px 2px 6px rgba(0,0,0,0.1);
             '>
-                <h4 style='margin:0'>{nombre}</h4>
+                <h4 style='margin:0'>{nombre} {error_icon_html}</h4>
                 <p style='margin:0; color:#555;'>{tipo}</p>
                 <div style='margin-top:0.25rem; font-size: 0.9rem;'>Estado: {estado_html}</div>
             </div>
         """, unsafe_allow_html=True)
+        # Mostrar botón para ver el mensaje de error si existe
+        if mensaje_error:
+            if st.button(f"Ver error del scraper", key=f"ver_error_{id}"):
+                st.warning(mensaje_error)
 
         col1, col2, col3, col4 = st.columns(4)
         # Nuevo orden: Ver, Editar, Reporte, Eliminar
@@ -375,18 +382,10 @@ def pagina_reporte(id):
 
 # --- Layout principal ---
 def main():
-    # Consultar mensaje global del sistema
+    # Limpiar mensaje global de sistema_estado para evitar mostrar errores antiguos
     with conn.cursor() as cur:
-        cur.execute("SELECT tipo, mensaje FROM sistema_estado WHERE id=1")
-        row = cur.fetchone()
-        if row and row[1]:
-            st.error(row[1])
-            if st.button("Limpiar mensaje de error y continuar", key="limpiar_mensaje_global"):
-                with conn.cursor() as cur2:
-                    cur2.execute("UPDATE sistema_estado SET tipo=NULL, mensaje=NULL, fecha_actualizacion=GETDATE() WHERE id=1")
-                    conn.commit()
-                st.rerun()
-            st.stop()
+        cur.execute("UPDATE sistema_estado SET tipo=NULL, mensaje=NULL, fecha_actualizacion=GETDATE() WHERE id=1")
+        conn.commit()
 
     page = st.session_state.get("page", "inicio")
     # Solo mostrar navegación en inicio y formulario
