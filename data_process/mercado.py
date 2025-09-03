@@ -1,17 +1,18 @@
-import pandas as pd
+
+import pyodbc
 from scrapers.linkedin_modules.linkedin_database import (
     extraer_datos_tabla,
     obtener_id_carrera,
     obtener_codigos_por_id_carrera,
 )
+from conexion import conn, cursor
 
 MERCADO = 0.15
-ARCHIVO_MERCADO = "db/mercado.xlsx"
 HOJAS = ["Total Ingresos", "Ventas 12", "Ventas 0"]
 
 def calc_mercado(proyecto_id):
-    print(f"\n=== INFORMACIÓN DE ARCHIVOS ===")
-    print(f"Archivo de datos de mercado (referencia): {ARCHIVO_MERCADO}")
+    print(f"\n=== INFORMACIÓN DE BASE DE DATOS ===")
+    print(f"Usando tabla mercado_datos")
     print(f"Proyecto ID: {proyecto_id}")
 
     # Obtener datos del proyecto desde la base de datos
@@ -47,29 +48,17 @@ def calc_mercado(proyecto_id):
     resultados_carreraReferencia = {}
     resultados_carreraConsultar = {}
 
-
     for hoja in HOJAS:
         print(f"\n--- Procesando hoja: {hoja} ---")
-        try:
-            df = pd.read_excel(ARCHIVO_MERCADO, sheet_name=hoja)
-            print(f"Filas totales en la hoja: {len(df)}")
-        except Exception as e:
-            print(f"ERROR: Fallo al leer la hoja '{hoja}' del archivo '{ARCHIVO_MERCADO}': {e}.")
-            resultados_carreraReferencia[hoja] = 0
-            resultados_carreraConsultar[hoja] = 0
-            continue
-
-        # Limpiar columna de códigos
-        if "ACTIVIDAD ECONÓMICA" in df.columns:
-            df["ACTIVIDAD ECONÓMICA"] = df["ACTIVIDAD ECONÓMICA"].astype(str).str.strip()
-        else:
-            print(f"ERROR: No se encontró columna 'ACTIVIDAD ECONÓMICA' en la hoja '{hoja}'.")
-            resultados_carreraReferencia[hoja] = 0
-            resultados_carreraConsultar[hoja] = 0
-            continue
-
-        columna_valor = "2023" if "2023" in df.columns else None
-        print(f"Año/columna de referencia: {columna_valor}")
+        # Obtener todos los registros de la hoja desde la base de datos
+        cursor.execute(
+            "SELECT actividad_economica, valor_2023 FROM mercado_datos WHERE hoja_origen = ?",
+            hoja
+        )
+        rows = cursor.fetchall()
+        # Convertir a diccionario para fácil acceso
+        datos_hoja = {str(row[0]).strip(): row[1] for row in rows if row[0] is not None}
+        print(f"Filas totales en la hoja: {len(rows)}")
 
         # Mostrar códigos buscados y valores para referencia
         print(f"Códigos referencia buscados: {codigos_referencia}")
@@ -77,14 +66,13 @@ def calc_mercado(proyecto_id):
         codigos_ref_no_encontrados = []
         valores_ref_codigos = []
         for codigo in codigos_referencia:
-            filas_codigo = df[df["ACTIVIDAD ECONÓMICA"] == codigo]
-            if not filas_codigo.empty and columna_valor:
-                valor = filas_codigo[columna_valor].values[0]
+            valor = datos_hoja.get(codigo)
+            if valor is not None:
                 codigos_ref_encontrados.append(codigo)
                 valores_ref_codigos.append(valor)
                 print(f"  Código referencia {codigo}: valor = {valor}")
-                if pd.isna(valor) or valor == 0:
-                    print(f"    -> ADVERTENCIA: Valor para código referencia {codigo} es NaN o 0")
+                if valor == 0:
+                    print(f"    -> ADVERTENCIA: Valor para código referencia {codigo} es 0")
             else:
                 codigos_ref_no_encontrados.append(codigo)
                 print(f"  Código referencia {codigo}: NO ENCONTRADO")
@@ -95,26 +83,23 @@ def calc_mercado(proyecto_id):
         codigos_cons_no_encontrados = []
         valores_cons_codigos = []
         for codigo in codigos_consultar:
-            filas_codigo = df[df["ACTIVIDAD ECONÓMICA"] == codigo]
-            if not filas_codigo.empty and columna_valor:
-                valor = filas_codigo[columna_valor].values[0]
+            valor = datos_hoja.get(codigo)
+            if valor is not None:
                 codigos_cons_encontrados.append(codigo)
                 valores_cons_codigos.append(valor)
                 print(f"  Código consulta {codigo}: valor = {valor}")
-                if pd.isna(valor) or valor == 0:
-                    print(f"    -> ADVERTENCIA: Valor para código consulta {codigo} es NaN o 0")
+                if valor == 0:
+                    print(f"    -> ADVERTENCIA: Valor para código consulta {codigo} es 0")
             else:
                 codigos_cons_no_encontrados.append(codigo)
                 print(f"  Código consulta {codigo}: NO ENCONTRADO")
 
         # Referencia: sumar valores para todos los códigos de la carrera referencia
-        df_ref = df[df["ACTIVIDAD ECONÓMICA"].isin(codigos_referencia)]
-        total_ref = df_ref[columna_valor].sum() if columna_valor else 0
+        total_ref = sum([v for v in valores_ref_codigos if v is not None])
         resultados_carreraReferencia[hoja] = total_ref
 
         # Consulta: sumar valores para el código CIIU de la carrera a consultar
-        df_cons = df[df["ACTIVIDAD ECONÓMICA"].isin(codigos_consultar)]
-        total_cons = df_cons[columna_valor].sum() if columna_valor else 0
+        total_cons = sum([v for v in valores_cons_codigos if v is not None])
         resultados_carreraConsultar[hoja] = total_cons
 
         print(f"Referencia - códigos encontrados: {codigos_ref_encontrados}")
