@@ -382,10 +382,6 @@ def pagina_reporte(id):
 
 # --- Layout principal ---
 def main():
-    # Limpiar mensaje global de sistema_estado para evitar mostrar errores antiguos
-    with conn.cursor() as cur:
-        cur.execute("UPDATE sistema_estado SET tipo=NULL, mensaje=NULL, fecha_actualizacion=GETDATE() WHERE id=1")
-        conn.commit()
 
     page = st.session_state.get("page", "inicio")
     # Solo mostrar navegación en inicio y formulario
