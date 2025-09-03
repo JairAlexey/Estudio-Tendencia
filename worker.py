@@ -1,6 +1,18 @@
 import os
 import sys
 import time
+import shutil
+import os
+
+PROFILE_DIR = os.path.join(os.path.dirname(__file__), 'profile')
+
+def reset_profile_dir():
+    if os.path.exists(PROFILE_DIR):
+        shutil.rmtree(PROFILE_DIR)
+    os.makedirs(PROFILE_DIR)
+
+# Llamar a la función al inicio del script
+reset_profile_dir()
 import traceback
 import subprocess
 from scrapers.linkedin_modules.linkedin_database import (
@@ -61,7 +73,6 @@ def process_job(job):
         tb = traceback.format_exc()
         mark_job_failed(job_id, f"{e}\n{tb}")
         print(f"[worker] Job {job_id} fallo ✖: {e}")
-
 
 def main():
     print("Worker iniciado. Escuchando cola 'scraper_queue'...")
