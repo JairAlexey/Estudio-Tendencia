@@ -4,6 +4,7 @@ import time
 from streamlit_option_menu import option_menu
 from conexion import conn, cursor
 
+
 # --- Navegación ---
 def mostrar_navegacion(key):
     selected = option_menu(
@@ -98,9 +99,9 @@ def pagina_inicio():
         }
         /* Botones personalizados por columna */
         div[data-testid="stButton"] button[data-testid="stBaseButton-secondary"] {
-            min-width: 160px;
-            height: 40px;
-            border-radius: 10px !important;
+            min-width: 120px;
+            height: 38px; /* un poco más alto para texto */
+            border-radius: 8px !important;
             font-weight: 600;
             font-size: 15px;
             margin: 0 2px;
@@ -108,9 +109,21 @@ def pagina_inicio():
             color: #222 !important;
             border: 1px solid #ddd !important;
             box-shadow: none !important;
+            padding: 0 8px !important;
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            justify-content: center !important;
+        }
+        div[data-testid="stButton"] button[data-testid="stBaseButton-secondary"] span.small-btn-label {
+            font-size: 11px !important;
+            font-weight: 400 !important;
+            margin-top: -2px !important;
+            color: #444 !important;
+            letter-spacing: 0.2px;
         }
         /* Solo el botón Eliminar será rojo */
-        div[data-testid="stColumn"]:nth-child(4) button[data-testid="stBaseButton-secondary"] {
+        div[data-testid="stColumn"]:nth-child(5) button[data-testid="stBaseButton-secondary"] {
             background-color: #ff0000 !important;
             color: #fff !important;
             border: 1px solid #ff0000 !important;
@@ -166,6 +179,15 @@ def pagina_inicio():
         else:
             estado_html = "<span style='color:#800080;'>🟣 En espera</span>"
 
+        # Verificar si existen datos de solicitud para este proyecto
+        with conn.cursor() as cur:
+            cur.execute("SELECT COUNT(*) FROM datos_solicitud WHERE proyecto_id=?", (id,))
+            solicitud_count = cur.fetchone()[0]
+        if solicitud_count > 0:
+            solicitud_html = "<div style='color:#28a745; font-size:0.95rem; margin-top:0.2rem;'>✔️ Datos de solicitud agregados</div>"
+        else:
+            solicitud_html = "<div style='color:#dc3545; font-size:0.95rem; margin-top:0.2rem;'>❌ Datos de solicitud no agregados</div>"
+
         error_icon_html = ""
         if mensaje_error:
             error_icon_html = "<span style='color:#dc3545; font-size:1.2em;' title='Error en scraper'>❗</span>"
@@ -181,6 +203,7 @@ def pagina_inicio():
                 <h4 style='margin:0'>{nombre} {error_icon_html}</h4>
                 <p style='margin:0; color:#555;'>{tipo}</p>
                 <div style='margin-top:0.25rem; font-size: 0.9rem;'>Estado: {estado_html}</div>
+                {solicitud_html}
             </div>
         """, unsafe_allow_html=True)
         # Mostrar botón para ver el mensaje de error si existe
@@ -188,30 +211,35 @@ def pagina_inicio():
             if st.button(f"Ver error del scraper", key=f"ver_error_{id}"):
                 st.warning(mensaje_error)
 
-        col1, col2, col3, col4 = st.columns(4)
-        # Nuevo orden: Ver, Editar, Reporte, Eliminar
+        col1, col2, col3, col4, col5 = st.columns(5)
         disabled = st.session_state.get("botones_deshabilitados", False)
         with col1:
-            st.button("Ver", key=f"ver_{id}", disabled=disabled)
+            st.button("👁️ Ver", key=f"ver_{id}", disabled=disabled, help="Ver")
             if not disabled and st.session_state.get(f"ver_{id}"):
                 st.session_state["page"] = "ver"
                 st.session_state["id"] = id
                 st.rerun()
         with col2:
-            st.button("Editar", key=f"editar_{id}", disabled=disabled)
+            st.button("✏️ Editar", key=f"editar_{id}", disabled=disabled, help="Editar")
             if not disabled and st.session_state.get(f"editar_{id}"):
                 st.session_state["page"] = "editar"
                 st.session_state["id"] = id
                 st.rerun()
         with col3:
+            st.button("ℹ️ Agregar", key=f"info_{id}", disabled=disabled, help="Agregar")
+            if not disabled and st.session_state.get(f"info_{id}"):
+                st.session_state["page"] = "datos_solicitud"
+                st.session_state["id"] = id
+                st.rerun()
+        with col4:
             reporte_disabled = disabled or estado != "completed"
-            st.button("Reporte", key=f"reporte_{id}", disabled=reporte_disabled)
+            st.button("📄 Reporte", key=f"reporte_{id}", disabled=reporte_disabled, help="Reporte")
             if not reporte_disabled and st.session_state.get(f"reporte_{id}"):
                 st.session_state["page"] = "reporte"
                 st.session_state["id"] = id
                 st.rerun()
-        with col4:
-            st.button("Eliminar", key=f"eliminar_{id}", disabled=disabled)
+        with col5:
+            st.button("🗑️ Eliminar", key=f"eliminar_{id}", disabled=disabled, help="Eliminar")
             if not disabled and st.session_state.get(f"eliminar_{id}"):
                 st.session_state["confirmar_eliminar_id"] = id
                 st.session_state["confirmar_eliminar_nombre"] = nombre
@@ -345,10 +373,14 @@ def pagina_formulario():
 
 # --- Visualizar proyecto ---
 def pagina_reporte(id):
-    st.title("Reporte del Proyecto")
-    if st.button("Regresar al inicio", key="volver_inicio_reporte"):
-        st.session_state["page"] = "inicio"
-        st.rerun()
+    # Obtener nombre del proyecto
+    with conn.cursor() as cur:
+        cur.execute("SELECT carrera_estudio FROM proyectos_tendencias WHERE id=?", (id,))
+        row = cur.fetchone()
+        nombre_proyecto = row[0] if row else "Proyecto desconocido"
+        # Capitalizar cada palabra
+        nombre_proyecto = " ".join([w.capitalize() for w in nombre_proyecto.split()])
+
     # Importar la lógica de reporte desde app.py
     try:
         import sys
@@ -361,7 +393,7 @@ def pagina_reporte(id):
             st.error("Proyecto no encontrado.")
             return
         nombre_pestana = f"{proyecto['id']} - {proyecto['carrera_referencia']} vs {proyecto['carrera_estudio']}"
-        st.subheader("Evaluación")
+        st.subheader(f"Evaluación para {nombre_proyecto}")
         procesar_proyecto(id, nombre_pestana)
         # Mostrar rango de evaluación final
         import pandas as pd
@@ -408,6 +440,11 @@ def main():
         id = st.session_state.get("id", None)
         if id:
             pagina_reporte(id)
+    elif page == "datos_solicitud":
+        id = st.session_state.get("id", None)
+        if id:
+            from forms.datos_solicitud import mostrar_formulario_datos_solicitud
+            mostrar_formulario_datos_solicitud(id)
 
 if __name__ == "__main__":
     main()
