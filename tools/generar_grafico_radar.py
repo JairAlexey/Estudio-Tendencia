@@ -46,7 +46,7 @@ def generar_grafico_radar(valores, labels, ruta_salida):
     yticks = [0.0, 0.20, 0.40, 0.60, 0.80, 1.0]
     ax.set_yticks(yticks)
     ax.set_yticklabels([f"{int(y*100)}%" for y in yticks])
-    plt.savefig(ruta_salida, format='jpg', bbox_inches='tight')
+    plt.savefig(ruta_salida.replace('.jpg', '.png'), format='png', bbox_inches='tight', dpi=300)
     plt.close(fig)
 
 # Ejemplo de uso (puedes borrar esto en producción):

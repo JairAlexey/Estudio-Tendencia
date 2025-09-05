@@ -173,8 +173,11 @@ def procesar_proyecto(proyecto_id, nombre_archivo):
         labels = ["Busqueda", "Competencia", "LinkedIn", "Mercado"]
         ruta_salida = f"db/imagenes/grafico_radar_{proyecto_id}.jpg"
         generar_grafico_radar(valores, labels, ruta_salida)
+        # Calcular viabilidad como suma de las áreas y convertir a porcentaje
+        viabilidad = round(sum(valores) * 100)
+        st.markdown(f"**Viabilidad del proyecto:** {viabilidad}%")
     except Exception as e:
-        st.warning(f"No se pudo generar el gráfico radar: {e}")
+        st.warning(f"No se pudo generar el gráfico radar ni calcular viabilidad: {e}")
 
 df_rango = pd.DataFrame(
     {

@@ -4,7 +4,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from conexion import conn, cursor
 from pptx import Presentation
 
-TEMPLATE_PATH = 'db/Plantilla para automatización de tendencias.pptx'
+TEMPLATE_PATH = 'db/Viable.pptx'
 
 def obtener_datos_solicitud(id_solicitud):
     cursor.execute('''
