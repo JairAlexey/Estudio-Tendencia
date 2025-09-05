@@ -7,6 +7,7 @@ from data_process.linkedin import calc_linkedin
 from data_process.busquedaWeb import calc_busquedaWeb
 from data_process.competencia import calc_competencia_presencial, calc_competencia_virtual
 from scrapers.linkedin_modules.linkedin_database import listar_proyectos
+from tools.generar_grafico_radar import generar_grafico_radar
 
 # Configuración de la página
 st.set_page_config(
@@ -160,6 +161,20 @@ def procesar_proyecto(proyecto_id, nombre_archivo):
     )
 
     st.dataframe(styled_df, use_container_width=True, hide_index=True)
+
+    # Generar gráfico radar con los valores de presencialidad
+    try:
+        valores = [
+            presencialidad_resultados[parametros.index("Búsqueda Web")]/100,
+            presencialidad_resultados[parametros.index("Competencia")]/100,
+            presencialidad_resultados[parametros.index("LinkedIN")]/100,
+            presencialidad_resultados[parametros.index("Mercado")]/100
+        ]
+        labels = ["Busqueda", "Competencia", "LinkedIn", "Mercado"]
+        ruta_salida = f"db/imagenes/grafico_radar_{proyecto_id}.jpg"
+        generar_grafico_radar(valores, labels, ruta_salida)
+    except Exception as e:
+        st.warning(f"No se pudo generar el gráfico radar: {e}")
 
 df_rango = pd.DataFrame(
     {
