@@ -371,7 +371,7 @@ def pagina_formulario():
     except Exception as e:
         st.error(f"ERROR: {e}")
 
-# --- Visualizar proyecto ---
+# --- Reporte proyecto ---
 def pagina_reporte(id):
     # Obtener nombre del proyecto
     with conn.cursor() as cur:
@@ -381,6 +381,9 @@ def pagina_reporte(id):
         # Capitalizar cada palabra
         nombre_proyecto = " ".join([w.capitalize() for w in nombre_proyecto.split()])
 
+    if st.button("Regresar al inicio", key="volver_inicio_ver"):
+        st.session_state["page"] = "inicio"
+        st.rerun()
     # Importar la lógica de reporte desde app.py
     try:
         import sys
