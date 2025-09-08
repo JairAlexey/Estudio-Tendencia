@@ -4,7 +4,6 @@ import time
 from streamlit_option_menu import option_menu
 from conexion import conn, cursor
 
-
 # --- Navegación ---
 def mostrar_navegacion(key):
     selected = option_menu(
@@ -46,7 +45,7 @@ def pagina_inicio():
         st.session_state["botones_deshabilitados"] = True
         # Limpiar la bandera después de mostrar el mensaje y esperar 2 segundos
         st.session_state["exito_guardado"] = False
-        st.query_params.clear()  # <-- reemplazo aquí
+        st.query_params.clear() 
         st.markdown(
             """
             <script>
@@ -99,7 +98,7 @@ def pagina_inicio():
         }
         /* Botones personalizados por columna */
         div[data-testid="stButton"] button[data-testid="stBaseButton-secondary"] {
-            min-width: 120px;
+            min-width: 125px;
             height: 38px; /* un poco más alto para texto */
             border-radius: 8px !important;
             font-weight: 600;
@@ -134,7 +133,7 @@ def pagina_inicio():
     search_query = st.text_input("Buscar proyecto por nombre o tipo de carpeta", key="search_query", label_visibility="collapsed")
     
     with conn.cursor() as cur:
-        cur.execute("SELECT id, carrera_estudio, tipo_carpeta, mensaje_error FROM proyectos_tendencias")
+        cur.execute("SELECT id, carrera_estudio, tipo_carpeta, mensaje_error FROM proyectos_tendencias ORDER BY id DESC")
         proyectos = cur.fetchall()
         # Traer último estado de scraper por proyecto
         cur.execute(
@@ -163,6 +162,8 @@ def pagina_inicio():
 
     if search_query:
         proyectos = [p for p in proyectos if search_query.lower() in p[1].lower() or search_query.lower() in p[2].lower()]
+    else:
+        proyectos = proyectos[:3]
 
     for proyecto in proyectos:
         id, nombre, tipo, mensaje_error = proyecto
@@ -175,18 +176,18 @@ def pagina_inicio():
         estado = estados.get(id, None)
         if estado in estado_traducido:
             texto, color, icono = estado_traducido[estado]
-            estado_html = f"<span style='color:{color}; font-weight:bold;'>{icono} {texto}</span>"
+            estado_html = f"<span style='color:#555; font-size:0.95rem;'>Estado:</span> <span style='color:{color}; font-size:0.95rem;'>{icono} {texto}</span>"
         else:
-            estado_html = "<span style='color:#800080;'>🟣 En espera</span>"
+            estado_html = "<span style='color:#555; font-size:0.95rem;'>Estado:</span> <span style='color:#800080; font-size:0.95rem;'>🟣 En espera</span>"
 
         # Verificar si existen datos de solicitud para este proyecto
         with conn.cursor() as cur:
             cur.execute("SELECT COUNT(*) FROM datos_solicitud WHERE proyecto_id=?", (id,))
             solicitud_count = cur.fetchone()[0]
         if solicitud_count > 0:
-            solicitud_html = "<div style='color:#28a745; font-size:0.95rem; margin-top:0.2rem;'>✔️ Datos de solicitud agregados</div>"
+            solicitud_html = "<span style='color:#555; font-size:0.95rem;'>Datos solicitud:</span> <span style='color:#28a745; font-size:0.95rem;'>🟢 Agregados</span>"
         else:
-            solicitud_html = "<div style='color:#dc3545; font-size:0.95rem; margin-top:0.2rem;'>❌ Datos de solicitud no agregados</div>"
+            solicitud_html = "<span style='color:#555; font-size:0.95rem;'>Datos solicitud:</span> <span style='color:#dc3545; font-size:0.95rem;'>🔴 No agregados</span>"
 
         error_icon_html = ""
         if mensaje_error:
@@ -202,8 +203,10 @@ def pagina_inicio():
             '>
                 <h4 style='margin:0'>{nombre} {error_icon_html}</h4>
                 <p style='margin:0; color:#555;'>{tipo}</p>
-                <div style='margin-top:0.25rem; font-size: 0.9rem;'>Estado: {estado_html}</div>
-                {solicitud_html}
+                <div style='margin-top:0.25rem; font-size: 0.9rem;'>
+                    <div>{estado_html}</div>
+                    <div>{solicitud_html}</div>
+                </div>
             </div>
         """, unsafe_allow_html=True)
         # Mostrar botón para ver el mensaje de error si existe
@@ -214,30 +217,30 @@ def pagina_inicio():
         col1, col2, col3, col4, col5 = st.columns(5)
         disabled = st.session_state.get("botones_deshabilitados", False)
         with col1:
-            st.button("👁️ Ver", key=f"ver_{id}", disabled=disabled, help="Ver")
-            if not disabled and st.session_state.get(f"ver_{id}"):
-                st.session_state["page"] = "ver"
-                st.session_state["id"] = id
-                st.rerun()
-        with col2:
             st.button("✏️ Editar", key=f"editar_{id}", disabled=disabled, help="Editar")
             if not disabled and st.session_state.get(f"editar_{id}"):
                 st.session_state["page"] = "editar"
                 st.session_state["id"] = id
                 st.rerun()
-        with col3:
+        with col2:
             st.button("ℹ️ Agregar", key=f"info_{id}", disabled=disabled, help="Agregar")
             if not disabled and st.session_state.get(f"info_{id}"):
                 st.session_state["page"] = "datos_solicitud"
                 st.session_state["id"] = id
                 st.rerun()
-        with col4:
+        with col3:
             reporte_disabled = disabled or estado != "completed"
-            st.button("📄 Reporte", key=f"reporte_{id}", disabled=reporte_disabled, help="Reporte")
+            st.button("📑 Tabla", key=f"reporte_{id}", disabled=reporte_disabled, help="Tabla")
             if not reporte_disabled and st.session_state.get(f"reporte_{id}"):
                 st.session_state["page"] = "reporte"
                 st.session_state["id"] = id
                 st.rerun()
+        with col4:
+            st.button("📊 Reporte", key=f"presentacion_{id}", disabled=disabled, help="Reporte")
+            if not disabled and st.session_state.get(f"presentacion_{id}"):
+                st.session_state["page"] = "presentacion"
+                st.session_state["id"] = id
+                st.rerun()            
         with col5:
             st.button("🗑️ Eliminar", key=f"eliminar_{id}", disabled=disabled, help="Eliminar")
             if not disabled and st.session_state.get(f"eliminar_{id}"):
@@ -259,6 +262,9 @@ def pagina_inicio():
                         cur.execute("DELETE FROM linkedin WHERE proyecto_id=?", (id,))
                         cur.execute("DELETE FROM semrush WHERE proyecto_id=?", (id,))
                         cur.execute("DELETE FROM scraper_queue WHERE proyecto_id=?", (id,))
+                        cur.execute("DELETE FROM grafico_radar_datos WHERE proyecto_id=?", (id,))
+                        cur.execute("DELETE FROM presentation_queue WHERE proyecto_id=?", (id,))
+                        cur.execute("DELETE FROM datos_solicitud WHERE proyecto_id=?", (id,))
                         # Eliminar el proyecto principal
                         cur.execute("DELETE FROM proyectos_tendencias WHERE id=?", (id,))
                         conn.commit()
@@ -271,47 +277,6 @@ def pagina_inicio():
                 st.session_state["confirmar_eliminar_nombre"] = None
                 st.session_state["confirmar_eliminar_tipo"] = None
                 st.rerun()
-
-
-# --- Visualizar proyecto ---
-def pagina_ver(id):
-    st.title("Visualizar Proyecto")
-    if st.button("Regresar al inicio", key="volver_inicio_ver"):
-        st.session_state["page"] = "inicio"
-        st.rerun()
-    with conn.cursor() as cur:
-        # Datos principales del proyecto
-        cur.execute("SELECT * FROM proyectos_tendencias WHERE id=?", (id,))
-        proyecto = cur.fetchone()
-        columns = [desc[0] for desc in cur.description]
-        if not proyecto:
-            st.error("Proyecto no encontrado.")
-            return
-        st.subheader("Datos principales")
-        for k, v in dict(zip(columns, proyecto)).items():
-            st.markdown(f"- **{k.replace('_', ' ').capitalize()}**: {v}")
-
-    # Usar un nuevo cursor para las siguientes consultas
-    with conn.cursor() as cur2:
-        # Tendencias asociadas
-        cur2.execute("SELECT palabra, promedio FROM tendencias WHERE proyecto_id=?", (id,))
-        tendencias = cur2.fetchall()
-        st.subheader("Trends (palabras y promedios)")
-        for item in tendencias:
-            if len(item) == 2:
-                st.markdown(f"- **{item[0]}**: {item[1]}")
-            else:
-                st.markdown(f"- {item[0]}")
-
-        # Modalidad de oferta asociada
-        cur2.execute("SELECT presencial, virtual FROM modalidad_oferta WHERE proyecto_id=?", (id,))
-        modalidad = cur2.fetchall()
-        st.subheader("Modalidad de Oferta")
-        for item in modalidad:
-            if len(item) == 2:
-                st.markdown(f"- <b>Presencial:</b> {item[0]} &nbsp;&nbsp; <b>Virtual:</b> {item[1]}", unsafe_allow_html=True)
-            else:
-                st.markdown(f"- {item[0]}")
 
 # --- Editar proyecto ---
 def pagina_editar(id):
@@ -384,7 +349,7 @@ def pagina_reporte(id):
         st.session_state["page"] = "inicio"
         st.rerun()
 
-    # Importar la lógica de reporte desde app.py (solo para mostrar datos, no generar gráfico)
+    # Importar la lógica de reporte desde app.py
     try:
         import sys
         sys.path.append(".")
@@ -397,7 +362,8 @@ def pagina_reporte(id):
             return
         nombre_pestana = f"{proyecto['id']} - {proyecto['carrera_referencia']} vs {proyecto['carrera_estudio']}"
         st.subheader(f"Evaluación para {nombre_proyecto}")
-        procesar_proyecto(id, nombre_pestana)
+        with st.spinner("Procesando reporte..."):
+            procesar_proyecto(id, nombre_pestana)
         import pandas as pd
         st.subheader("Rango Evaluación Final")
         df_rango = pd.DataFrame(
@@ -413,14 +379,55 @@ def pagina_reporte(id):
         st.dataframe(df_rango, use_container_width=True, hide_index=True)
     except Exception as e:
         st.error(f"ERROR mostrando reporte: {e}")
-
-    # Botón para generar presentación y mostrar estado
-    st.markdown("---")
-    mensaje_presentacion = ""
-    if st.button("Generar presentación", key=f"generar_presentacion_{id}"):
-        try:
+        
+# --- Presentación ---
+def pagina_presentacion(id):
+    # Diccionario de traducción y color/ícono para presentación
+    estado_traducido_presentacion = {
+        "queued": ("En cola", "#6c757d", "⏳"),
+        "running": ("Procesando", "#ffc107", "🟡"),
+        "finished": ("Completado", "#28a745", "🟢"),
+        "error": ("Error", "#dc3545", "🔴"),
+    }
+    # Obtener nombre del proyecto
+    with conn.cursor() as cur:
+        cur.execute("SELECT carrera_estudio FROM proyectos_tendencias WHERE id=?", (id,))
+        row = cur.fetchone()
+        nombre_proyecto = row[0] if row else "Proyecto desconocido"
+    st.title(f"Presentación generada para: {nombre_proyecto}")
+    if st.button("Regresar al inicio", key="volver_inicio_presentacion"):
+        st.session_state["page"] = "inicio"
+        st.rerun()
+    # Mostrar estado de la presentación
+    with conn.cursor() as cur:
+        cur.execute("SELECT status, file_name, pptx_file, error FROM presentation_queue WHERE proyecto_id=? ORDER BY created_at DESC", (id,))
+        row = cur.fetchone()
+    status = None
+    if row:
+        status, file_name, pptx_file, error = row
+        texto, color, icono = estado_traducido_presentacion.get(status, (status, "#800080", "🟣"))
+        st.markdown(f"""
+            <div style='border:2px solid {color}; border-radius:12px; padding:1.2rem; margin:1.2rem 0; background:#f8f9fa;'>
+                <h4 style='margin:0 0 0.5rem 0;'>Estado de la presentación</h4>
+                <div style='font-size:1.1rem; color:{color}; font-weight:bold;'>{icono} {texto}</div>
+            </div>
+        """, unsafe_allow_html=True)
+        if status == "finished" and pptx_file:
+            st.download_button(
+                label="📥 Descargar presentación",
+                data=pptx_file,
+                file_name=file_name,
+                mime="application/vnd.openxmlformats-officedocument.presentationml.presentation"
+            )
+        if status == "error" and error:
+            st.error(f"Error: {error}")
+    else:
+        st.markdown("<div style='border:2px solid #800080; border-radius:12px; padding:1.2rem; margin:1.2rem 0; background:#f8f9fa;'><h4>Estado de la presentación</h4><div style='font-size:1.1rem; color:#800080; font-weight:bold;'>🟣 Sin registro</div></div>", unsafe_allow_html=True)
+    # Botón para generar presentación solo si no está en proceso o ya finalizada
+    if not status or status not in ["queued", "running", "finished"]:
+        if st.button("Generar presentación", key=f"generar_presentacion_{id}_presentacion"):
             with conn.cursor() as cur:
-                cur.execute("SELECT id FROM presentation_queue WHERE proyecto_id=? AND status IN ('queued','running')", (id,))
+                cur.execute("SELECT id FROM presentation_queue WHERE proyecto_id=? AND status IN ('queued','running','finished','error')", (id,))
                 existe = cur.fetchone()
                 if not existe:
                     cur.execute("""
@@ -428,30 +435,8 @@ def pagina_reporte(id):
                         VALUES (?, 'queued', 0, GETDATE())
                     """, (id,))
                     conn.commit()
-            mensaje_presentacion = "Proyecto procesándose con éxito."
-        except Exception as e:
-            mensaje_presentacion = f"Error procesando proyecto: {e}"
-    if mensaje_presentacion:
-        st.info(mensaje_presentacion)
-    # Mostrar estado de la presentación
-    with conn.cursor() as cur:
-        cur.execute("SELECT status, file_name, pptx_file, error FROM presentation_queue WHERE proyecto_id=? ORDER BY created_at DESC", (id,))
-        row = cur.fetchone()
-    if row:
-        status, file_name, pptx_file, error = row
-        st.markdown(f"**Estado de la presentación:** {status}")
-        if status == "error" and error:
-            st.error(f"Error: {error}")
-        if status == "finished" and pptx_file:
-            st.success("Presentación generada correctamente.")
-            st.download_button(
-                label=f"Descargar presentación ({file_name})",
-                data=pptx_file,
-                file_name=file_name,
-                mime="application/vnd.openxmlformats-officedocument.presentationml.presentation"
-            )
-    else:
-        st.markdown("**Estado de la presentación:** Sin registro")
+            st.info("Proyecto procesándose con éxito.")
+            st.rerun()
 
 # --- Layout principal ---
 def main():
@@ -465,10 +450,6 @@ def main():
             pagina_formulario()
         else:
             pagina_inicio()
-    elif page == "ver":
-        id = st.session_state.get("id", None)
-        if id:
-            pagina_ver(id)
     elif page == "editar":
         id = st.session_state.get("id", None)
         if id:
@@ -486,6 +467,10 @@ def main():
         if id:
             from forms.datos_solicitud import mostrar_formulario_datos_solicitud
             mostrar_formulario_datos_solicitud(id)
+    elif page == "presentacion":
+        id = st.session_state.get("id", None)
+        if id:
+            pagina_presentacion(id)
 
 if __name__ == "__main__":
     main()

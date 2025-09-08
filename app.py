@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 import os
-from pathlib import Path
 from data_process.mercado import calc_mercado
 from data_process.linkedin import calc_linkedin
 from data_process.busquedaWeb import calc_busquedaWeb
@@ -15,13 +14,6 @@ st.set_page_config(
     layout="centered"
 )
 
-# Función para obtener el nombre del archivo sin extensión
-def obtener_nombre_archivo(ruta):
-    return Path(ruta).stem
-
-# Función para verificar si un archivo Excel existe
-def verificar_archivo_excel(ruta):
-    return os.path.exists(ruta)
 
 # Listar proyectos desde la base de datos
 try:
@@ -105,38 +97,33 @@ def calcular_virtual_competencia(proyecto_id):
 
 # Función para procesar un archivo Excel específico
 def procesar_proyecto(proyecto_id, nombre_archivo):
-    # Diccionarios para mapear resultados
     presencialidad_resultados = []
     virtualidad_resultados = []
-
-    # Mostrar progress bar
-    progress_bar = st.progress(0)
-    
+    # Calcular todos los valores requeridos una sola vez
+    valor_busqueda = calcular_valor_general("Búsqueda Web", proyecto_id)
+    valor_linkedin = calcular_valor_general("LinkedIN", proyecto_id)
+    valor_mercado = calcular_valor_general("Mercado", proyecto_id)
+    valor_competencia_presencial = calcular_presencial_competencia(proyecto_id)
+    valor_competencia_virtual = calcular_virtual_competencia(proyecto_id)
     for i, parametro in enumerate(parametros):
-        progress_bar.progress((i + 1) / len(parametros))
-        
         if parametro == "Competencia":
-            presencialidad_resultados.append(calcular_presencial_competencia(proyecto_id))
-            virtualidad_resultados.append(calcular_virtual_competencia(proyecto_id))
+            presencialidad_resultados.append(valor_competencia_presencial)
+            virtualidad_resultados.append(valor_competencia_virtual)
         elif parametro == "Total":
             total_presencial = round(sum(presencialidad_resultados), 2)
             total_virtual = round(sum(virtualidad_resultados), 2)
             presencialidad_resultados.append(total_presencial)
             virtualidad_resultados.append(total_virtual)
-        else:
-            resultado = calcular_valor_general(parametro, proyecto_id)
-            presencialidad_resultados.append(resultado)
-            virtualidad_resultados.append(resultado)
-    
-    progress_bar.empty()
-
+        elif parametro == "Búsqueda Web":
+            presencialidad_resultados.append(valor_busqueda)
+            virtualidad_resultados.append(valor_busqueda)
+        elif parametro == "LinkedIN":
+            presencialidad_resultados.append(valor_linkedin)
+            virtualidad_resultados.append(valor_linkedin)
+        elif parametro == "Mercado":
+            presencialidad_resultados.append(valor_mercado)
+            virtualidad_resultados.append(valor_mercado)
     # Guardar/actualizar en grafico_radar_datos
-    valor_busqueda = calcular_valor_general("Búsqueda Web", proyecto_id)
-    valor_competencia = calcular_presencial_competencia(proyecto_id)
-    valor_linkedin = calcular_valor_general("LinkedIN", proyecto_id)
-    valor_mercado = calcular_valor_general("Mercado", proyecto_id)
-    presencialidad = valor_competencia
-    virtualidad = calcular_virtual_competencia(proyecto_id)
     try:
         with conn.cursor() as cur:
             cur.execute("SELECT id FROM grafico_radar_datos WHERE proyecto_id=?", (proyecto_id,))
@@ -147,13 +134,13 @@ def procesar_proyecto(proyecto_id, nombre_archivo):
                         valor_busqueda=?, valor_competencia=?, valor_linkedin=?, valor_mercado=?,
                         presencialidad=?, virtualidad=?, updated_at=GETDATE()
                     WHERE proyecto_id=?
-                """, (valor_busqueda, valor_competencia, valor_linkedin, valor_mercado, presencialidad, virtualidad, proyecto_id))
+                """, (valor_busqueda, valor_competencia_presencial, valor_linkedin, valor_mercado, valor_competencia_presencial, valor_competencia_virtual, proyecto_id))
             else:
                 cur.execute("""
                     INSERT INTO grafico_radar_datos (
                         proyecto_id, valor_busqueda, valor_competencia, valor_linkedin, valor_mercado, presencialidad, virtualidad
                     ) VALUES (?, ?, ?, ?, ?, ?, ?)
-                """, (proyecto_id, valor_busqueda, valor_competencia, valor_linkedin, valor_mercado, presencialidad, virtualidad))
+                """, (proyecto_id, valor_busqueda, valor_competencia_presencial, valor_linkedin, valor_mercado, valor_competencia_presencial, valor_competencia_virtual))
             conn.commit()
     except Exception as e:
         st.error(f"Error actualizando datos de grafico_radar_datos: {e}")
