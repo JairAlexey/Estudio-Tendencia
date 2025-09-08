@@ -4,7 +4,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from conexion import conn, cursor
 from pptx import Presentation
 
-TEMPLATE_PATH = 'db/Viable.pptx'
+TEMPLATE_PATH = '../db/Viable.pptx'
 
 def obtener_datos_solicitud(id_solicitud):
     cursor.execute('''
@@ -32,7 +32,7 @@ def generar_reporte(id_solicitud):
         print("No se encontraron datos para la solicitud.")
         return
     prs = Presentation(TEMPLATE_PATH)
-    slide = prs.slides[2]
+    slide = prs.slides[1]
     shape_map = {
         1: "nombre_proponente",
         3: "duracion",
@@ -58,8 +58,28 @@ def generar_reporte(id_solicitud):
                 # Si no se encontró el texto en los runs, como fallback modifica el texto completo (no recomendado, pero evita que quede vacío)
                 if not reemplazado:
                     shape.text = f"{partes[0]}:{nuevo_texto}"
+                    
+    # Reemplazar imagen en el slide 3 (índice 3)
+    try:
+        slide_img = prs.slides[3]
+        # Encuentra el primer shape que sea imagen
+        for shape in slide_img.shapes:
+            if shape.shape_type == 13:  # MSO_SHAPE_TYPE.PICTURE
+                left = shape.left
+                top = shape.top
+                width = shape.width
+                height = shape.height
+                # Elimina la imagen actual
+                sp = slide_img.shapes._spTree
+                sp.remove(shape._element)
+                # Inserta la nueva imagen
+                ruta_img = f"../db/imagenes/grafico_radar_48.png"
+                slide_img.shapes.add_picture(ruta_img, left, top, width, height)
+                break
+    except Exception as e:
+        print(f"No se pudo reemplazar la imagen en el slide 3: {e}")
     nombre_archivo = f"{datos['nombre_programa'].replace(' ', '_')}.pptx"
-    output_path = os.path.join('db', nombre_archivo)
+    output_path = os.path.join('../db', nombre_archivo)
     prs.save(output_path)
     print(f"Reporte guardado en: {output_path}")
 

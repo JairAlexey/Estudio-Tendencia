@@ -34,6 +34,9 @@ def generar_grafico_radar(valores, labels, ruta_salida):
     ax.plot(theta, r, 'o', color=color_vino)
     ax.set_xticks(theta)
     ax.set_xticklabels(['']*len(labels))
+    # Líneas radiales internas como puntitos
+    for angle in theta:
+        ax.plot([angle, angle], [0, 1.0], linestyle=':', color='gray', linewidth=1)
     for angle, label in zip(theta, labels):
         if label in ["Busqueda", "LinkedIn"]:
             rot = 315
