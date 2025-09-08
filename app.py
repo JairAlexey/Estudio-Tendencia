@@ -7,7 +7,7 @@ from data_process.linkedin import calc_linkedin
 from data_process.busquedaWeb import calc_busquedaWeb
 from data_process.competencia import calc_competencia_presencial, calc_competencia_virtual
 from scrapers.linkedin_modules.linkedin_database import listar_proyectos
-from tools.generar_grafico_radar import generar_grafico_radar
+from conexion import conn
 
 # Configuración de la página
 st.set_page_config(
@@ -130,6 +130,34 @@ def procesar_proyecto(proyecto_id, nombre_archivo):
     
     progress_bar.empty()
 
+    # Guardar/actualizar en grafico_radar_datos
+    valor_busqueda = calcular_valor_general("Búsqueda Web", proyecto_id)
+    valor_competencia = calcular_presencial_competencia(proyecto_id)
+    valor_linkedin = calcular_valor_general("LinkedIN", proyecto_id)
+    valor_mercado = calcular_valor_general("Mercado", proyecto_id)
+    presencialidad = valor_competencia
+    virtualidad = calcular_virtual_competencia(proyecto_id)
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT id FROM grafico_radar_datos WHERE proyecto_id=?", (proyecto_id,))
+            existe = cur.fetchone()
+            if existe:
+                cur.execute("""
+                    UPDATE grafico_radar_datos SET
+                        valor_busqueda=?, valor_competencia=?, valor_linkedin=?, valor_mercado=?,
+                        presencialidad=?, virtualidad=?, updated_at=GETDATE()
+                    WHERE proyecto_id=?
+                """, (valor_busqueda, valor_competencia, valor_linkedin, valor_mercado, presencialidad, virtualidad, proyecto_id))
+            else:
+                cur.execute("""
+                    INSERT INTO grafico_radar_datos (
+                        proyecto_id, valor_busqueda, valor_competencia, valor_linkedin, valor_mercado, presencialidad, virtualidad
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                """, (proyecto_id, valor_busqueda, valor_competencia, valor_linkedin, valor_mercado, presencialidad, virtualidad))
+            conn.commit()
+    except Exception as e:
+        st.error(f"Error actualizando datos de grafico_radar_datos: {e}")
+
     # Construcción del DataFrame
     datos = {
         "Parámetros": parametros,
@@ -161,23 +189,6 @@ def procesar_proyecto(proyecto_id, nombre_archivo):
     )
 
     st.dataframe(styled_df, use_container_width=True, hide_index=True)
-
-    # Generar gráfico radar con los valores de presencialidad
-    try:
-        valores = [
-            presencialidad_resultados[parametros.index("Búsqueda Web")]/100,
-            presencialidad_resultados[parametros.index("Competencia")]/100,
-            presencialidad_resultados[parametros.index("LinkedIN")]/100,
-            presencialidad_resultados[parametros.index("Mercado")]/100
-        ]
-        labels = ["Busqueda", "Competencia", "LinkedIn", "Mercado"]
-        ruta_salida = f"db/imagenes/grafico_radar_{proyecto_id}.jpg"
-        generar_grafico_radar(valores, labels, ruta_salida)
-        # Calcular viabilidad como suma de las áreas y convertir a porcentaje
-        viabilidad = round(sum(valores) * 100)
-        st.markdown(f"**Viabilidad del proyecto:** {viabilidad}%")
-    except Exception as e:
-        st.warning(f"No se pudo generar el gráfico radar ni calcular viabilidad: {e}")
 
 df_rango = pd.DataFrame(
     {

@@ -4,14 +4,14 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from conexion import conn, cursor
 from pptx import Presentation
 
-TEMPLATE_PATH = '../db/Viable.pptx'
+TEMPLATE_PATH = 'db/Viable.pptx'
 
-def obtener_datos_solicitud(id_solicitud):
+def obtener_datos_solicitud_por_proyecto(proyecto_id):
     cursor.execute('''
         SELECT nombre_proponente, duracion, modalidad, nombre_programa, facultad_propuesta, facultad_proponente, cargo_proponente
         FROM datos_solicitud
-        WHERE id = ?
-    ''', (id_solicitud,))
+        WHERE proyecto_id = ?
+    ''', (proyecto_id,))
     row = cursor.fetchone()
     if row:
         return {
@@ -26,8 +26,8 @@ def obtener_datos_solicitud(id_solicitud):
     else:
         return None
 
-def generar_reporte(id_solicitud):
-    datos = obtener_datos_solicitud(id_solicitud)
+def generar_reporte(proyecto_id):
+    datos = obtener_datos_solicitud_por_proyecto(proyecto_id)
     if not datos:
         print("No se encontraron datos para la solicitud.")
         return
@@ -73,16 +73,16 @@ def generar_reporte(id_solicitud):
                 sp = slide_img.shapes._spTree
                 sp.remove(shape._element)
                 # Inserta la nueva imagen
-                ruta_img = f"../db/imagenes/grafico_radar_48.png"
+                ruta_img = f"db/imagenes/grafico_radar_{proyecto_id}.png"
                 slide_img.shapes.add_picture(ruta_img, left, top, width, height)
                 break
     except Exception as e:
         print(f"No se pudo reemplazar la imagen en el slide 3: {e}")
     nombre_archivo = f"{datos['nombre_programa'].replace(' ', '_')}.pptx"
-    output_path = os.path.join('../db', nombre_archivo)
+    output_path = os.path.join('db', nombre_archivo)
     prs.save(output_path)
     print(f"Reporte guardado en: {output_path}")
 
 if __name__ == "__main__":
-    id_solicitud = 1  # Cambia esto por el id que quieras consultar
-    generar_reporte(id_solicitud)
+    proyecto_id = 1  # Cambia esto por el id de tu proyecto
+    generar_reporte(proyecto_id)

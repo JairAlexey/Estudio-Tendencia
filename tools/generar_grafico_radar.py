@@ -1,9 +1,31 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import os
+import sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from conexion import conn, cursor
 
-def generar_grafico_radar(valores, labels, ruta_salida):
+
+def generar_grafico_radar_desde_bd(proyecto_id, ruta_salida):
+    cursor.execute('''
+        SELECT valor_busqueda, valor_competencia, valor_linkedin, valor_mercado
+        FROM grafico_radar_datos
+        WHERE proyecto_id = ?
+    ''', (proyecto_id,))
+    row = cursor.fetchone()
+    print(f"[DEBUG] Datos obtenidos de grafico_radar_datos para proyecto_id={proyecto_id}: {row}")
+    if not row:
+        print(f"No hay datos de gráfico radar para proyecto_id={proyecto_id}")
+        return
+    # Reemplazar None por 0 para evitar errores
+    valores = [v if v is not None else 0 for v in row]
+    # Normalizar valores al rango [0, 1] usando máximo fijo (100)
+    maximos = [100, 100, 100, 100]  # Puedes ajustar estos valores según tus necesidades
+    valores_normalizados = [min(v / m, 1.0) for v, m in zip(valores, maximos)]
+    print(f"[DEBUG] Valores normalizados para gráfico radar: {valores_normalizados}")
+    labels = ["Busqueda", "Competencia", "LinkedIn", "Mercado"]
     m = len(labels)
-    r = np.array(valores, dtype=float)
+    r = np.array(valores_normalizados, dtype=float)
     theta = np.linspace(0, 2*np.pi, m, endpoint=False)
     delta = 2*np.pi/m
     slopes = np.array([(r[(k+1)%m] - r[(k-1)%m]) / (2*delta) for k in range(m)])
@@ -52,9 +74,8 @@ def generar_grafico_radar(valores, labels, ruta_salida):
     plt.savefig(ruta_salida.replace('.jpg', '.png'), format='png', bbox_inches='tight', dpi=300)
     plt.close(fig)
 
-# Ejemplo de uso (puedes borrar esto en producción):
+# Ejemplo de uso:
 if __name__ == "__main__":
-    valores = [0.35, 0.08, 0.20, 0.22]
-    labels = ["Busqueda", "Competencia", "LinkedIn", "Mercado"]
+    proyecto_id = 1  # Cambia por el id de tu proyecto
     ruta_salida = "../db/imagenes/grafico_radar.jpg"
-    generar_grafico_radar(valores, labels, ruta_salida)
+    generar_grafico_radar_desde_bd(proyecto_id, ruta_salida)

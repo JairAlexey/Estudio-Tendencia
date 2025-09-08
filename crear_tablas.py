@@ -15,6 +15,22 @@ def crear_tablas():
                 CONSTRAINT PK_carreras_facultad PRIMARY KEY (ID)
             )
         END''',
+        # grafico_radar_datos
+        '''IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'grafico_radar_datos')
+        BEGIN
+            CREATE TABLE grafico_radar_datos (
+                id INT IDENTITY(1,1) PRIMARY KEY,
+                proyecto_id INT NOT NULL,
+                valor_busqueda FLOAT NULL,
+                valor_competencia FLOAT NULL,
+                valor_linkedin FLOAT NULL,
+                valor_mercado FLOAT NULL,
+                presencialidad FLOAT NULL,
+                virtualidad FLOAT NULL,
+                updated_at DATETIME NOT NULL DEFAULT GETDATE(),
+                CONSTRAINT FK_grafico_radar_proyecto FOREIGN KEY (proyecto_id) REFERENCES proyectos_tendencias(id)
+            )
+        END''',
         # codigos_carrera
         '''IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'codigos_carrera')
         BEGIN

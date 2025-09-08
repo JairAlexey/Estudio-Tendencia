@@ -378,13 +378,13 @@ def pagina_reporte(id):
         cur.execute("SELECT carrera_estudio FROM proyectos_tendencias WHERE id=?", (id,))
         row = cur.fetchone()
         nombre_proyecto = row[0] if row else "Proyecto desconocido"
-        # Capitalizar cada palabra
         nombre_proyecto = " ".join([w.capitalize() for w in nombre_proyecto.split()])
 
     if st.button("Regresar al inicio", key="volver_inicio_ver"):
         st.session_state["page"] = "inicio"
         st.rerun()
-    # Importar la lógica de reporte desde app.py
+
+    # Importar la lógica de reporte desde app.py (solo para mostrar datos, no generar gráfico)
     try:
         import sys
         sys.path.append(".")
@@ -398,7 +398,6 @@ def pagina_reporte(id):
         nombre_pestana = f"{proyecto['id']} - {proyecto['carrera_referencia']} vs {proyecto['carrera_estudio']}"
         st.subheader(f"Evaluación para {nombre_proyecto}")
         procesar_proyecto(id, nombre_pestana)
-        # Mostrar rango de evaluación final
         import pandas as pd
         st.subheader("Rango Evaluación Final")
         df_rango = pd.DataFrame(
@@ -414,6 +413,45 @@ def pagina_reporte(id):
         st.dataframe(df_rango, use_container_width=True, hide_index=True)
     except Exception as e:
         st.error(f"ERROR mostrando reporte: {e}")
+
+    # Botón para generar presentación y mostrar estado
+    st.markdown("---")
+    mensaje_presentacion = ""
+    if st.button("Generar presentación", key=f"generar_presentacion_{id}"):
+        try:
+            with conn.cursor() as cur:
+                cur.execute("SELECT id FROM presentation_queue WHERE proyecto_id=? AND status IN ('queued','running')", (id,))
+                existe = cur.fetchone()
+                if not existe:
+                    cur.execute("""
+                        INSERT INTO presentation_queue (proyecto_id, status, tries, created_at)
+                        VALUES (?, 'queued', 0, GETDATE())
+                    """, (id,))
+                    conn.commit()
+            mensaje_presentacion = "Proyecto procesándose con éxito."
+        except Exception as e:
+            mensaje_presentacion = f"Error procesando proyecto: {e}"
+    if mensaje_presentacion:
+        st.info(mensaje_presentacion)
+    # Mostrar estado de la presentación
+    with conn.cursor() as cur:
+        cur.execute("SELECT status, file_name, pptx_file, error FROM presentation_queue WHERE proyecto_id=? ORDER BY created_at DESC", (id,))
+        row = cur.fetchone()
+    if row:
+        status, file_name, pptx_file, error = row
+        st.markdown(f"**Estado de la presentación:** {status}")
+        if status == "error" and error:
+            st.error(f"Error: {error}")
+        if status == "finished" and pptx_file:
+            st.success("Presentación generada correctamente.")
+            st.download_button(
+                label=f"Descargar presentación ({file_name})",
+                data=pptx_file,
+                file_name=file_name,
+                mime="application/vnd.openxmlformats-officedocument.presentationml.presentation"
+            )
+    else:
+        st.markdown("**Estado de la presentación:** Sin registro")
 
 # --- Layout principal ---
 def main():
