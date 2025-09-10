@@ -112,6 +112,7 @@ def linkedin_scraper():
             if not carrera_linkedin:
                 carrera_linkedin = elemento.get("ProyectoReferencia")
             for tipo, carrera in [("Referencia", carrera_linkedin), ("Estudio", elemento.get("ProyectoEstudio"))]:
+                time.sleep(TIEMPO_ESPERA_MEDIO)
                 print(f"\n=== Buscando carpeta '{carpeta_buscar}' y proyecto '{carrera}' ({tipo}) ===")
                 encontrada = paginar_y_buscar_carpeta(driver, carpeta_buscar, buscar_carpeta_en_pagina, url, TIEMPO_ESPERA_CORTO, TIEMPO_ESPERA_MEDIO)
                 if not encontrada:
@@ -173,6 +174,7 @@ def linkedin_scraper():
         )
 
         # Guardar resultados en la base de datos
+        print(f"[DEBUG] resultados_finales: {resultados_finales}")
         if resultados_finales:
             # Asignar correctamente el campo Tipo antes de guardar
             for r in resultados_finales:

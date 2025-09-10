@@ -1,5 +1,6 @@
 from selenium.webdriver.common.by import By
 import time
+from scrapers.linkedin_modules.linkedin_utils import normalizar_texto
 
 def buscar_proyecto_en_pagina(
     driver, proyecto_buscar, ubicaciones, carpeta_nombre, resultados_finales, extraer_datos_reporte, TIEMPO_ESPERA_MEDIO=2
@@ -22,7 +23,7 @@ def buscar_proyecto_en_pagina(
             )
             texto = span.text.strip()
             print("🔍 Revisando reporte:", texto)
-            if texto.lower() == proyecto_buscar.lower():
+            if normalizar_texto(texto) == normalizar_texto(proyecto_buscar):
                 print("Proyecto encontrado:", texto)
                 enlace = row.find_element(
                     By.CSS_SELECTOR,

@@ -68,6 +68,7 @@ def guardar_datos_sql(data, plataforma, proyecto_id):
 
     if plataforma.lower() == "linkedin":
         for item in data:
+            print(f"Intentando guardar en linkedin: {item}")  # Depuración
             # Eliminar duplicados previos
             cursor.execute("""
                 DELETE FROM linkedin WHERE proyecto_id=? AND Tipo=? AND Region=?

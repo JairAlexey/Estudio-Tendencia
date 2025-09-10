@@ -1,5 +1,13 @@
 import time
+import unicodedata
 from selenium.webdriver.common.by import By
+
+def normalizar_texto(texto):
+    """
+    Normaliza el texto eliminando tildes y convirtiendo a minúsculas.
+    """
+    texto = ''.join(c for c in unicodedata.normalize('NFD', texto) if unicodedata.category(c) != 'Mn')
+    return texto.strip().lower()
 
 def buscar_carpeta_en_pagina(driver, carpeta_buscar, TIEMPO_ESPERA_MEDIO=2):
     """
@@ -14,7 +22,7 @@ def buscar_carpeta_en_pagina(driver, carpeta_buscar, TIEMPO_ESPERA_MEDIO=2):
             )
             nombre_carpeta = link_title.text.strip()
             href_carpeta = link_title.get_attribute("href")
-            if nombre_carpeta.lower() == carpeta_buscar.lower():
+            if normalizar_texto(nombre_carpeta) == normalizar_texto(carpeta_buscar):
                 print(f"Carpeta encontrada: {nombre_carpeta}")
                 driver.get(href_carpeta)
                 time.sleep(TIEMPO_ESPERA_MEDIO)
