@@ -1,6 +1,15 @@
 from selenium.webdriver.common.by import By
 import time
 from scrapers.linkedin_modules.linkedin_utils import normalizar_texto
+import unicodedata
+
+def normalizar_texto(texto):
+    if not isinstance(texto, str):
+        return ""
+    texto = texto.upper()
+    texto = unicodedata.normalize('NFD', texto)
+    texto = ''.join(c for c in texto if unicodedata.category(c) != 'Mn')
+    return texto.strip()
 
 def buscar_proyecto_en_pagina(
     driver, proyecto_buscar, ubicaciones, carpeta_nombre, resultados_finales, extraer_datos_reporte, TIEMPO_ESPERA_MEDIO=2

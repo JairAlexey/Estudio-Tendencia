@@ -419,10 +419,10 @@ def pagina_presentacion(id):
     else:
         st.markdown("<div style='border:2px solid #800080; border-radius:12px; padding:1.2rem; margin:1.2rem 0; background:#f8f9fa;'><h4>Estado de la presentación</h4><div style='font-size:1.1rem; color:#800080; font-weight:bold;'>🟣 Sin registro</div></div>", unsafe_allow_html=True)
     # Botón para generar presentación solo si no está en proceso o ya finalizada
-    if not status or status not in ["queued", "running", "finished"]:
-        if st.button("Generar presentación", key=f"generar_presentacion_{id}_presentacion"):
+    if not status or status in ["error", "finished"]:
+        if st.button("Reintentar generación", key=f"reintentar_presentacion_{id}_presentacion"):
             with conn.cursor() as cur:
-                cur.execute("SELECT id FROM presentation_queue WHERE proyecto_id=? AND status IN ('queued','running','finished','error')", (id,))
+                cur.execute("SELECT id FROM presentation_queue WHERE proyecto_id=? AND status IN ('queued','running')", (id,))
                 existe = cur.fetchone()
                 if not existe:
                     cur.execute("""
@@ -430,7 +430,7 @@ def pagina_presentacion(id):
                         VALUES (?, 'queued', 0, GETDATE())
                     """, (id,))
                     conn.commit()
-            st.info("Proyecto procesándose con éxito.")
+            st.info("Proyecto reintentado para generación de presentación.")
             st.rerun()
 
 # --- Layout principal ---
