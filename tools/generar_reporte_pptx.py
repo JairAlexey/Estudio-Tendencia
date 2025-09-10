@@ -4,7 +4,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from conexion import conn, cursor
 from pptx import Presentation
 
-TEMPLATE_PATH = 'db/Viable.pptx'
+TEMPLATE_PATH = 'db/base/Viable.pptx'
 
 def obtener_datos_solicitud_por_proyecto(proyecto_id):
     cursor.execute('''
@@ -79,7 +79,7 @@ def generar_reporte(proyecto_id):
     except Exception as e:
         print(f"No se pudo reemplazar la imagen en el slide 3: {e}")
     nombre_archivo = f"{datos['nombre_programa'].replace(' ', '_')}.pptx"
-    output_path = os.path.join('db', nombre_archivo)
+    output_path = os.path.join('db/presentaciones', nombre_archivo)
     prs.save(output_path)
     print(f"Reporte guardado en: {output_path}")
 

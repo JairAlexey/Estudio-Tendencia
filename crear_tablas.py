@@ -15,6 +15,30 @@ def crear_tablas():
                 CONSTRAINT PK_carreras_facultad PRIMARY KEY (ID)
             )
         END''',
+        # codigos_carrera
+        '''IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'codigos_carrera')
+        BEGIN
+            CREATE TABLE codigos_carrera (
+                ID_Carrera int NOT NULL,
+                Codigo nvarchar(50) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL,
+                CONSTRAINT PK_codigos_carrera PRIMARY KEY (ID_Carrera,Codigo)
+            )
+        END''',
+        # proyectos_tendencias (mover antes de tablas que la referencian)
+        '''IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'proyectos_tendencias')
+        BEGIN
+            CREATE TABLE proyectos_tendencias (
+                id int IDENTITY(1,1) NOT NULL,
+                tipo_carpeta nvarchar(100) COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
+                carrera_referencia nvarchar(200) COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
+                carrera_estudio nvarchar(200) COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
+                palabra_semrush nvarchar(200) COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
+                codigo_ciiu nvarchar(50) COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
+                carrera_linkedin nvarchar(200) COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
+                mensaje_error nvarchar(500) COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
+                CONSTRAINT PK_proyectos_tendencias PRIMARY KEY (id)
+            )
+        END''',
         # grafico_radar_datos
         '''IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'grafico_radar_datos')
         BEGIN
@@ -29,30 +53,6 @@ def crear_tablas():
                 virtualidad FLOAT NULL,
                 updated_at DATETIME NOT NULL DEFAULT GETDATE(),
                 CONSTRAINT FK_grafico_radar_proyecto FOREIGN KEY (proyecto_id) REFERENCES proyectos_tendencias(id)
-            )
-        END''',
-        # codigos_carrera
-        '''IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'codigos_carrera')
-        BEGIN
-            CREATE TABLE codigos_carrera (
-                ID_Carrera int NOT NULL,
-                Codigo nvarchar(50) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL,
-                CONSTRAINT PK_codigos_carrera PRIMARY KEY (ID_Carrera,Codigo)
-            )
-        END''',
-        # proyectos_tendencias
-        '''IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'proyectos_tendencias')
-        BEGIN
-            CREATE TABLE proyectos_tendencias (
-                id int IDENTITY(1,1) NOT NULL,
-                tipo_carpeta nvarchar(100) COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
-                carrera_referencia nvarchar(200) COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
-                carrera_estudio nvarchar(200) COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
-                palabra_semrush nvarchar(200) COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
-                codigo_ciiu nvarchar(50) COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
-                carrera_linkedin nvarchar(200) COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
-                mensaje_error nvarchar(500) COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
-                CONSTRAINT PK_proyectos_tendencias PRIMARY KEY (id)
             )
         END''',
         # linkedin
@@ -159,7 +159,7 @@ def crear_tablas():
                 created_at datetime NOT NULL DEFAULT GETDATE(),
                 started_at datetime NULL,
                 finished_at datetime NULL,
-                pptx_file varbinary(max) NULL,
+                dropbox_url nvarchar(500) NULL,
                 file_name nvarchar(255) NULL,
                 CONSTRAINT PK_presentation_queue PRIMARY KEY (id),
                 CONSTRAINT FK_presentation_queue_proyecto FOREIGN KEY (proyecto_id) REFERENCES proyectos_tendencias(id)

@@ -2,10 +2,10 @@ import pyodbc
 import os
 
 # Configuración de la conexión a Azure SQL
-server   = "tendencias21.database.windows.net"
-database = "tendencias"
-username = "admin123"
-password = "*123Admin*"
+server   = "sqlserverestudiotendencia.database.windows.net"
+database = "estudio-tendencia"
+username = "estudiotendenciaadmin123"
+password = "*Admin123*"
 
 conn = pyodbc.connect(
 	"DRIVER={ODBC Driver 17 for SQL Server};"
@@ -23,7 +23,7 @@ def ensure_connection():
     except pyodbc.Error:
         print("Reconectando a SQL Server...")
         conn = pyodbc.connect(
-            "DRIVER={ODBC Driver 17 for SQL Server};"
+            "DRIVER={ODBC Driver 18 for SQL Server};"
             f"SERVER=tcp:{server},1433;"
             f"DATABASE={database};UID={username};PWD={password};"
             "Encrypt=yes;TrustServerCertificate=no;Connection Timeout=30;"

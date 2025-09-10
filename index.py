@@ -400,11 +400,11 @@ def pagina_presentacion(id):
         st.rerun()
     # Mostrar estado de la presentación
     with conn.cursor() as cur:
-        cur.execute("SELECT status, file_name, pptx_file, error FROM presentation_queue WHERE proyecto_id=? ORDER BY created_at DESC", (id,))
+        cur.execute("SELECT status, file_name, dropbox_url, error FROM presentation_queue WHERE proyecto_id=? ORDER BY created_at DESC", (id,))
         row = cur.fetchone()
     status = None
     if row:
-        status, file_name, pptx_file, error = row
+        status, file_name, dropbox_url, error = row
         texto, color, icono = estado_traducido_presentacion.get(status, (status, "#800080", "🟣"))
         st.markdown(f"""
             <div style='border:2px solid {color}; border-radius:12px; padding:1.2rem; margin:1.2rem 0; background:#f8f9fa;'>
@@ -412,13 +412,8 @@ def pagina_presentacion(id):
                 <div style='font-size:1.1rem; color:{color}; font-weight:bold;'>{icono} {texto}</div>
             </div>
         """, unsafe_allow_html=True)
-        if status == "finished" and pptx_file:
-            st.download_button(
-                label="📥 Descargar presentación",
-                data=pptx_file,
-                file_name=file_name,
-                mime="application/vnd.openxmlformats-officedocument.presentationml.presentation"
-            )
+        if status == "finished" and dropbox_url:
+            st.markdown(f"[📥 Descargar presentación]({dropbox_url})", unsafe_allow_html=True)
         if status == "error" and error:
             st.error(f"Error: {error}")
     else:

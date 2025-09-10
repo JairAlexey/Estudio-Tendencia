@@ -11,3 +11,4 @@ streamlit-option-menu
 streamlit-elements
 python-pptx
 matplotlib
+dropbox

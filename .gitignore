@@ -13,5 +13,6 @@
 # Ignorar perfil de chrome
 profile/
 
-
+# Ignorar carpetas de imagenes y presentaciones
 imagenes/
+presentaciones/
