@@ -27,11 +27,11 @@ def procesar_presentacion_queue():
                 with conn.cursor() as cur:
                     cur.execute("UPDATE presentation_queue SET status='running', started_at=GETDATE() WHERE id=?", (queue_id,))
                     conn.commit()
-                # Generar gráfico radar
+                # Generar gráfico radar y calcular viabilidad
                 ruta_img = f"db/imagenes/grafico_radar_{proyecto_id}.png"
-                generar_grafico_radar_desde_bd(proyecto_id, ruta_img)
-                # Generar presentación PPTX
-                generar_reporte(proyecto_id)
+                viabilidad = generar_grafico_radar_desde_bd(proyecto_id, ruta_img)
+                # Generar presentación PPTX pasando viabilidad
+                generar_reporte(proyecto_id, viabilidad)
                 # Buscar el archivo generado
                 # Obtener el nombre del archivo generado dinámicamente
                 with conn.cursor() as cur:
@@ -45,13 +45,26 @@ def procesar_presentacion_queue():
                 if not os.path.exists(output_path):
                     raise FileNotFoundError(f"No se encontró el archivo PPTX generado: {output_path}")
                 # Subir el archivo a Dropbox
-                dbx = dropbox.Dropbox('sl.u.AF8sij9Ig5isRKhhXFMmhKRNrskPP8wEosO7-c8Y23X7qA6KuiQGJXbx7XCPdSrFmUF9rvqclz4c9hC1GqrtVGi8N9lXYrNtGg2CcIeF8aAb8QYGMlw8AqmEtvPqR94DQ1U2PlyzFyM0cio7W_Oi0ZI9_KfvnAgXoz6Dy3ZVGGJ5im3IK8kYbFev8_r1Knz1yoKwV52n5XOPiRR4muNXhgyeXUuXTxP21Y_21PLSfNZ2Wr2eCnx4JTHFbnAqSCKnCkWZKVCmWgh7su6UW4u2ZOwcTs9KdnDon5jGhKciE0Fw7dVpqXiXC6iHyYEq0tPdEKdQuI4oUKkz8wq4F1Y90XoLI8Re2VrcK15ooBjoCie5TMV7FskNRzaSIHSxze1pWeS1vE9ww3eF0LupTZ0n6WbESpB2tj41dKPjbjX6pFZHikf9TubeYI-s545LG3wUAAnyKPEf4axFvhTxA2GSUjulzaXj9GybNmYWPS2bpXrZhaRwBHdb0HMn6d25zsoZLl7YXKR1bOKf21a-Vq4rvH-nn5iHAU65RIjSRTKo4oEw79Nljig22x-52gd6qUKGEApkyuIGlEWgKDOYl_KDYZ5VGH62eTQMwY5_Cs1HmwdVMw3m1W8q9QINUVR066Uisjn-AqWD8TC14kxK85uPJYFW2zgjIfaQPlCes7SfOL3F1qOb1QWPeAgJbHmY2pWLUCRjCUTgbFyOBgflegVHiWPkLJp40L6irqAErrLhLlujrgsOmPPgq-kq1wG2rZfY3r_cTtlyfPcyDW6i8NqD8T9CyvWENvscSQoy83yvc6oHP0EPOLH7yQYD2UA5rZ9Te7Ge0jrQnXPlHb1yqFuQ7lAq-EnMF6M1SHzsW4RcLA5OvM4XhgjWwFwZ8WAfw1CnQdnfVTRjSBL8w_N0aqWe5ty81TeeH3q3C6djmwZC6EUn_pd2f5pWZ_OmTGcMDJFaSHbCOKYgizB-6CNMYgmD7XTyAFKZROrUagLsn0Lp_-cZOLQulu1TgkIw0wkBVGGGb1HVIrqtfiqSPgLa3ImkcsOsARqPzWlrM7tyDCXI_Pdj1cu0UhVYuJzryNAggVMmNP_83tkkMC5F0RQkQUN3qStu-rHlMdSdJJQkFa2FEcVwq7o1CCzGAHRUE92COZrJfLtsERB_-FbOkq8tQsu03gHH5k9PW2aODl92azSG_7NkCbivI3FqDPdnXi2Ry8romWLqPZFP-yk6KbaLAbOIhvH_fkZtbxYRytUGDzpAp_ZDNOOsIiB1_lpKZBCl9GiNVhXyNSYYpfltN8kEAvNwswkXewYBXC05HHpajONTAN_03tKZHO6CXO5bWrWr9qr-QQsFCsnPaz08a1AiSORV75_nhKgi-rmI2AUbzp5dSOD3HOW3E2hb2Pw5T3avzamN5JD6X-NWEMMfA_oq9fA8pYAB_fGTgypmBKjQNnm8CDiBAU3036O__Qjw9rIh4r4Ir8s')
+                dbx = dropbox.Dropbox('sl.u.AF_9VBroYRGqeFRgKv3nxalBRymI78QVOQyzkou4EqaXbB01HaHwxsQe31n52EYc7245jnTbS2v_vpL_zkN2LBHJrmzNu7chlUWAeAL5BkjR66YZ9JxGXTq9He6TTUMImWMJdQjx8gmT38f-u95l2bqbFopxv8v6tYpBGWV1J0GgdJI3eyIvP3DM2km_cmKbv_rfySgjgPCSHiZCyH5WlHlsZrpYjmanG-c7KlsWzvX6daIh512JwMQOYXp7mI3WOhlhnflXT8X0Sb9TxPZqCBWBbAoHXUFclO2hUMJ5WTYjKqsCAfwhzuMWnovZ98lIWfRzZkjmrA5yUkSfVclrxHBNi0fFPdo_9W-2JIQ4YD_N8gst4NAWTeOHIYlZRH2RsMirX1tyv0DUgMix_UPgVwl9t2gspZGEm5-RCvODCkO2HcxYYF52i1xI2CGbOwYNmxjvdeoLT1r9vFwzJag2AQY8HcopTAeXqZOy_k6gVGENN-E6H1WZeUMQGKJDzkebrA9GvvnUPBi1pe8UDuKWLx97UgScyYhv5YgQG6_S4Nv98g_1Pe5l5Vy3y7uxgwRwOPsGx4qvzT0VsT9sWiZ46Xz_zXeEOEB72uGu70nNj3yOE6R2C4dxtcwOPTuL0mB52ahDg2Ky5aTaEoAmVk5zCNe-C5jQWDo0y6HwHOgHepeGAYuoqTFCwbHGvK39A5Tp2GuShVUnwc98eS4rXrS6mLiSmTanlepae1Z5Bn-umlmUJF4jkInEp1bf8sl-jU1jRlfV6A0POqL0UPD2PUEQoG_FXSMMLqrNAdeHHvGXHLThNSdbIvzDTJOYc1yY892vMSOTBnH_CviXH8dbsd_mGBz-9ewdjhTs05mCHb6JxepCZVF2-gHvoyH7oNqlqEeDQx4lg29OzilwOMFwFvv7Eu90nhSD7Qh69j7AOEdp5Yp1EGGBi58NGIcJQpt5SYPpDRJBJ6BXbwm1vjfFqbx80bWyNe0MWWeQaiDxbhfLa01d-FIr2R48WzWXFGJaJgTCW0cKcvKmcVAN0RwZRUD56-jxh_f_krivd6VianulrI7qg59GbbFM5DnsKHRsyYkhzfT-w1TVercA5xdgJ-zwaas0oDp-TvJY5G8DxjmGZ3j1EcuYZ2nkslrzyU2P8GygE_H71QHJmbHB57nOfoPEpoHbpCeSdkFIXqaUgJUAZVjJD-axd9QypTJ8nug3392e9aHUqymWHuj6eHHyaTB1yIdlXqq_IsEXP7TXzA2jykl51IQTfP3wtc3kVv6b8RXZxyF1VL91y-iVGhj5QutIPhVDIJc1ogqjUa5QJUSJbCWD-JEVL7s2WngkUTGXVXa5TPUOofdcnnXJh7A5cjCYr0d4Fcm6R-5eqq0jxugAHVoB_Ikp_Mpkhv8xtTCtFpEbY_hveZYcZXsgvbvVin0mf4QAnl0yigoIB_C0RQmCQ6Gz4C1RG6eOokpWZW1tLM9oRdanwW35U3UQ3VrANIMj0cEO')
                 dropbox_path = f"/presentaciones/{nombre_archivo}"
                 with open(output_path, 'rb') as f:
                     dbx.files_upload(f.read(), dropbox_path, mode=dropbox.files.WriteMode.overwrite)
-                # Obtener enlace compartido
-                shared_link_metadata = dbx.sharing_create_shared_link_with_settings(dropbox_path)
-                dropbox_url = shared_link_metadata.url.replace('?dl=0', '?dl=1')
+                # Obtener enlace compartido, manejar si ya existe
+                try:
+                    shared_link_metadata = dbx.sharing_create_shared_link_with_settings(dropbox_path)
+                    dropbox_url = shared_link_metadata.url.replace('?dl=0', '?dl=1')
+                except dropbox.exceptions.ApiError as e:
+                    if (hasattr(e, 'error') and
+                        hasattr(e.error, 'is_shared_link_already_exists') and
+                        e.error.is_shared_link_already_exists()):
+                        # Obtener el enlace existente
+                        links = dbx.sharing_list_shared_links(path=dropbox_path).links
+                        if links:
+                            dropbox_url = links[0].url.replace('?dl=0', '?dl=1')
+                        else:
+                            raise
+                    else:
+                        raise
                 # Guardar el enlace en la base de datos
                 with conn.cursor() as cur:
                     cur.execute("""

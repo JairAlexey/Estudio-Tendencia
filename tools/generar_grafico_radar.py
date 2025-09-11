@@ -8,7 +8,7 @@ from conexion import conn, cursor
 
 def generar_grafico_radar_desde_bd(proyecto_id, ruta_salida):
     cursor.execute('''
-        SELECT valor_busqueda, valor_competencia_presencialidad, valor_linkedin, valor_mercado
+        SELECT valor_busqueda, valor_competencia_presencialidad, valor_competencia_virtualidad, valor_linkedin, valor_mercado
         FROM grafico_radar_datos
         WHERE proyecto_id = ?
     ''', (proyecto_id,))
@@ -18,14 +18,29 @@ def generar_grafico_radar_desde_bd(proyecto_id, ruta_salida):
         print(f"No hay datos de gráfico radar para proyecto_id={proyecto_id}")
         return
     # Reemplazar None por 0 para evitar errores
-    valores = [v if v is not None else 0 for v in row]
-    # Normalizar valores al rango [0, 1] usando máximo fijo (100)
-    maximos = [100, 100, 100, 100]  # Puedes ajustar estos valores según tus necesidades
-    valores_normalizados = [min(v / m, 1.0) for v, m in zip(valores, maximos)]
-    print(f"[DEBUG] Valores normalizados para gráfico radar: {valores_normalizados}")
+    valor_busqueda = row[0] if row[0] is not None else 0
+    valor_competencia_presencialidad = row[1] if row[1] is not None else 0
+    valor_competencia_virtualidad = row[2] if row[2] is not None else 0
+    valor_linkedin = row[3] if row[3] is not None else 0
+    valor_mercado = row[4] if row[4] is not None else 0
+
+    # Calcular valores según reglas
+    competencia_avg = (valor_competencia_presencialidad + valor_competencia_virtualidad) / 2
+    busqueda_pct = round((valor_busqueda / 35) * 100)
+    competencia_pct = round((competencia_avg / 25) * 100)
+    linkedin_pct = round((valor_linkedin / 25) * 100)
+    mercado_pct = round((valor_mercado / 15) * 100)
+
+    # Calcular viabilidad correctamente
+    viabilidad_raw = (valor_busqueda / 35) + (competencia_avg / 25) + (valor_linkedin / 25) + (valor_mercado / 15)
+    viabilidad = round(viabilidad_raw * 100, 2)
+    print(f"[DEBUG] Valores calculados para gráfico radar: busqueda={busqueda_pct}, competencia={competencia_pct}, linkedin={linkedin_pct}, mercado={mercado_pct}, viabilidad={viabilidad}")
     labels = ["Busqueda", "Competencia", "LinkedIn", "Mercado"]
+    valores_grafico = [busqueda_pct, competencia_pct, linkedin_pct, mercado_pct]
     m = len(labels)
-    r = np.array(valores_normalizados, dtype=float)
+    # Normalizar al rango [0, 1] para graficar
+    r = np.array([min(v / 100, 1.0) for v in valores_grafico], dtype=float)
+    return viabilidad
     theta = np.linspace(0, 2*np.pi, m, endpoint=False)
     delta = 2*np.pi/m
     slopes = np.array([(r[(k+1)%m] - r[(k-1)%m]) / (2*delta) for k in range(m)])

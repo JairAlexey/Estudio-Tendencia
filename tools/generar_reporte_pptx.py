@@ -26,7 +26,7 @@ def obtener_datos_solicitud_por_proyecto(proyecto_id):
     else:
         return None
 
-def generar_reporte(proyecto_id):
+def generar_reporte(proyecto_id, viabilidad=None):
     datos = obtener_datos_solicitud_por_proyecto(proyecto_id)
     if not datos:
         print("No se encontraron datos para la solicitud.")
@@ -55,9 +55,29 @@ def generar_reporte(proyecto_id):
                         if texto_actual in run.text:
                             run.text = run.text.replace(texto_actual, nuevo_texto)
                             reemplazado = True
-                # Si no se encontró el texto en los runs, como fallback modifica el texto completo (no recomendado, pero evita que quede vacío)
                 if not reemplazado:
                     shape.text = f"{partes[0]}:{nuevo_texto}"
+
+    # Reemplazar viabilidad en el slide 3, shape 11
+    if viabilidad is not None:
+        try:
+            slide_img = prs.slides[3]
+            shape_viabilidad = slide_img.shapes[11]
+            if shape_viabilidad.has_text_frame:
+                partes = shape_viabilidad.text.split(":", 1)
+                if len(partes) == 2:
+                    texto_actual = partes[1].strip()
+                    nuevo_texto = f" {viabilidad:.1f}%"
+                    reemplazado = False
+                    for paragraph in shape_viabilidad.text_frame.paragraphs:
+                        for run in paragraph.runs:
+                            if texto_actual in run.text:
+                                run.text = run.text.replace(texto_actual, nuevo_texto)
+                                reemplazado = True
+                    if not reemplazado:
+                        shape_viabilidad.text = f"{partes[0]}:{nuevo_texto}"
+        except Exception as e:
+            print(f"No se pudo reemplazar la viabilidad en el slide 3, shape 11: {e}")
                     
     # Reemplazar imagen en el slide 3 (índice 3)
     try:
