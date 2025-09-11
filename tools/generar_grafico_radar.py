@@ -8,7 +8,7 @@ from conexion import conn, cursor
 
 def generar_grafico_radar_desde_bd(proyecto_id, ruta_salida):
     cursor.execute('''
-        SELECT valor_busqueda, valor_competencia, valor_linkedin, valor_mercado
+        SELECT valor_busqueda, valor_competencia_presencialidad, valor_linkedin, valor_mercado
         FROM grafico_radar_datos
         WHERE proyecto_id = ?
     ''', (proyecto_id,))

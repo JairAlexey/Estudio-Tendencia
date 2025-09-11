@@ -131,16 +131,15 @@ def procesar_proyecto(proyecto_id, nombre_archivo):
             if existe:
                 cur.execute("""
                     UPDATE grafico_radar_datos SET
-                        valor_busqueda=?, valor_competencia=?, valor_linkedin=?, valor_mercado=?,
-                        presencialidad=?, virtualidad=?, updated_at=GETDATE()
+                        valor_busqueda=?, valor_competencia_presencialidad=?, valor_competencia_virtualidad=?, valor_linkedin=?, valor_mercado=?, updated_at=GETDATE()
                     WHERE proyecto_id=?
-                """, (valor_busqueda, valor_competencia_presencial, valor_linkedin, valor_mercado, valor_competencia_presencial, valor_competencia_virtual, proyecto_id))
+                """, (valor_busqueda, valor_competencia_presencial, valor_competencia_virtual, valor_linkedin, valor_mercado, proyecto_id))
             else:
                 cur.execute("""
                     INSERT INTO grafico_radar_datos (
-                        proyecto_id, valor_busqueda, valor_competencia, valor_linkedin, valor_mercado, presencialidad, virtualidad
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?)
-                """, (proyecto_id, valor_busqueda, valor_competencia_presencial, valor_linkedin, valor_mercado, valor_competencia_presencial, valor_competencia_virtual))
+                        proyecto_id, valor_busqueda, valor_competencia_presencialidad, valor_competencia_virtualidad, valor_linkedin, valor_mercado
+                    ) VALUES (?, ?, ?, ?, ?, ?)
+                """, (proyecto_id, valor_busqueda, valor_competencia_presencial, valor_competencia_virtual, valor_linkedin, valor_mercado))
             conn.commit()
     except Exception as e:
         st.error(f"Error actualizando datos de grafico_radar_datos: {e}")

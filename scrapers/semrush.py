@@ -275,7 +275,7 @@ def semrush_scraper():
     proyecto_id = int(sys.argv[1])
 
     # CONFIGURACION
-    user_data_dir = r"C:\Users\User\Documents\TRABAJO - UDLA\Estudio-Tendencia\profile"
+    user_data_dir = r"C:\Users\Alexey\Documents\TRABAJO - UDLA\Estudio-Tendencia\profile"
     profile_directory = "Default"
 
     # LIMPIEZA DEL LOCK
