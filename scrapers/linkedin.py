@@ -59,7 +59,7 @@ def linkedin_scraper():
     proyecto_id = int(sys.argv[1])
 
     UBICACIONES = ["Ecuador", "América Latina"]
-    user_data_dir = r"C:\Users\Alexey\Documents\TRABAJO - UDLA\Estudio-Tendencia\profile"
+    user_data_dir = r"C:\Users\User\Documents\TRABAJO - UDLA\Estudio-Tendencia\profile"
     profile_directory = "Default"
     limpiar_singleton_lock(user_data_dir, profile_directory)
     options = crear_opciones_chrome(user_data_dir, profile_directory)
