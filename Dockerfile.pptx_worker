@@ -1,0 +1,29 @@
+FROM python:3.10-slim
+
+# Instalar dependencias de ODBC
+RUN apt-get update && apt-get install -y \
+    unixodbc \
+    unixodbc-dev \
+    libgssapi-krb5-2 \
+    curl \
+    gnupg \
+    && rm -rf /var/lib/apt/lists/*
+
+# Instalar driver de SQL Server (msodbcsql18)
+RUN curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > /etc/apt/trusted.gpg.d/microsoft.gpg && \
+    curl https://packages.microsoft.com/config/debian/11/prod.list > /etc/apt/sources.list.d/mssql-release.list && \
+    apt-get update && ACCEPT_EULA=Y apt-get install -y msodbcsql18 && \
+    rm -rf /var/lib/apt/lists/*
+
+# Instalar dependencias Python
+WORKDIR /app
+
+# Copiar requirements.txt e instalar dependencias Python
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copiar el resto de los archivos del proyecto
+COPY . .
+
+# Comando por defecto para ejecutar el worker
+CMD ["python", "worker_presentacion.py"]

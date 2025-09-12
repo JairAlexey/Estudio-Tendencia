@@ -1,0 +1,54 @@
+FROM python:3.10-slim
+
+WORKDIR /app
+
+# Instalar dependencias base (ODBC + utilidades necesarias)
+RUN apt-get update && apt-get install -y \
+    unixodbc \
+    unixodbc-dev \
+    libgssapi-krb5-2 \
+    curl \
+    gnupg \
+    wget \
+    unzip \
+    && rm -rf /var/lib/apt/lists/*
+
+# Instalar driver de SQL Server (msodbcsql18)
+RUN curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > /etc/apt/trusted.gpg.d/microsoft.gpg && \
+    curl https://packages.microsoft.com/config/debian/11/prod.list > /etc/apt/sources.list.d/mssql-release.list && \
+    apt-get update && ACCEPT_EULA=Y apt-get install -y msodbcsql18 && \
+    rm -rf /var/lib/apt/lists/*
+
+# Instalar Chromium y Chromedriver ARM64 con librerías necesarias para Selenium
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    chromium \
+    chromium-driver \
+    fonts-liberation \
+    libasound2 \
+    libatk-bridge2.0-0 \
+    libatk1.0-0 \
+    libc6 \
+    libgbm1 \
+    libgtk-3-0 \
+    libnspr4 \
+    libnss3 \
+    libx11-xcb1 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxrandr2 \
+    xdg-utils \
+    && rm -rf /var/lib/apt/lists/*
+
+# Variables de entorno para Selenium
+ENV CHROME_BIN=/usr/bin/chromium
+ENV CHROMEDRIVER_PATH=/usr/bin/chromedriver
+
+# Copiar requirements.txt e instalar dependencias Python
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copiar el resto del proyecto
+COPY . .
+
+# Comando por defecto
+CMD ["python", "worker.py"]
