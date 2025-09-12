@@ -2,9 +2,8 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from conexion import conn, cursor
-from pptx import Presentation
 
-TEMPLATE_PATH = 'db/base/Viable.pptx'
+from pptx import Presentation
 
 def obtener_datos_solicitud_por_proyecto(proyecto_id):
     cursor.execute('''
@@ -31,7 +30,17 @@ def generar_reporte(proyecto_id, viabilidad=None):
     if not datos:
         print("No se encontraron datos para la solicitud.")
         return
-    prs = Presentation(TEMPLATE_PATH)
+    # Seleccionar plantilla según viabilidad
+    if viabilidad is not None:
+        if viabilidad <= 60:
+            template_path = 'db/base/NoViable.pptx'
+        elif viabilidad <= 70:
+            template_path = 'db/base/Revision.pptx'
+        else:
+            template_path = 'db/base/Viable.pptx'
+    else:
+        template_path = 'db/base/Viable.pptx'
+    prs = Presentation(template_path)
     slide = prs.slides[1]
     shape_map = {
         1: "nombre_proponente",

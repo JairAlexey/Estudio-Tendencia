@@ -26,21 +26,26 @@ def generar_grafico_radar_desde_bd(proyecto_id, ruta_salida):
 
     # Calcular valores según reglas
     competencia_avg = (valor_competencia_presencialidad + valor_competencia_virtualidad) / 2
+    busqueda_pct = round(valor_busqueda)
+    competencia_pct = round(competencia_avg)
+    linkedin_pct = round(valor_linkedin)
+    mercado_pct = round(valor_mercado)
+
+    # Calcular valores según reglas
+    competencia_avg = (valor_competencia_presencialidad + valor_competencia_virtualidad) / 2
     busqueda_pct = round((valor_busqueda / 35) * 100)
     competencia_pct = round((competencia_avg / 25) * 100)
     linkedin_pct = round((valor_linkedin / 25) * 100)
     mercado_pct = round((valor_mercado / 15) * 100)
 
-    # Calcular viabilidad correctamente
-    viabilidad_raw = (valor_busqueda / 35) + (competencia_avg / 25) + (valor_linkedin / 25) + (valor_mercado / 15)
-    viabilidad = round(viabilidad_raw * 100, 2)
+    # Calcular viabilidad como suma directa
+    viabilidad = valor_busqueda + competencia_avg + valor_linkedin + valor_mercado
     print(f"[DEBUG] Valores calculados para gráfico radar: busqueda={busqueda_pct}, competencia={competencia_pct}, linkedin={linkedin_pct}, mercado={mercado_pct}, viabilidad={viabilidad}")
     labels = ["Busqueda", "Competencia", "LinkedIn", "Mercado"]
     valores_grafico = [busqueda_pct, competencia_pct, linkedin_pct, mercado_pct]
     m = len(labels)
     # Normalizar al rango [0, 1] para graficar
     r = np.array([min(v / 100, 1.0) for v in valores_grafico], dtype=float)
-    return viabilidad
     theta = np.linspace(0, 2*np.pi, m, endpoint=False)
     delta = 2*np.pi/m
     slopes = np.array([(r[(k+1)%m] - r[(k-1)%m]) / (2*delta) for k in range(m)])
@@ -88,9 +93,4 @@ def generar_grafico_radar_desde_bd(proyecto_id, ruta_salida):
     ax.set_yticklabels([f"{int(y*100)}%" for y in yticks])
     plt.savefig(ruta_salida.replace('.jpg', '.png'), format='png', bbox_inches='tight', dpi=300)
     plt.close(fig)
-
-# Ejemplo de uso:
-if __name__ == "__main__":
-    proyecto_id = 1  # Cambia por el id de tu proyecto
-    ruta_salida = "../db/imagenes/grafico_radar.jpg"
-    generar_grafico_radar_desde_bd(proyecto_id, ruta_salida)
+    return viabilidad
