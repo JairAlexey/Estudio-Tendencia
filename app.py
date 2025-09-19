@@ -186,3 +186,13 @@ df_rango = pd.DataFrame(
         ],
     }
 )
+
+with st.form("mi_formulario"):
+    # Campos del formulario
+    nombre = st.text_input("Nombre")
+    edad = st.number_input("Edad")
+    # Botón de envío
+    submit = st.form_submit_button("Guardar")
+    if submit:
+        # Procesar datos
+        st.success("Datos guardados correctamente.")
