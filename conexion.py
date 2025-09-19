@@ -2,8 +2,9 @@ import psycopg2
 import os
 import urllib.parse as urlparse
 
-# Permite usar una sola variable de entorno o el string directo
-PG_URL = os.getenv("DATABASE_URL", "postgresql://postgres:GzBNabTYXBdUpYswLIYZkvFuIOvdwDXr@gondola.proxy.rlwy.net:11456/railway")
+PG_URL = os.getenv("DATABASE_URL")
+if not PG_URL:
+    raise RuntimeError("La variable de entorno DATABASE_URL no está definida. Debe contener la cadena de conexión a PostgreSQL.")
 
 def get_connection():
     url = urlparse.urlparse(PG_URL)

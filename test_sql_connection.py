@@ -1,8 +1,10 @@
 import psycopg2
 import urllib.parse as urlparse
+import os
 
-# Configuración de la conexión a PostgreSQL Railway (nueva)
-PG_URL = "postgresql://postgres:eSXetjVvVwefXiVucBCnduKLFJFpPnch@switchyard.proxy.rlwy.net:19724/railway"
+PG_URL = os.getenv("DATABASE_URL")
+if not PG_URL:
+    raise RuntimeError("La variable de entorno DATABASE_URL no está definida. Debe contener la cadena de conexión a PostgreSQL.")
 
 try:
     url = urlparse.urlparse(PG_URL)
