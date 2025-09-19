@@ -1,195 +1,145 @@
-import pyodbc
+import psycopg2
 from conexion import conn, cursor
 
 # Script para crear todas las tablas necesarias en la base de datos
 def crear_tablas():
     tablas = [
-        # # carreras_facultad
-        # '''IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'carreras_facultad')
-        # BEGIN
-        #     CREATE TABLE carreras_facultad (
-        #         ID int IDENTITY(1,1) NOT NULL,
-        #         Facultad nvarchar(200) COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
-        #         Nivel nvarchar(100) COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
-        #         Carrera nvarchar(200) COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
-        #         CONSTRAINT PK_carreras_facultad PRIMARY KEY (ID)
-        #     )
-        # END''',
-        # # codigos_carrera
-        # '''IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'codigos_carrera')
-        # BEGIN
-        #     CREATE TABLE codigos_carrera (
-        #         ID_Carrera int NOT NULL,
-        #         Codigo nvarchar(50) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL,
-        #         CONSTRAINT PK_codigos_carrera PRIMARY KEY (ID_Carrera,Codigo)
-        #     )
-        # END''',
-        # # proyectos_tendencias (mover antes de tablas que la referencian)
-        # '''IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'proyectos_tendencias')
-        # BEGIN
-        #     CREATE TABLE proyectos_tendencias (
-        #         id int IDENTITY(1,1) NOT NULL,
-        #         tipo_carpeta nvarchar(100) COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
-        #         carrera_referencia nvarchar(200) COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
-        #         carrera_estudio nvarchar(200) COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
-        #         palabra_semrush nvarchar(200) COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
-        #         codigo_ciiu nvarchar(50) COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
-        #         carrera_linkedin nvarchar(200) COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
-        #         mensaje_error nvarchar(500) COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
-        #         CONSTRAINT PK_proyectos_tendencias PRIMARY KEY (id)
-        #     )
-        # END''',
-        # grafico_radar_datos
-        '''IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'grafico_radar_datos')
-        BEGIN
-            CREATE TABLE grafico_radar_datos (
-                id INT IDENTITY(1,1) PRIMARY KEY,
-                proyecto_id INT NOT NULL,
-                valor_busqueda FLOAT NULL,
-                valor_competencia_presencialidad FLOAT NULL,
-                valor_competencia_virtualidad FLOAT NULL,
-                valor_linkedin FLOAT NULL,
-                valor_mercado FLOAT NULL,
-                updated_at DATETIME NOT NULL DEFAULT GETDATE(),
-                CONSTRAINT FK_grafico_radar_proyecto FOREIGN KEY (proyecto_id) REFERENCES proyectos_tendencias(id)
-            )
-        END''',
+        '''
+        CREATE TABLE IF NOT EXISTS proyectos_tendencias (
+            id SERIAL PRIMARY KEY,
+            tipo_carpeta VARCHAR(100),
+            carrera_referencia VARCHAR(200),
+            carrera_estudio VARCHAR(200),
+            palabra_semrush VARCHAR(200),
+            codigo_ciiu VARCHAR(50),
+            carrera_linkedin VARCHAR(200),
+            mensaje_error VARCHAR(500)
+        );
+        ''',
+        '''
+        CREATE TABLE IF NOT EXISTS grafico_radar_datos (
+            id SERIAL PRIMARY KEY,
+            proyecto_id INTEGER NOT NULL REFERENCES proyectos_tendencias(id),
+            valor_busqueda FLOAT,
+            valor_competencia_presencialidad FLOAT,
+            valor_competencia_virtualidad FLOAT,
+            valor_linkedin FLOAT,
+            valor_mercado FLOAT,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+        );
+        ''',
         # # linkedin
-        # '''IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'linkedin')
-        # BEGIN
-        #     CREATE TABLE linkedin (
-        #         id int IDENTITY(1,1) NOT NULL,
-        #         proyecto_id int NULL,
-        #         Tipo nvarchar(50) COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
-        #         Region nvarchar(100) COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
-        #         Profesionales int NULL,
-        #         AnunciosEmpleo int NULL,
-        #         PorcentajeAnunciosProfesionales decimal(10,2) NULL,
-        #         DemandaContratacion nvarchar(50),
-        #         CONSTRAINT PK_linkedin PRIMARY KEY (id),
-        #         CONSTRAINT FK_linkedin_proyecto FOREIGN KEY (proyecto_id) REFERENCES proyectos_tendencias(id)
-        #     )
-        # END''',
+        '''
+        CREATE TABLE IF NOT EXISTS linkedin (
+            id SERIAL PRIMARY KEY,
+            proyecto_id INTEGER REFERENCES proyectos_tendencias(id),
+            Tipo VARCHAR(50),
+            Region VARCHAR(100),
+            Profesionales INTEGER,
+            AnunciosEmpleo INTEGER,
+            PorcentajeAnunciosProfesionales DECIMAL(10,2),
+            DemandaContratacion VARCHAR(50)
+        );
+        ''',
         # # modalidad_oferta
-        # '''IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'modalidad_oferta')
-        # BEGIN
-        #     CREATE TABLE modalidad_oferta (
-        #         id int IDENTITY(1,1) NOT NULL,
-        #         proyecto_id int NULL,
-        #         presencial nvarchar(50) COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
-        #         virtual nvarchar(50) COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
-        #         CONSTRAINT PK_modalidad_oferta PRIMARY KEY (id),
-        #         CONSTRAINT FK_modalidad_oferta_proyecto FOREIGN KEY (proyecto_id) REFERENCES proyectos_tendencias(id)
-        #     )
-        # END''',
+        '''
+        CREATE TABLE IF NOT EXISTS modalidad_oferta (
+            id SERIAL PRIMARY KEY,
+            proyecto_id INTEGER REFERENCES proyectos_tendencias(id),
+            presencial VARCHAR(50),
+            virtual VARCHAR(50)
+        );
+        ''',
         # # semrush
-        # '''IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'semrush')
-        # BEGIN
-        #     CREATE TABLE semrush (
-        #         id int IDENTITY(1,1) NOT NULL,
-        #         proyecto_id int NULL,
-        #         VisionGeneral nvarchar(200) COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
-        #         Palabras int NULL,
-        #         Volumen int NULL,
-        #         CONSTRAINT PK_semrush PRIMARY KEY (id),
-        #         CONSTRAINT FK_semrush_proyecto FOREIGN KEY (proyecto_id) REFERENCES proyectos_tendencias(id)
-        #     )
-        # END''',
+        '''
+        CREATE TABLE IF NOT EXISTS semrush (
+            id SERIAL PRIMARY KEY,
+            proyecto_id INTEGER REFERENCES proyectos_tendencias(id),
+            VisionGeneral VARCHAR(200),
+            Palabras INTEGER,
+            Volumen INTEGER
+        );
+        ''',
         # # semrush_base
-        # '''IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'semrush_base')
-        # BEGIN
-        #     CREATE TABLE semrush_base (
-        #         ID_Carrera int NOT NULL,
-        #         Vision_General int NULL,
-        #         Palabras int NULL,
-        #         Volumen int NULL,
-        #         CONSTRAINT PK_semrush_base PRIMARY KEY (ID_Carrera),
-        #         CONSTRAINT FK_semrush_base_carreras_facultad FOREIGN KEY (ID_Carrera) REFERENCES carreras_facultad(ID)
-        #     )
-        # END''',
+        '''
+        CREATE TABLE IF NOT EXISTS semrush_base (
+            ID_Carrera INTEGER PRIMARY KEY,
+            Vision_General INTEGER,
+            Palabras INTEGER,
+            Volumen INTEGER,
+            FOREIGN KEY (ID_Carrera) REFERENCES carreras_facultad(ID)
+        );
+        ''',
         # # tendencias
-        # '''IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'tendencias')
-        # BEGIN
-        #     CREATE TABLE tendencias (
-        #         id int IDENTITY(1,1) NOT NULL,
-        #         proyecto_id int NULL,
-        #         palabra nvarchar(200) COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
-        #         promedio float NULL,
-        #         CONSTRAINT PK_tendencias PRIMARY KEY (id),
-        #         CONSTRAINT FK_tendencias_proyecto FOREIGN KEY (proyecto_id) REFERENCES proyectos_tendencias(id)
-        #     )
-        # END''',
+        '''
+        CREATE TABLE IF NOT EXISTS tendencias (
+            id SERIAL PRIMARY KEY,
+            proyecto_id INTEGER REFERENCES proyectos_tendencias(id),
+            palabra VARCHAR(200),
+            promedio FLOAT
+        );
+        ''',
         # # tendencias_carrera
-        # '''IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'tendencias_carrera')
-        # BEGIN
-        #     CREATE TABLE tendencias_carrera (
-        #         ID_Carrera int NOT NULL,
-        #         Palabra nvarchar(100) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL,
-        #         Cantidad int NULL,
-        #         CONSTRAINT PK_tendencias_carrera PRIMARY KEY (ID_Carrera,Palabra),
-        #         CONSTRAINT FK_tendencias_carrera_carreras_facultad FOREIGN KEY (ID_Carrera) REFERENCES carreras_facultad(ID)
-        #     )
-        # END''',
+        '''
+        CREATE TABLE IF NOT EXISTS tendencias_carrera (
+            ID_Carrera INTEGER,
+            Palabra VARCHAR(100),
+            Cantidad INTEGER,
+            PRIMARY KEY (ID_Carrera, Palabra),
+            FOREIGN KEY (ID_Carrera) REFERENCES carreras_facultad(ID)
+        );
+        ''',
         # # scraper_queue
-        # '''IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'scraper_queue')
-        # BEGIN
-        #     CREATE TABLE scraper_queue (
-        #         id int IDENTITY(1,1) NOT NULL,
-        #         proyecto_id int NOT NULL,
-        #         status nvarchar(20) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL DEFAULT 'queued',
-        #         tries int NOT NULL DEFAULT 0,
-        #         error nvarchar(max) NULL,
-        #         created_at datetime NOT NULL DEFAULT GETDATE(),
-        #         started_at datetime NULL,
-        #         finished_at datetime NULL,
-        #         CONSTRAINT PK_scraper_queue PRIMARY KEY (id),
-        #         CONSTRAINT FK_scraper_queue_proyecto FOREIGN KEY (proyecto_id) REFERENCES proyectos_tendencias(id)
-        #     )
-        # END''',
+        '''
+        CREATE TABLE IF NOT EXISTS scraper_queue (
+            id SERIAL PRIMARY KEY,
+            proyecto_id INTEGER NOT NULL REFERENCES proyectos_tendencias(id),
+            status VARCHAR(20) NOT NULL DEFAULT 'queued',
+            tries INTEGER NOT NULL DEFAULT 0,
+            error TEXT,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            started_at TIMESTAMP,
+            finished_at TIMESTAMP
+        );
+        ''',
         # # presentation_queue
-        # '''IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'presentation_queue')
-        # BEGIN
-        #     CREATE TABLE presentation_queue (
-        #         id int IDENTITY(1,1) NOT NULL,
-        #         proyecto_id int NOT NULL,
-        #         status nvarchar(20) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL DEFAULT 'queued',
-        #         tries int NOT NULL DEFAULT 0,
-        #         error nvarchar(max) NULL,
-        #         created_at datetime NOT NULL DEFAULT GETDATE(),
-        #         started_at datetime NULL,
-        #         finished_at datetime NULL,
-        #         dropbox_url nvarchar(500) NULL,
-        #         file_name nvarchar(255) NULL,
-        #         CONSTRAINT PK_presentation_queue PRIMARY KEY (id),
-        #         CONSTRAINT FK_presentation_queue_proyecto FOREIGN KEY (proyecto_id) REFERENCES proyectos_tendencias(id)
-        #     )
-        # END''',
+        '''
+        CREATE TABLE IF NOT EXISTS presentation_queue (
+            id SERIAL PRIMARY KEY,
+            proyecto_id INTEGER NOT NULL REFERENCES proyectos_tendencias(id),
+            status VARCHAR(20) NOT NULL DEFAULT 'queued',
+            tries INTEGER NOT NULL DEFAULT 0,
+            error TEXT,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            started_at TIMESTAMP,
+            finished_at TIMESTAMP,
+            dropbox_url VARCHAR(500),
+            file_name VARCHAR(255)
+        );
+        ''',
         # # mercado_datos
-        # '''IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'mercado_datos')
-        # BEGIN
-        #     CREATE TABLE mercado_datos (
-        #         id INT IDENTITY(1,1) PRIMARY KEY,
-        #         hoja_origen NVARCHAR(50),
-        #         actividad_economica NVARCHAR(200),
-        #         valor_2023 FLOAT
-        #     )
-        # END''',
+        '''
+        CREATE TABLE IF NOT EXISTS mercado_datos (
+            id SERIAL PRIMARY KEY,
+            hoja_origen VARCHAR(50),
+            actividad_economica VARCHAR(200),
+            valor_2023 FLOAT
+        );
+        ''',
         # # datos_solicitud
-        # '''IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'datos_solicitud')
-        # BEGIN
-        #     CREATE TABLE datos_solicitud (
-        #         id INT IDENTITY(1,1) PRIMARY KEY,
-        #         proyecto_id INT NOT NULL,
-        #         nombre_programa NVARCHAR(200),
-        #         facultad_propuesta NVARCHAR(200),
-        #         duracion NVARCHAR(50),
-        #         modalidad NVARCHAR(50),
-        #         nombre_proponente NVARCHAR(200),
-        #         facultad_proponente NVARCHAR(200),
-        #         cargo_proponente NVARCHAR(100),
-        #         CONSTRAINT FK_datos_solicitud_proyecto FOREIGN KEY (proyecto_id) REFERENCES proyectos_tendencias(id)
-        #     )
-        # END'''
+        '''
+        CREATE TABLE IF NOT EXISTS datos_solicitud (
+            id SERIAL PRIMARY KEY,
+            proyecto_id INTEGER NOT NULL REFERENCES proyectos_tendencias(id),
+            nombre_programa VARCHAR(200),
+            facultad_propuesta VARCHAR(200),
+            duracion VARCHAR(50),
+            modalidad VARCHAR(50),
+            nombre_proponente VARCHAR(200),
+            facultad_proponente VARCHAR(200),
+            cargo_proponente VARCHAR(100)
+        );
+        '''
     ]
     for sql in tablas:
         cursor.execute(sql)

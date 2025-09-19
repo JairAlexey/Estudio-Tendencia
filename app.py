@@ -125,22 +125,23 @@ def procesar_proyecto(proyecto_id, nombre_archivo):
             virtualidad_resultados.append(valor_mercado)
     # Guardar/actualizar en grafico_radar_datos
     try:
-        with conn.cursor() as cur:
-            cur.execute("SELECT id FROM grafico_radar_datos WHERE proyecto_id=?", (proyecto_id,))
-            existe = cur.fetchone()
-            if existe:
-                cur.execute("""
-                    UPDATE grafico_radar_datos SET
-                        valor_busqueda=?, valor_competencia_presencialidad=?, valor_competencia_virtualidad=?, valor_linkedin=?, valor_mercado=?, updated_at=GETDATE()
-                    WHERE proyecto_id=?
-                """, (valor_busqueda, valor_competencia_presencial, valor_competencia_virtual, valor_linkedin, valor_mercado, proyecto_id))
-            else:
-                cur.execute("""
-                    INSERT INTO grafico_radar_datos (
-                        proyecto_id, valor_busqueda, valor_competencia_presencialidad, valor_competencia_virtualidad, valor_linkedin, valor_mercado
-                    ) VALUES (?, ?, ?, ?, ?, ?)
-                """, (proyecto_id, valor_busqueda, valor_competencia_presencial, valor_competencia_virtual, valor_linkedin, valor_mercado))
-            conn.commit()
+        cur = conn.cursor()
+        cur.execute("SELECT id FROM grafico_radar_datos WHERE proyecto_id=%s", (proyecto_id,))
+        existe = cur.fetchone()
+        if existe:
+            cur.execute("""
+                UPDATE grafico_radar_datos SET
+                    valor_busqueda=%s, valor_competencia_presencialidad=%s, valor_competencia_virtualidad=%s, valor_linkedin=%s, valor_mercado=%s, updated_at=CURRENT_TIMESTAMP
+                WHERE proyecto_id=%s
+            """, (valor_busqueda, valor_competencia_presencial, valor_competencia_virtual, valor_linkedin, valor_mercado, proyecto_id))
+        else:
+            cur.execute("""
+                INSERT INTO grafico_radar_datos (
+                    proyecto_id, valor_busqueda, valor_competencia_presencialidad, valor_competencia_virtualidad, valor_linkedin, valor_mercado
+                ) VALUES (%s, %s, %s, %s, %s, %s)
+            """, (proyecto_id, valor_busqueda, valor_competencia_presencial, valor_competencia_virtual, valor_linkedin, valor_mercado))
+        conn.commit()
+        cur.close()
     except Exception as e:
         st.error(f"Error actualizando datos de grafico_radar_datos: {e}")
 
@@ -186,13 +187,3 @@ df_rango = pd.DataFrame(
         ],
     }
 )
-
-with st.form("mi_formulario"):
-    # Campos del formulario
-    nombre = st.text_input("Nombre")
-    edad = st.number_input("Edad")
-    # Botón de envío
-    submit = st.form_submit_button("Guardar")
-    if submit:
-        # Procesar datos
-        st.success("Datos guardados correctamente.")

@@ -182,7 +182,7 @@ def pagina_inicio():
 
         # Verificar si existen datos de solicitud para este proyecto
         with conn.cursor() as cur:
-            cur.execute("SELECT COUNT(*) FROM datos_solicitud WHERE proyecto_id=?", (id,))
+            cur.execute("SELECT COUNT(*) FROM datos_solicitud WHERE proyecto_id=%s", (id,))
             solicitud_count = cur.fetchone()[0]
         if solicitud_count > 0:
             solicitud_html = "<span style='color:#555; font-size:0.95rem;'>Datos solicitud:</span> <span style='color:#28a745; font-size:0.95rem;'>🟢 Agregados</span>"
@@ -257,16 +257,16 @@ def pagina_inicio():
             if confirmar:
                     with conn.cursor() as cur:
                         # Eliminar de todas las tablas relacionadas
-                        cur.execute("DELETE FROM modalidad_oferta WHERE proyecto_id=?", (id,))
-                        cur.execute("DELETE FROM tendencias WHERE proyecto_id=?", (id,))
-                        cur.execute("DELETE FROM linkedin WHERE proyecto_id=?", (id,))
-                        cur.execute("DELETE FROM semrush WHERE proyecto_id=?", (id,))
-                        cur.execute("DELETE FROM scraper_queue WHERE proyecto_id=?", (id,))
-                        cur.execute("DELETE FROM grafico_radar_datos WHERE proyecto_id=?", (id,))
-                        cur.execute("DELETE FROM presentation_queue WHERE proyecto_id=?", (id,))
-                        cur.execute("DELETE FROM datos_solicitud WHERE proyecto_id=?", (id,))
+                        cur.execute("DELETE FROM modalidad_oferta WHERE proyecto_id=%s", (id,))
+                        cur.execute("DELETE FROM tendencias WHERE proyecto_id=%s", (id,))
+                        cur.execute("DELETE FROM linkedin WHERE proyecto_id=%s", (id,))
+                        cur.execute("DELETE FROM semrush WHERE proyecto_id=%s", (id,))
+                        cur.execute("DELETE FROM scraper_queue WHERE proyecto_id=%s", (id,))
+                        cur.execute("DELETE FROM grafico_radar_datos WHERE proyecto_id=%s", (id,))
+                        cur.execute("DELETE FROM presentation_queue WHERE proyecto_id=%s", (id,))
+                        cur.execute("DELETE FROM datos_solicitud WHERE proyecto_id=%s", (id,))
                         # Eliminar el proyecto principal
-                        cur.execute("DELETE FROM proyectos_tendencias WHERE id=?", (id,))
+                        cur.execute("DELETE FROM proyectos_tendencias WHERE id=%s", (id,))
                         conn.commit()
                     st.success("Proyecto eliminado correctamente")
                     st.session_state["mostrar_confirmacion_eliminar"] = False
@@ -300,7 +300,7 @@ def pagina_editar(id):
 def pagina_eliminar(id):
     st.title("Eliminar Proyecto")
     with conn.cursor() as cur:
-        cur.execute("SELECT carrera_estudio FROM proyectos_tendencias WHERE id=?", id)
+        cur.execute("SELECT carrera_estudio FROM proyectos_tendencias WHERE id=%s", (id,))
         proyecto = cur.fetchone()
     if not proyecto:
         st.error("Proyecto no encontrado.")
@@ -308,7 +308,7 @@ def pagina_eliminar(id):
     st.warning(f"¿Está seguro que desea eliminar el proyecto '{proyecto[0]}'?")
     if st.button("Eliminar definitivamente"):
         with conn.cursor() as cur:
-            cur.execute("DELETE FROM proyectos_tendencias WHERE id=?", id)
+            cur.execute("DELETE FROM proyectos_tendencias WHERE id=%s", (id,))
             conn.commit()
         st.success("Proyecto eliminado correctamente.")
         st.query_params.update({"page": "inicio"})
@@ -340,7 +340,7 @@ def pagina_formulario():
 def pagina_reporte(id):
     # Obtener nombre del proyecto
     with conn.cursor() as cur:
-        cur.execute("SELECT carrera_estudio FROM proyectos_tendencias WHERE id=?", (id,))
+        cur.execute("SELECT carrera_estudio FROM proyectos_tendencias WHERE id=%s", (id,))
         row = cur.fetchone()
         nombre_proyecto = row[0] if row else "Proyecto desconocido"
         nombre_proyecto = " ".join([w.capitalize() for w in nombre_proyecto.split()])
@@ -391,7 +391,7 @@ def pagina_presentacion(id):
     }
     # Obtener nombre del proyecto
     with conn.cursor() as cur:
-        cur.execute("SELECT carrera_estudio FROM proyectos_tendencias WHERE id=?", (id,))
+        cur.execute("SELECT carrera_estudio FROM proyectos_tendencias WHERE id=%s", (id,))
         row = cur.fetchone()
         nombre_proyecto = row[0] if row else "Proyecto desconocido"
     st.title(f"Presentación generada para: {nombre_proyecto}")
@@ -400,7 +400,7 @@ def pagina_presentacion(id):
         st.rerun()
     # Mostrar estado de la presentación
     with conn.cursor() as cur:
-        cur.execute("SELECT status, file_name, dropbox_url, error FROM presentation_queue WHERE proyecto_id=? ORDER BY created_at DESC", (id,))
+        cur.execute("SELECT status, file_name, dropbox_url, error FROM presentation_queue WHERE proyecto_id=%s ORDER BY created_at DESC", (id,))
         row = cur.fetchone()
     status = None
     if row:
@@ -422,12 +422,12 @@ def pagina_presentacion(id):
     if not status or status in ["error", "finished"]:
         if st.button("Reintentar generación", key=f"reintentar_presentacion_{id}_presentacion"):
             with conn.cursor() as cur:
-                cur.execute("SELECT id FROM presentation_queue WHERE proyecto_id=? AND status IN ('queued','running')", (id,))
+                cur.execute("SELECT id FROM presentation_queue WHERE proyecto_id=%s AND status IN ('queued','running')", (id,))
                 existe = cur.fetchone()
                 if not existe:
                     cur.execute("""
                         INSERT INTO presentation_queue (proyecto_id, status, tries, created_at)
-                        VALUES (?, 'queued', 0, GETDATE())
+                        VALUES (%s, 'queued', 0, CURRENT_TIMESTAMP)
                     """, (id,))
                     conn.commit()
             st.info("Proyecto reintentado para generación de presentación.")

@@ -1,5 +1,3 @@
-
-import pyodbc
 from scrapers.linkedin_modules.linkedin_database import (
     extraer_datos_tabla,
     obtener_id_carrera,
@@ -52,8 +50,8 @@ def calc_mercado(proyecto_id):
         print(f"\n--- Procesando hoja: {hoja} ---")
         # Obtener todos los registros de la hoja desde la base de datos
         cursor.execute(
-            "SELECT actividad_economica, valor_2023 FROM mercado_datos WHERE hoja_origen = ?",
-            hoja
+            "SELECT actividad_economica, valor_2023 FROM mercado_datos WHERE hoja_origen = %s",
+            (hoja,)
         )
         rows = cursor.fetchall()
         # Convertir a diccionario para fácil acceso

@@ -200,9 +200,10 @@ def linkedin_scraper():
             # Guardar mensaje en la columna mensaje_error del proyecto
             try:
                 from conexion import conn
-                with conn.cursor() as cur:
-                    cur.execute("UPDATE proyectos_tendencias SET mensaje_error=? WHERE id=?", (mensaje_error, proyecto_id))
-                    conn.commit()
+                cur = conn.cursor()
+                cur.execute("UPDATE proyectos_tendencias SET mensaje_error=%s WHERE id=%s", (mensaje_error, proyecto_id))
+                conn.commit()
+                cur.close()
             except Exception as e:
                 print(f"Error actualizando mensaje_error en proyectos_tendencias: {e}")
         else:
@@ -210,9 +211,10 @@ def linkedin_scraper():
             # Limpiar mensaje de error si todo fue exitoso
             try:
                 from conexion import conn
-                with conn.cursor() as cur:
-                    cur.execute("UPDATE proyectos_tendencias SET mensaje_error=NULL WHERE id=?", (proyecto_id,))
-                    conn.commit()
+                cur = conn.cursor()
+                cur.execute("UPDATE proyectos_tendencias SET mensaje_error=NULL WHERE id=%s", (proyecto_id,))
+                conn.commit()
+                cur.close()
             except Exception as e:
                 print(f"Error limpiando mensaje_error en proyectos_tendencias: {e}")
     finally:

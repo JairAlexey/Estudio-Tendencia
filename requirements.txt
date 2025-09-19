@@ -12,3 +12,4 @@ streamlit-elements
 python-pptx
 matplotlib
 dropbox
+psycopg2
