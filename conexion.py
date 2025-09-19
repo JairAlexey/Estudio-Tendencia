@@ -8,7 +8,7 @@ username = "estudiotendenciaadmin123"
 password = "*Admin123*"
 
 conn = pyodbc.connect(
-    "DRIVER={ODBC Driver 18 for SQL Server};"
+    "DRIVER={ODBC Driver 17 for SQL Server};"
     f"SERVER=tcp:{server},1433;"
     f"DATABASE={database};UID={username};PWD={password};"
     "Encrypt=yes;TrustServerCertificate=yes;Connection Timeout=30;"
@@ -23,7 +23,7 @@ def ensure_connection():
     except pyodbc.Error:
         print("Reconectando a SQL Server...")
         conn = pyodbc.connect(
-            "DRIVER={ODBC Driver 17 for SQL Server};"
+            "DRIVER={ODBC Driver 18 for SQL Server};"
             f"SERVER=tcp:{server},1433;"
             f"DATABASE={database};UID={username};PWD={password};"
             "Encrypt=yes;TrustServerCertificate=no;Connection Timeout=30;"
