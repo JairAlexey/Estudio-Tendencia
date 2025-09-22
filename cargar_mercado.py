@@ -21,8 +21,8 @@ def cargar_mercado():
             except Exception:
                 valor = None
             cursor.execute(
-                "INSERT INTO mercado_datos (hoja_origen, actividad_economica, valor_2023) VALUES (?, ?, ?)",
-                hoja, actividad, valor
+                "INSERT INTO mercado_datos (hoja_origen, actividad_economica, valor_2023) VALUES (%s, %s, %s)",
+                (hoja, actividad, valor)
             )
         conn.commit()
     print("Datos cargados correctamente en mercado_datos.")

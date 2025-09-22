@@ -1,6 +1,10 @@
 import psycopg2
 import urllib.parse as urlparse
 import os
+from dotenv import load_dotenv
+
+# Cargar variables de entorno desde .env
+load_dotenv()
 
 PG_URL = os.getenv("DATABASE_URL")
 if not PG_URL:

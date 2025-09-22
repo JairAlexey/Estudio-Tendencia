@@ -12,8 +12,8 @@ def cargar_carreras_facultad(path_excel):
         try:
             cursor.execute("""
                 INSERT INTO carreras_facultad (Facultad, Nivel, Carrera)
-                VALUES (?, ?, ?)
-            """, row['Facultad'], row['Nivel'], row['Carrera'])
+                VALUES (%s, %s, %s)
+            """, (row['Facultad'], row['Nivel'], row['Carrera']))
             insertados += 1
         except Exception:
             pass
@@ -27,8 +27,8 @@ def cargar_codigos_carrera(path_excel):
         try:
             cursor.execute("""
                 INSERT INTO codigos_carrera (ID_Carrera, Codigo)
-                VALUES (?, ?)
-            """, int(row['ID Carrera']), str(row['Codigo']))
+                VALUES (%s, %s)
+            """, (int(row['ID Carrera']), str(row['Codigo'])))
             insertados += 1
         except Exception:
             pass
@@ -42,8 +42,8 @@ def cargar_semrush_base(path_excel):
         try:
             cursor.execute("""
                 INSERT INTO semrush_base (ID_Carrera, Vision_General, Palabras, Volumen)
-                VALUES (?, ?, ?, ?)
-            """, int(row['ID Carrera']), int(row['Visión General']), int(row['Palabras']), int(row['Volumen']))
+                VALUES (%s, %s, %s, %s)
+            """, (int(row['ID Carrera']), int(row['Visión General']), int(row['Palabras']), int(row['Volumen'])))
             insertados += 1
         except Exception:
             pass
@@ -57,8 +57,8 @@ def cargar_tendencias_carrera(path_excel):
         try:
             cursor.execute("""
                 INSERT INTO tendencias_carrera (ID_Carrera, Palabra, Cantidad)
-                VALUES (?, ?, ?)
-            """, int(row['ID Carrera']), str(row['Palabra']), int(row['Cantidad']))
+                VALUES (%s, %s, %s)
+            """, (int(row['ID Carrera']), str(row['Palabra']), int(row['Cantidad'])))
             insertados += 1
         except Exception:
             pass

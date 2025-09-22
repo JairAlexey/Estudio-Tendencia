@@ -16,6 +16,13 @@ def crear_tablas():
             mensaje_error VARCHAR(500)
         );
         ''',
+        '''CREATE TABLE IF NOT EXISTS carreras_facultad (
+            ID SERIAL PRIMARY KEY,
+            Facultad VARCHAR(200),
+            Nivel VARCHAR(100),
+            Carrera VARCHAR(200)
+        );
+        ''',
         '''
         CREATE TABLE IF NOT EXISTS grafico_radar_datos (
             id SERIAL PRIMARY KEY,
