@@ -186,9 +186,14 @@ def pagina_inicio():
             estado_html = "<span style='color:#555; font-size:0.95rem;'>Estado:</span> <span style='color:#800080; font-size:0.95rem;'>🟣 En espera</span>"
 
         # Verificar si existen datos de solicitud para este proyecto
-        with conn.cursor() as cur:
-            cur.execute("SELECT COUNT(*) FROM datos_solicitud WHERE proyecto_id=%s", (id,))
-            solicitud_count = cur.fetchone()[0]
+        try:
+            with conn.cursor() as cur:
+                cur.execute("SELECT COUNT(*) FROM datos_solicitud WHERE proyecto_id=%s", (id,))
+                solicitud_count = cur.fetchone()[0]
+        except Exception as e:
+            conn.rollback()
+            st.error(f"Error en la base de datos (datos_solicitud): {e}")
+            return
         if solicitud_count > 0:
             solicitud_html = "<span style='color:#555; font-size:0.95rem;'>Datos solicitud:</span> <span style='color:#28a745; font-size:0.95rem;'>🟢 Agregados</span>"
         else:
@@ -260,6 +265,7 @@ def pagina_inicio():
             confirmar = st.button("Sí, eliminar definitivamente", key=f"confirmar_eliminar_{id}")
             cancelar = st.button("Cancelar", key=f"cancelar_eliminar_{id}")
             if confirmar:
+                try:
                     with conn.cursor() as cur:
                         # Eliminar de todas las tablas relacionadas
                         cur.execute("DELETE FROM modalidad_oferta WHERE proyecto_id=%s", (id,))
@@ -276,6 +282,10 @@ def pagina_inicio():
                     st.success("Proyecto eliminado correctamente")
                     st.session_state["mostrar_confirmacion_eliminar"] = False
                     st.rerun()
+                except Exception as e:
+                    conn.rollback()
+                    st.error(f"Error eliminando proyecto: {e}")
+                    return
             elif cancelar:
                 st.session_state["mostrar_confirmacion_eliminar"] = False
                 st.session_state["confirmar_eliminar_id"] = None
