@@ -318,7 +318,7 @@ NOMBRES_PREGRADO = [
 def obtener_carreras_por_nivel(nivel):
     try:
         with conn.cursor() as cur:
-            cur.execute("SELECT Carrera FROM carreras_facultad WHERE Nivel = ?", nivel)
+            cur.execute("SELECT Carrera FROM carreras_facultad WHERE Nivel = %s", (nivel,))
             rows = cur.fetchall()
             return [row[0] for row in rows]
     except Exception as e:
