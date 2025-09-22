@@ -6,7 +6,7 @@ from conexion import conn
 def mostrar_formulario_datos_solicitud(proyecto_id):
     # Obtener el nombre del proyecto
     with conn.cursor() as cur:
-        cur.execute("SELECT carrera_estudio FROM proyectos_tendencias WHERE id=?", proyecto_id)
+        cur.execute("SELECT carrera_estudio FROM proyectos_tendencias WHERE id=%s", (proyecto_id,))
         row = cur.fetchone()
         nombre_proyecto = row[0] if row else "Proyecto desconocido"
         nombre_proyecto = " ".join([w.capitalize() for w in nombre_proyecto.split()])
@@ -15,8 +15,8 @@ def mostrar_formulario_datos_solicitud(proyecto_id):
     with conn.cursor() as cur:
         cur.execute('''
             SELECT facultad_propuesta, duracion, modalidad, nombre_proponente, facultad_proponente, cargo_proponente
-            FROM datos_solicitud WHERE proyecto_id=?
-        ''', proyecto_id)
+            FROM datos_solicitud WHERE proyecto_id=%s
+        ''', (proyecto_id,))
         datos_previos = cur.fetchone()
 
     st.markdown(
@@ -62,15 +62,15 @@ def mostrar_formulario_datos_solicitud(proyecto_id):
                 try:
                     with conn.cursor() as cur:
                         # Eliminar registro anterior si existe
-                        cur.execute('DELETE FROM datos_solicitud WHERE proyecto_id=?', proyecto_id)
+                        cur.execute('DELETE FROM datos_solicitud WHERE proyecto_id=%s', (proyecto_id,))
                         # Insertar nuevo registro
                         cur.execute('''
                             INSERT INTO datos_solicitud (
                                 proyecto_id, nombre_programa, facultad_propuesta, duracion, modalidad,
                                 nombre_proponente, facultad_proponente, cargo_proponente
-                            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                        ''', proyecto_id, nombre_programa, facultad_propuesta, duracion, modalidad,
-                             nombre_proponente, facultad_proponente, cargo_proponente)
+                            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                        ''', (proyecto_id, nombre_programa, facultad_propuesta, duracion, modalidad,
+                             nombre_proponente, facultad_proponente, cargo_proponente))
                         conn.commit()
                     st.success("Datos de solicitud guardados correctamente.")
                 except Exception as e:

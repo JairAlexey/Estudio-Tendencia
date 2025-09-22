@@ -15,26 +15,28 @@ def calc_linkedin(proyecto_id):
     df = pd.DataFrame(data)
 
     # ECUADOR
-    filtroEC = df["Region"] == "Ecuador"
+    # Usar 'region' en minúsculas para compatibilidad con PostgreSQL
+    filtroEC = df["region"] == "Ecuador"
     data_ecuador = df[filtroEC]
 
-    data_ecuadorRef = data_ecuador.loc[data_ecuador["Tipo"] == "Referencia"].reset_index(drop=True)
-    data_ecuadorCon = data_ecuador.loc[data_ecuador["Tipo"] == "Estudio"].reset_index(drop=True)
+
+    data_ecuadorRef = data_ecuador.loc[data_ecuador["tipo"] == "Referencia"].reset_index(drop=True)
+    data_ecuadorCon = data_ecuador.loc[data_ecuador["tipo"] == "Estudio"].reset_index(drop=True)
 
     # Convertir todos los valores a float
-    profesionalesRefEc = float(data_ecuadorRef["Profesionales"][0])
-    empleoRefEc = float(data_ecuadorRef["AnunciosEmpleo"][0])
+    profesionalesRefEc = float(data_ecuadorRef["profesionales"][0])
+    empleoRefEc = float(data_ecuadorRef["anunciosempleo"][0])
     if empleoRefEc is None or empleoRefEc == 0:
         empleoRefEc = 1
-    anuncios_profesionalesRefEc = float(data_ecuadorRef["PorcentajeAnunciosProfesionales"][0])
+    anuncios_profesionalesRefEc = float(data_ecuadorRef["porcentajeanunciosprofesionales"][0])
     if anuncios_profesionalesRefEc is None or anuncios_profesionalesRefEc == 0:
         anuncios_profesionalesRefEc = 1
 
-    profesionalesConEc = float(data_ecuadorCon["Profesionales"][0])
-    empleoConEc = float(data_ecuadorCon["AnunciosEmpleo"][0])
+    profesionalesConEc = float(data_ecuadorCon["profesionales"][0])
+    empleoConEc = float(data_ecuadorCon["anunciosempleo"][0])
     if empleoConEc is None or empleoConEc == 0:
         empleoConEc = 1
-    anuncios_profesionalesConEc = float(data_ecuadorCon["PorcentajeAnunciosProfesionales"][0])
+    anuncios_profesionalesConEc = float(data_ecuadorCon["porcentajeanunciosprofesionales"][0])
     if anuncios_profesionalesConEc is None or anuncios_profesionalesConEc == 0:
         anuncios_profesionalesConEc = 1
 
@@ -45,25 +47,25 @@ def calc_linkedin(proyecto_id):
     resPromedioEc = round((resProfesionalesEc + resEmpleoEc + resAnunEmpEc) / 3, 2)
 
     # LATAM
-    filtroLATAM = df["Region"] == "América Latina"
+    filtroLATAM = df["region"] == "América Latina"
     data_latam = df[filtroLATAM]
 
-    data_latamRef = data_latam.loc[data_latam["Tipo"] == "Referencia"].reset_index(drop=True)
-    data_latamCon = data_latam.loc[data_latam["Tipo"] == "Estudio"].reset_index(drop=True)
+    data_latamRef = data_latam.loc[data_latam["tipo"] == "Referencia"].reset_index(drop=True)
+    data_latamCon = data_latam.loc[data_latam["tipo"] == "Estudio"].reset_index(drop=True)
 
-    profesionalesRefLat = float(data_latamRef["Profesionales"][0])
-    empleoRefLat = float(data_latamRef["AnunciosEmpleo"][0])
+    profesionalesRefLat = float(data_latamRef["profesionales"][0])
+    empleoRefLat = float(data_latamRef["anunciosempleo"][0])
     if empleoRefLat is None or empleoRefLat == 0:
         empleoRefLat = 1
-    anuncios_profesionalesRefLat = float(data_latamRef["PorcentajeAnunciosProfesionales"][0])
+    anuncios_profesionalesRefLat = float(data_latamRef["porcentajeanunciosprofesionales"][0])
     if anuncios_profesionalesRefLat is None or anuncios_profesionalesRefLat == 0:
         anuncios_profesionalesRefLat = 1
 
-    profesionalesConLat = float(data_latamCon["Profesionales"][0])
-    empleoConLat = float(data_latamCon["AnunciosEmpleo"][0])
+    profesionalesConLat = float(data_latamCon["profesionales"][0])
+    empleoConLat = float(data_latamCon["anunciosempleo"][0])
     if empleoConLat is None or empleoConLat == 0:
         empleoConLat = 1
-    anuncios_profesionalesConLat = float(data_latamCon["PorcentajeAnunciosProfesionales"][0])
+    anuncios_profesionalesConLat = float(data_latamCon["porcentajeanunciosprofesionales"][0])
     if anuncios_profesionalesConLat is None or anuncios_profesionalesConLat == 0:
         anuncios_profesionalesConLat = 1
 

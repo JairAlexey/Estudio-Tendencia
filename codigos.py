@@ -5,8 +5,8 @@ from conexion import conn, cursor
 def obtener_codigos_ciiu(hoja_origen="Total Ingresos"):
     try:
         cursor.execute(
-            "SELECT DISTINCT actividad_economica FROM mercado_datos WHERE hoja_origen = ? AND actividad_economica IS NOT NULL",
-            hoja_origen
+            "SELECT DISTINCT actividad_economica FROM mercado_datos WHERE hoja_origen = %s AND actividad_economica IS NOT NULL",
+            (hoja_origen,)
         )
         rows = cursor.fetchall()
         codigos = [row[0] for row in rows]

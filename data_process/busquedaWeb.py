@@ -52,18 +52,18 @@ def calc_busquedaWeb(source=None):
             print("No se encontraron datos de semrush para el proyecto.")
             return 0
         hjSemrushBase = pd.DataFrame([{
-            'Visión General': semrush_base_dict.get('VisionGeneral', 0),
-            'Palabras': semrush_base_dict.get('Palabras', 0),
-            'Volumen': semrush_base_dict.get('Volumen', 0),
-            'ID Carrera': idCarrera,
+            'visiongeneral': semrush_base_dict.get('VisionGeneral', 0),
+            'palabras': semrush_base_dict.get('Palabras', 0),
+            'volumen': semrush_base_dict.get('Volumen', 0),
+            'id_carrera': idCarrera,
         }])
         hjSemrush = pd.DataFrame([{
-            'Visión General': semrush_consulta_rows[0].get('VisionGeneral', 0),
-            'Palabras': semrush_consulta_rows[0].get('Palabras', 0),
-            'Volumen': semrush_consulta_rows[0].get('Volumen', 0),
+            'visiongeneral': semrush_consulta_rows[0].get('VisionGeneral', 0),
+            'palabras': semrush_consulta_rows[0].get('Palabras', 0),
+            'volumen': semrush_consulta_rows[0].get('Volumen', 0),
         }])
         # Normalizar a numérico
-        for col in ['Visión General', 'Palabras', 'Volumen']:
+        for col in ['visiongeneral', 'palabras', 'volumen']:
             hjSemrushBase[col] = pd.to_numeric(hjSemrushBase[col], errors='coerce').fillna(0)
             hjSemrush[col] = pd.to_numeric(hjSemrush[col], errors='coerce').fillna(0)
     else:
@@ -75,20 +75,20 @@ def calc_busquedaWeb(source=None):
 
     # --- CALCULO SEMRUSH ---
     # Filtrar en SemrushBase el ID Carrera por el id de la carrera referencia
-    filtroCarrera = hjSemrushBase["ID Carrera"] == idCarrera if "ID Carrera" in hjSemrushBase.columns else [True] * len(hjSemrushBase)
+    filtroCarrera = hjSemrushBase["id_carrera"] == idCarrera if "id_carrera" in hjSemrushBase.columns else [True] * len(hjSemrushBase)
     datosSemrushCarrera = hjSemrushBase[filtroCarrera]
     if datosSemrushCarrera.empty:
         print("Semrush base para la carrera no disponible.")
         return 0
-    datosSemrushCarrera_dict = datosSemrushCarrera[['Visión General', 'Palabras', 'Volumen']].iloc[0].to_dict()
+    datosSemrushCarrera_dict = datosSemrushCarrera[['visiongeneral', 'palabras', 'volumen']].iloc[0].to_dict()
 
     # Guardar en un diccionario datos semrush consultados
     datosSemrushConsulta_dict = hjSemrush.iloc[0].to_dict()
 
     # Calculos
     # Vision general
-    visionGeneralBase = datosSemrushCarrera_dict['Visión General']
-    visionGeneralConsulta = datosSemrushConsulta_dict['Visión General']
+    visionGeneralBase = datosSemrushCarrera_dict['visiongeneral']
+    visionGeneralConsulta = datosSemrushConsulta_dict['visiongeneral']
 
     if visionGeneralBase != 0:
         resVisionGeneral = ((visionGeneralConsulta * SEMRUSH) / visionGeneralBase) * 100
@@ -96,8 +96,8 @@ def calc_busquedaWeb(source=None):
         resVisionGeneral = 0  # O algún valor por defecto, o puedes lanzar un warning
 
     # Palabras
-    palabrasBase = datosSemrushCarrera_dict['Palabras']
-    palabrasConsulta = datosSemrushConsulta_dict['Palabras']
+    palabrasBase = datosSemrushCarrera_dict['palabras']
+    palabrasConsulta = datosSemrushConsulta_dict['palabras']
 
     if palabrasBase != 0:
         resPalabras = ((palabrasConsulta * SEMRUSH) / palabrasBase) * 100
@@ -105,8 +105,8 @@ def calc_busquedaWeb(source=None):
         resPalabras = 0
 
     # Volumen
-    volumenBase = datosSemrushCarrera_dict['Volumen']
-    volumenConsulta = datosSemrushConsulta_dict['Volumen']
+    volumenBase = datosSemrushCarrera_dict['volumen']
+    volumenConsulta = datosSemrushConsulta_dict['volumen']
 
     if volumenBase != 0:
         resVolumen = ((volumenConsulta * SEMRUSH) / volumenBase) * 100

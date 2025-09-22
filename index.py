@@ -372,12 +372,19 @@ def pagina_formulario():
 
 # --- Reporte proyecto ---
 def pagina_reporte(id):
-    # Obtener nombre del proyecto
+    # Obtener nombre del proyecto con manejo de errores y rollback
     conn, cur = get_conn_cursor()
-    cur.execute("SELECT carrera_estudio FROM proyectos_tendencias WHERE id=%s", (id,))
-    row = cur.fetchone()
-    nombre_proyecto = row[0] if row else "Proyecto desconocido"
-    nombre_proyecto = " ".join([w.capitalize() for w in nombre_proyecto.split()])
+    try:
+        cur.execute("SELECT carrera_estudio FROM proyectos_tendencias WHERE id=%s", (id,))
+        row = cur.fetchone()
+        nombre_proyecto = row[0] if row else "Proyecto desconocido"
+        nombre_proyecto = " ".join([w.capitalize() for w in nombre_proyecto.split()])
+    except Exception as e:
+        conn.rollback()
+        cur.close()
+        conn.close()
+        st.error(f"Error en la base de datos: {e}")
+        return
     cur.close()
     conn.close()
 
@@ -414,6 +421,14 @@ def pagina_reporte(id):
         )
         st.dataframe(df_rango, use_container_width=True, hide_index=True)
     except Exception as e:
+        # Si ocurre un error en la consulta, intentar rollback de la conexión global si existe
+        try:
+            conn, cur = get_conn_cursor()
+            conn.rollback()
+            cur.close()
+            conn.close()
+        except Exception:
+            pass
         st.error(f"ERROR mostrando reporte: {e}")
         
 # --- Presentación ---

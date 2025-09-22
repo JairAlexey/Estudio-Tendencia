@@ -1,3 +1,13 @@
+import unicodedata
+# Función para normalizar texto (mayúsculas y sin tildes)
+def normalizar_texto(texto):
+    if not texto:
+        return ""
+    texto = str(texto)
+    texto = unicodedata.normalize('NFKD', texto)
+    texto = ''.join([c for c in texto if not unicodedata.combining(c)])
+    return texto.upper()
+
 import streamlit as st
 import pandas as pd
 import os
@@ -73,7 +83,7 @@ def calcular_valor_general(parametro, proyecto_id):
         elif parametro == "Mercado":
             resultado = calc_mercado(proyecto_id)
             if resultado == 0:
-                st.warning("No se encontraron datos de Mercado en el archivo Excel.")
+                st.warning("No se encontraron datos de Mercado en la base de datos.")
             return resultado
         return 0
     except Exception as e:
@@ -100,11 +110,11 @@ def procesar_proyecto(proyecto_id, nombre_archivo):
     presencialidad_resultados = []
     virtualidad_resultados = []
     # Calcular todos los valores requeridos una sola vez
-    valor_busqueda = calcular_valor_general("Búsqueda Web", proyecto_id)
-    valor_linkedin = calcular_valor_general("LinkedIN", proyecto_id)
-    valor_mercado = calcular_valor_general("Mercado", proyecto_id)
-    valor_competencia_presencial = calcular_presencial_competencia(proyecto_id)
-    valor_competencia_virtual = calcular_virtual_competencia(proyecto_id)
+    valor_busqueda = float(calcular_valor_general("Búsqueda Web", proyecto_id))
+    valor_linkedin = float(calcular_valor_general("LinkedIN", proyecto_id))
+    valor_mercado = float(calcular_valor_general("Mercado", proyecto_id))
+    valor_competencia_presencial = float(calcular_presencial_competencia(proyecto_id))
+    valor_competencia_virtual = float(calcular_virtual_competencia(proyecto_id))
     for i, parametro in enumerate(parametros):
         if parametro == "Competencia":
             presencialidad_resultados.append(valor_competencia_presencial)
@@ -133,13 +143,27 @@ def procesar_proyecto(proyecto_id, nombre_archivo):
                 UPDATE grafico_radar_datos SET
                     valor_busqueda=%s, valor_competencia_presencialidad=%s, valor_competencia_virtualidad=%s, valor_linkedin=%s, valor_mercado=%s, updated_at=CURRENT_TIMESTAMP
                 WHERE proyecto_id=%s
-            """, (valor_busqueda, valor_competencia_presencial, valor_competencia_virtual, valor_linkedin, valor_mercado, proyecto_id))
+            """, (
+                float(valor_busqueda),
+                float(valor_competencia_presencial),
+                float(valor_competencia_virtual),
+                float(valor_linkedin),
+                float(valor_mercado),
+                proyecto_id
+            ))
         else:
             cur.execute("""
                 INSERT INTO grafico_radar_datos (
                     proyecto_id, valor_busqueda, valor_competencia_presencialidad, valor_competencia_virtualidad, valor_linkedin, valor_mercado
                 ) VALUES (%s, %s, %s, %s, %s, %s)
-            """, (proyecto_id, valor_busqueda, valor_competencia_presencial, valor_competencia_virtual, valor_linkedin, valor_mercado))
+            """, (
+                proyecto_id,
+                float(valor_busqueda),
+                float(valor_competencia_presencial),
+                float(valor_competencia_virtual),
+                float(valor_linkedin),
+                float(valor_mercado)
+            ))
         conn.commit()
         cur.close()
     except Exception as e:

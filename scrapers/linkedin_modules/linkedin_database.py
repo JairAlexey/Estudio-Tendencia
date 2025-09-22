@@ -1,8 +1,19 @@
+
 import xlwings as xw
 import pandas as pd
 import os
 from conexion import conn, cursor, ensure_connection, is_connected
 import datetime
+import unicodedata
+
+# Función para normalizar texto (mayúsculas y sin tildes)
+def normalizar_texto(texto):
+    if not texto:
+        return ""
+    texto = str(texto)
+    texto = unicodedata.normalize('NFKD', texto)
+    texto = ''.join([c for c in texto if not unicodedata.combining(c)])
+    return texto.upper()
 
 def extraer_datos_tabla(nombre_tabla, proyecto_id):
     """
@@ -128,11 +139,14 @@ def obtener_id_carrera(nombre_carrera):
     ensure_connection()
     if not is_connected():
         raise ValueError("No hay conexión a PostgreSQL. No se puede obtener ID de carrera.")
-    cursor.execute("SELECT ID FROM carreras_facultad WHERE Carrera = %s", (nombre_carrera,))
-    row = cursor.fetchone()
-    if not row:
-        raise ValueError(f"No se encontró ninguna carrera para '{nombre_carrera}'.")
-    return row[0]
+    nombre_carrera_norm = normalizar_texto(nombre_carrera)
+    cursor.execute("SELECT ID, Carrera FROM carreras_facultad")
+    rows = cursor.fetchall()
+    for row in rows:
+        carrera_db = row[1]
+        if normalizar_texto(carrera_db) == nombre_carrera_norm:
+            return row[0]
+    raise ValueError(f"No se encontró ninguna carrera para '{nombre_carrera}'.")
 
 def obtener_codigos_por_id_carrera(id_carrera):
     ensure_connection()

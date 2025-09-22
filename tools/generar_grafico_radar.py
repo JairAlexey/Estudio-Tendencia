@@ -10,7 +10,7 @@ def generar_grafico_radar_desde_bd(proyecto_id, ruta_salida):
     cursor.execute('''
         SELECT valor_busqueda, valor_competencia_presencialidad, valor_competencia_virtualidad, valor_linkedin, valor_mercado
         FROM grafico_radar_datos
-        WHERE proyecto_id = ?
+        WHERE proyecto_id = %s
     ''', (proyecto_id,))
     row = cursor.fetchone()
     print(f"[DEBUG] Datos obtenidos de grafico_radar_datos para proyecto_id={proyecto_id}: {row}")
@@ -18,11 +18,11 @@ def generar_grafico_radar_desde_bd(proyecto_id, ruta_salida):
         print(f"No hay datos de gráfico radar para proyecto_id={proyecto_id}")
         return
     # Reemplazar None por 0 para evitar errores
-    valor_busqueda = row[0] if row[0] is not None else 0
-    valor_competencia_presencialidad = row[1] if row[1] is not None else 0
-    valor_competencia_virtualidad = row[2] if row[2] is not None else 0
-    valor_linkedin = row[3] if row[3] is not None else 0
-    valor_mercado = row[4] if row[4] is not None else 0
+    valor_busqueda = float(row[0]) if row[0] is not None else 0.0
+    valor_competencia_presencialidad = float(row[1]) if row[1] is not None else 0.0
+    valor_competencia_virtualidad = float(row[2]) if row[2] is not None else 0.0
+    valor_linkedin = float(row[3]) if row[3] is not None else 0.0
+    valor_mercado = float(row[4]) if row[4] is not None else 0.0
 
     # Calcular valores según reglas
     competencia_avg = (valor_competencia_presencialidad + valor_competencia_virtualidad) / 2

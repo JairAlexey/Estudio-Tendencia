@@ -3,7 +3,7 @@ def mostrar_formulario_edicion(id):
     st.title("Editar Proyecto y Tendencias")
     # Obtener datos actuales del proyecto
     with conn.cursor() as cur:
-        cur.execute("SELECT tipo_carpeta, carrera_referencia, carrera_estudio, palabra_semrush, codigo_ciiu, carrera_linkedin FROM proyectos_tendencias WHERE id=?", id)
+        cur.execute("SELECT tipo_carpeta, carrera_referencia, carrera_estudio, palabra_semrush, codigo_ciiu, carrera_linkedin FROM proyectos_tendencias WHERE id=%s", (id,))
         proyecto = cur.fetchone()
         if not proyecto:
             st.error("Proyecto no encontrado.")
@@ -12,12 +12,12 @@ def mostrar_formulario_edicion(id):
 
     # Tendencias
     with conn.cursor() as cur:
-        cur.execute("SELECT palabra, promedio FROM tendencias WHERE proyecto_id=?", id)
+        cur.execute("SELECT palabra, promedio FROM tendencias WHERE proyecto_id=%s", (id,))
         tendencias = cur.fetchall()
 
     # Modalidad de oferta
     with conn.cursor() as cur:
-        cur.execute("SELECT presencial, virtual FROM modalidad_oferta WHERE proyecto_id=?", id)
+        cur.execute("SELECT presencial, virtual FROM modalidad_oferta WHERE proyecto_id=%s", (id,))
         modalidad = cur.fetchall()
 
     # --- Formulario ---
@@ -112,13 +112,13 @@ def mostrar_formulario_edicion(id):
                 with conn.cursor() as cur:
                     cur.execute('''
                         UPDATE proyectos_tendencias SET
-                            tipo_carpeta=?, carrera_referencia=?, carrera_estudio=?, palabra_semrush=?, codigo_ciiu=?, carrera_linkedin=?
-                        WHERE id=?
-                    ''', tipo_carpeta, nombre_proyecto_1_norm, nombre_proyecto_2_norm, palabra_semrush_norm, codigo_ciiu, carrera_linkedin_input_norm, id)
+                            tipo_carpeta=%s, carrera_referencia=%s, carrera_estudio=%s, palabra_semrush=%s, codigo_ciiu=%s, carrera_linkedin=%s
+                        WHERE id=%s
+                    ''', (tipo_carpeta, nombre_proyecto_1_norm, nombre_proyecto_2_norm, palabra_semrush_norm, codigo_ciiu, carrera_linkedin_input_norm, id))
 
                 # Eliminar tendencias
                 with conn.cursor() as cur:
-                    cur.execute("DELETE FROM tendencias WHERE proyecto_id=?", id)
+                    cur.execute("DELETE FROM tendencias WHERE proyecto_id=%s", (id,))
 
                 # Insertar tendencias
                 for row in df_trends.to_dict("records"):
@@ -132,12 +132,12 @@ def mostrar_formulario_edicion(id):
                         with conn.cursor() as cur:
                             cur.execute('''
                                 INSERT INTO tendencias (proyecto_id, palabra, promedio)
-                                VALUES (?, ?, ?)
-                            ''', id, palabra, promedio_float)
+                                VALUES (%s, %s, %s)
+                            ''', (id, palabra, promedio_float))
 
                 # Eliminar modalidad de oferta
                 with conn.cursor() as cur:
-                    cur.execute("DELETE FROM modalidad_oferta WHERE proyecto_id=?", id)
+                    cur.execute("DELETE FROM modalidad_oferta WHERE proyecto_id=%s", (id,))
 
                 # Insertar modalidad de oferta
                 if df_modalidad.shape[0] > 0:
@@ -146,8 +146,8 @@ def mostrar_formulario_edicion(id):
                     with conn.cursor() as cur:
                         cur.execute('''
                             INSERT INTO modalidad_oferta (proyecto_id, presencial, virtual)
-                            VALUES (?, ?, ?)
-                        ''', id, presencial, virtual)
+                            VALUES (%s, %s, %s)
+                        ''', (id, presencial, virtual))
 
                 conn.commit()
                 try:
@@ -322,6 +322,10 @@ def obtener_carreras_por_nivel(nivel):
             rows = cur.fetchall()
             return [row[0] for row in rows]
     except Exception as e:
+        try:
+            conn.rollback()
+        except:
+            pass
         st.error(f"Error al consultar carreras: {e}")
         return []
 
@@ -445,15 +449,16 @@ def mostrar_formulario():
                         cur.execute('''
                             INSERT INTO proyectos_tendencias (
                                 tipo_carpeta, carrera_referencia, carrera_estudio, palabra_semrush, codigo_ciiu, carrera_linkedin
-                            ) OUTPUT INSERTED.id VALUES (?, ?, ?, ?, ?, ?)
-                        ''',
+                            ) VALUES (%s, %s, %s, %s, %s, %s)
+                            RETURNING id
+                        ''', (
                             tipo_carpeta,
                             nombre_proyecto_1_norm,
                             nombre_proyecto_2_norm,
                             palabra_semrush_norm,
                             codigo_ciiu,
                             carrera_linkedin_input_norm
-                        )
+                        ))
                         proyecto_id_row = cur.fetchone()
                         if proyecto_id_row is None or proyecto_id_row[0] is None:
                             raise Exception("No se pudo obtener el ID del proyecto insertado.")
@@ -468,21 +473,19 @@ def mostrar_formulario():
                                     promedio_float = float(promedio)
                                 except:
                                     promedio_float = None
-                                # Guardar como valores nativos, no como string
                                 cur.execute('''
                                     INSERT INTO tendencias (proyecto_id, palabra, promedio)
-                                    VALUES (?, ?, ?)
-                                ''', proyecto_id, palabra, promedio_float)
+                                    VALUES (%s, %s, %s)
+                                ''', (proyecto_id, palabra, promedio_float))
 
                         # Insertar modalidad de oferta (solo una fila)
                         if df_modalidad.shape[0] > 0:
                             presencial = df_modalidad.iloc[0].get("Presencial", "")
                             virtual = df_modalidad.iloc[0].get("Virtual", "")
-                            # Guardar como valores nativos, no como string
                             cur.execute('''
                                 INSERT INTO modalidad_oferta (proyecto_id, presencial, virtual)
-                                VALUES (?, ?, ?)
-                            ''', proyecto_id, presencial, virtual)
+                                VALUES (%s, %s, %s)
+                            ''', (proyecto_id, presencial, virtual))
 
                         conn.commit()
                     # Encolar job para el nuevo proyecto
@@ -620,13 +623,13 @@ def mostrar_formulario_edicion(id):
                 with conn.cursor() as cur:
                     cur.execute('''
                         UPDATE proyectos_tendencias SET
-                            tipo_carpeta=?, carrera_referencia=?, carrera_estudio=?, palabra_semrush=?, codigo_ciiu=?, carrera_linkedin=?
-                        WHERE id=?
-                    ''', tipo_carpeta, nombre_proyecto_1_norm, nombre_proyecto_2_norm, palabra_semrush_norm, codigo_ciiu, carrera_linkedin_input_norm, id)
+                            tipo_carpeta=%s, carrera_referencia=%s, carrera_estudio=%s, palabra_semrush=%s, codigo_ciiu=%s, carrera_linkedin=%s
+                        WHERE id=%s
+                    ''', (tipo_carpeta, nombre_proyecto_1_norm, nombre_proyecto_2_norm, palabra_semrush_norm, codigo_ciiu, carrera_linkedin_input_norm, id))
 
                 # Eliminar tendencias
                 with conn.cursor() as cur:
-                    cur.execute("DELETE FROM tendencias WHERE proyecto_id=?", id)
+                    cur.execute("DELETE FROM tendencias WHERE proyecto_id=%s", (id,))
 
                 # Insertar tendencias
                 for row in df_trends.to_dict("records"):
@@ -640,12 +643,12 @@ def mostrar_formulario_edicion(id):
                         with conn.cursor() as cur:
                             cur.execute('''
                                 INSERT INTO tendencias (proyecto_id, palabra, promedio)
-                                VALUES (?, ?, ?)
-                            ''', id, palabra, promedio_float)
+                                VALUES (%s, %s, %s)
+                            ''', (id, palabra, promedio_float))
 
                 # Eliminar modalidad de oferta
                 with conn.cursor() as cur:
-                    cur.execute("DELETE FROM modalidad_oferta WHERE proyecto_id=?", id)
+                    cur.execute("DELETE FROM modalidad_oferta WHERE proyecto_id=%s", (id,))
 
                 # Insertar modalidad de oferta
                 if df_modalidad.shape[0] > 0:
@@ -654,8 +657,8 @@ def mostrar_formulario_edicion(id):
                     with conn.cursor() as cur:
                         cur.execute('''
                             INSERT INTO modalidad_oferta (proyecto_id, presencial, virtual)
-                            VALUES (?, ?, ?)
-                        ''', id, presencial, virtual)
+                            VALUES (%s, %s, %s)
+                        ''', (id, presencial, virtual))
 
                 conn.commit()
                 try:
