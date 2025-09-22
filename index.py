@@ -133,20 +133,25 @@ def pagina_inicio():
     search_query = st.text_input("Buscar proyecto por nombre o tipo de carpeta", key="search_query", label_visibility="collapsed")
     
     with conn.cursor() as cur:
-        cur.execute("SELECT id, carrera_estudio, tipo_carpeta, mensaje_error FROM proyectos_tendencias ORDER BY id DESC")
-        proyectos = cur.fetchall()
-        # Traer último estado de scraper por proyecto
-        cur.execute(
-            """
-            SELECT proyecto_id, status
-            FROM (
-                SELECT proyecto_id, status,
-                       ROW_NUMBER() OVER (PARTITION BY proyecto_id ORDER BY created_at DESC) rn
-                FROM scraper_queue
-            ) t WHERE rn = 1
-            """
-        )
-        estados = {row[0]: row[1] for row in cur.fetchall()}
+        try:
+            cur.execute("SELECT id, carrera_estudio, tipo_carpeta, mensaje_error FROM proyectos_tendencias ORDER BY id DESC")
+            proyectos = cur.fetchall()
+            # Traer último estado de scraper por proyecto
+            cur.execute(
+                """
+                SELECT proyecto_id, status
+                FROM (
+                    SELECT proyecto_id, status,
+                           ROW_NUMBER() OVER (PARTITION BY proyecto_id ORDER BY created_at DESC) rn
+                    FROM scraper_queue
+                ) t WHERE rn = 1
+                """
+            )
+            estados = {row[0]: row[1] for row in cur.fetchall()}
+        except Exception as e:
+            conn.rollback()
+            st.error(f"Error en la base de datos: {e}")
+            return
 
     # Diccionario de traducción y color/ícono
     estado_traducido = {
