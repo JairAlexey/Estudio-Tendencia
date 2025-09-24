@@ -468,6 +468,9 @@ def pagina_presentacion(id):
             </div>
         """, unsafe_allow_html=True)
         if status == "finished" and file_data:
+            # Convertir a bytes si es memoryview
+            if isinstance(file_data, memoryview):
+                file_data = file_data.tobytes()
             st.download_button(
                 label="📥 Descargar presentación",
                 data=file_data,

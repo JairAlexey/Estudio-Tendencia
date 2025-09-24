@@ -9,7 +9,7 @@ def obtener_datos_solicitud_por_proyecto(proyecto_id):
     cursor.execute('''
         SELECT nombre_proponente, duracion, modalidad, nombre_programa, facultad_propuesta, facultad_proponente, cargo_proponente
         FROM datos_solicitud
-        WHERE proyecto_id = ?
+        WHERE proyecto_id = %s
     ''', (proyecto_id,))
     row = cursor.fetchone()
     if row:

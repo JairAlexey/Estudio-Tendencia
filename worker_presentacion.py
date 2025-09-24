@@ -61,6 +61,7 @@ def procesar_presentacion_queue():
                 print(f"Presentación para proyecto_id={proyecto_id} guardada en la base de datos correctamente.")
             except Exception as e:
                 print(f"Error procesando presentación para proyecto_id={proyecto_id}: {e}")
+                conn.rollback()  # <-- Añade rollback aquí
                 with conn.cursor() as cur:
                     cur.execute("UPDATE presentation_queue SET status='error', error=%s WHERE id=%s", (str(e), queue_id))
                     conn.commit()
