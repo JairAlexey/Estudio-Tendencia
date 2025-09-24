@@ -13,10 +13,10 @@ def get_conn_cursor():
 def mostrar_navegacion(key):
     selected = option_menu(
         menu_title=None,  # Oculta título
-        options=["Inicio", "Formulario"],
+        options=["Proyectos", "Formulario"],
         icons=["house", "ui-checks"],  # Iconos de Bootstrap
         menu_icon="cast",
-        default_index=0 if st.session_state.get("page", "inicio") == "inicio" else 1,
+        default_index=0 if st.session_state.get("page", "proyectos") == "proyectos" else 1,
         orientation="horizontal",
         styles={
             "container": {"padding": "0!important", "background-color": "#1e293b"},
@@ -35,13 +35,13 @@ def mostrar_navegacion(key):
     # Solo actualiza la página si no está en una acción especial
     # Si se acaba de guardar exitosamente, no sobrescribir la página
     if st.session_state.get("exito_guardado"):
-        return "inicio"
-    if st.session_state.get("page", "inicio") in ["inicio", "formulario", "form", "f"]:
+        return "proyectos"
+    if st.session_state.get("page", "proyectos") in ["proyectos", "formulario", "form", "f"]:
         st.session_state["page"] = selected.lower()
     return st.session_state["page"]
 
 
-# --- Página de inicio ---
+# --- Página de proyectos ---
 def pagina_inicio():
     # Mostrar mensaje de éxito si viene de guardar en el formulario
     if st.session_state.get("exito_guardado"):
@@ -306,8 +306,8 @@ def pagina_inicio():
 
 # --- Editar proyecto ---
 def pagina_editar(id):
-    if st.button("Regresar al inicio", key="volver_inicio_editar"):
-        st.session_state["page"] = "inicio"
+    if st.button("Regresar al proyectos", key="volver_inicio_editar"):
+        st.session_state["page"] = "proyectos"
         st.rerun()
     try:
         import sys
@@ -342,7 +342,7 @@ def pagina_eliminar(id):
             cur2.close()
             conn2.close()
             st.success("Proyecto eliminado correctamente.")
-            st.query_params.update({"page": "inicio"})
+            st.query_params.update({"page": "proyectos"})
             st.rerun()
         except Exception as e:
             st.error(f"Error eliminando proyecto: {e}")
@@ -388,8 +388,8 @@ def pagina_reporte(id):
     cur.close()
     conn.close()
 
-    if st.button("Regresar al inicio", key="volver_inicio_ver"):
-        st.session_state["page"] = "inicio"
+    if st.button("Regresar al proyectos", key="volver_inicio_ver"):
+        st.session_state["page"] = "proyectos"
         st.rerun()
 
     # Importar la lógica de reporte desde app.py
@@ -448,8 +448,8 @@ def pagina_presentacion(id):
     cur.close()
     conn.close()
     st.title(f"Presentación generada para: {nombre_proyecto}")
-    if st.button("Regresar al inicio", key="volver_inicio_presentacion"):
-        st.session_state["page"] = "inicio"
+    if st.button("Regresar al proyectos", key="volver_inicio_presentacion"):
+        st.session_state["page"] = "proyectos"
         st.rerun()
     # Mostrar estado de la presentación
     conn2, cur2 = get_conn_cursor()
@@ -505,9 +505,9 @@ def pagina_presentacion(id):
 # --- Layout principal ---
 def main():
 
-    page = st.session_state.get("page", "inicio")
-    # Solo mostrar navegación en inicio y formulario
-    if page in ["inicio", "formulario", "form", "f"]:
+    page = st.session_state.get("page", "proyectos")
+    # Solo mostrar navegación en proyectos y formulario
+    if page in ["proyectos", "formulario", "form", "f"]:
         page = mostrar_navegacion("nav_main")
         if page in ["formulario", "form", "f"]:
             st.session_state["limpiar_formulario"] = True
