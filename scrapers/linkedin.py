@@ -212,7 +212,7 @@ def linkedin_scraper():
             try:
                 from conexion import conn
                 cur = conn.cursor()
-                cur.execute("UPDATE proyectos_tendencias SET mensaje_error=NULL WHERE id=%s", (proyecto_id,))
+                cur.execute("UPDATE proyectos_tendencias SET mensaje_error=%s WHERE id=%s", (None, proyecto_id))
                 conn.commit()
                 cur.close()
             except Exception as e:

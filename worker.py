@@ -2,7 +2,10 @@ import os
 import sys
 import time
 import shutil
-import os
+
+# Configurar variables de entorno para evitar conflictos de rutas en Windows
+os.environ["STREAMLIT_BROWSER_GATHER_USAGE_STATS"] = "false"
+os.environ["STREAMLIT_SERVER_FILE_WATCHER_TYPE"] = "none"
 
 PROFILE_DIR = os.path.join(os.path.dirname(__file__), 'profile')
 

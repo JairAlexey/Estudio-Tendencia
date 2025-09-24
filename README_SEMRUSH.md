@@ -60,14 +60,15 @@ python test_semrush.py 1
 ### Tabla `proyectos_tendencias`
 ```sql
 CREATE TABLE proyectos_tendencias (
-    id int IDENTITY(1,1) NOT NULL,
-    tipo_carpeta nvarchar(100),
-    carrera_referencia nvarchar(200),
-    carrera_estudio nvarchar(200),
-    palabra_semrush nvarchar(200),  -- Palabra clave para Semrush
-    codigo_ciiu nvarchar(50),
-    CONSTRAINT PK_proyectos_tendencias PRIMARY KEY (id)
-)
+    id SERIAL PRIMARY KEY,
+    tipo_carpeta VARCHAR(100),
+    carrera_referencia VARCHAR(200),
+    carrera_estudio VARCHAR(200),
+    palabra_semrush VARCHAR(200),  -- Palabra clave para Semrush
+    codigo_ciiu VARCHAR(50),
+    carrera_linkedin VARCHAR(200),
+    mensaje_error TEXT
+);
 ```
 
 ### Tabla `semrush`

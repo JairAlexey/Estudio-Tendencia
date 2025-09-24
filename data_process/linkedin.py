@@ -15,7 +15,7 @@ def calc_linkedin(proyecto_id):
     df = pd.DataFrame(data)
 
     # ECUADOR
-    # Usar 'region' en minúsculas para compatibilidad con PostgreSQL
+    # Usar nombres de columnas en minúsculas para compatibilidad con PostgreSQL
     filtroEC = df["region"] == "Ecuador"
     data_ecuador = df[filtroEC]
 

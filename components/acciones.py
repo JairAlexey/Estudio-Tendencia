@@ -5,7 +5,7 @@ import pandas as pd
 def visualizar_proyecto(id):
     st.header("Visualizar Proyecto")
     with conn.cursor() as cur:
-        cur.execute("SELECT * FROM proyectos_tendencias WHERE id=?", id)
+        cur.execute("SELECT * FROM proyectos_tendencias WHERE id=%s", (id,))
         proyecto = cur.fetchone()
     if not proyecto:
         st.error("Proyecto no encontrado.")
@@ -21,7 +21,7 @@ def editar_proyecto(id):
 def eliminar_proyecto(id):
     st.header("Eliminar Proyecto")
     with conn.cursor() as cur:
-        cur.execute("SELECT nombre_proyecto FROM proyectos_tendencias WHERE id=?", id)
+        cur.execute("SELECT carrera_estudio FROM proyectos_tendencias WHERE id=%s", (id,))
         proyecto = cur.fetchone()
     if not proyecto:
         st.error("Proyecto no encontrado.")
@@ -29,7 +29,8 @@ def eliminar_proyecto(id):
     st.warning(f"¿Está seguro que desea eliminar el proyecto '{proyecto[0]}'?")
     if st.button("Eliminar definitivamente"):
         with conn.cursor() as cur:
-            cur.execute("DELETE FROM proyectos_tendencias WHERE id=?", id)
+            cur.execute("DELETE FROM proyectos_tendencias WHERE id=%s", (id,))
             conn.commit()
         st.success("Proyecto eliminado correctamente.")
-        st.experimental_set_query_params(page="inicio")
+        st.query_params.update({"page": "inicio"})
+        st.rerun()

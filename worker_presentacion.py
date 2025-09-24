@@ -2,6 +2,11 @@ import os
 import sys
 import time
 import dropbox
+
+# Configurar variables de entorno para evitar conflictos de rutas
+os.environ["STREAMLIT_BROWSER_GATHER_USAGE_STATS"] = "false"
+os.environ["STREAMLIT_SERVER_FILE_WATCHER_TYPE"] = "none"
+
 from conexion import conn, cursor
 from tools.generar_grafico_radar import generar_grafico_radar_desde_bd
 from tools.generar_reporte_pptx import generar_reporte

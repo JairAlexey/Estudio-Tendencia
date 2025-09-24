@@ -199,7 +199,7 @@ def procesar_proyecto(proyecto_id, nombre_archivo):
         .format({"Presencialidad": lambda x: f"{x:.0f}%", "Virtualidad": lambda x: f"{x:.0f}%"})
     )
 
-    st.dataframe(styled_df, use_container_width=True, hide_index=True)
+    st.dataframe(styled_df, width="stretch", hide_index=True)
 
 df_rango = pd.DataFrame(
     {

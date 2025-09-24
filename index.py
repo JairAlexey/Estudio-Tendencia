@@ -419,7 +419,7 @@ def pagina_reporte(id):
                 ],
             }
         )
-        st.dataframe(df_rango, use_container_width=True, hide_index=True)
+        st.dataframe(df_rango, width="stretch", hide_index=True)
     except Exception as e:
         # Si ocurre un error en la consulta, intentar rollback de la conexión global si existe
         try:

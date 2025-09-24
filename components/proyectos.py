@@ -5,7 +5,7 @@ import pandas as pd
 def mostrar_proyectos():
     st.header("Proyectos registrados")
     with conn.cursor() as cur:
-        cur.execute("SELECT id, nombre_proyecto, tipo_carpeta FROM proyectos_tendencias")
+        cur.execute("SELECT id, carrera_estudio, tipo_carpeta FROM proyectos_tendencias")
         proyectos = cur.fetchall()
     if not proyectos:
         st.info("No hay proyectos registrados.")
@@ -20,12 +20,12 @@ def mostrar_proyectos():
             if cols[0].button("Visualizar", key=f"ver_{id}"):
                 st.session_state["page"] = "ver"
                 st.session_state["id"] = id
-                st.experimental_rerun()
+                st.rerun()
             if cols[1].button("Editar", key=f"editar_{id}"):
                 st.session_state["page"] = "editar"
                 st.session_state["id"] = id
-                st.experimental_rerun()
+                st.rerun()
             if cols[2].button("Eliminar", key=f"eliminar_{id}"):
                 st.session_state["page"] = "eliminar"
                 st.session_state["id"] = id
-                st.experimental_rerun()
+                st.rerun()
