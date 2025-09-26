@@ -208,17 +208,25 @@ def listar_proyectos():
     ]
 
 # --- Cola de Scrapers ---
-def enqueue_scraper_job(proyecto_id):
+# Definir constantes de prioridad
+PRIORITY_DEFAULT = 2  # Media por defecto
+PRIORITY_MAP = {"Alta": 1, "Media": 2, "Baja": 3}
+
+def enqueue_scraper_job(proyecto_id, priority=PRIORITY_DEFAULT):
+    """
+    Encola un trabajo de scraping con prioridad opcional.
+    Si no se especifica prioridad, usa prioridad Media (2)
+    """
     ensure_connection()
     if not is_connected():
         print("No hay conexión a PostgreSQL. No se puede encolar job.")
         return
     cursor.execute(
         """
-        INSERT INTO scraper_queue (proyecto_id, status)
-        VALUES (%s, 'queued')
+        INSERT INTO scraper_queue (proyecto_id, status, priority)
+        VALUES (%s, 'queued', %s)
         """,
-        (proyecto_id,),
+        (proyecto_id, priority),
     )
     conn.commit()
 
@@ -227,13 +235,13 @@ def fetch_next_job():
     if not is_connected():
         print("No hay conexión a PostgreSQL. No se puede continuar.")
         return None
-    # Buscar jobs en 'queued' o 'retry'
+    # Buscar jobs en 'queued' o 'retry' priorizando por priority
     cursor.execute(
         """
         SELECT id, proyecto_id
         FROM scraper_queue
         WHERE status IN ('queued', 'retry')
-        ORDER BY created_at ASC
+        ORDER BY priority ASC, created_at ASC
         LIMIT 1
         """
     )

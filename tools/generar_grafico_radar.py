@@ -86,11 +86,12 @@ def generar_grafico_radar_desde_bd(proyecto_id, ruta_salida):
             rot = 405
         else:
             rot = 0
-        ax.text(angle, 1.08, label, rotation=rot, ha='center', va='center', fontsize=12, rotation_mode='anchor')
-    ax.set_ylim(0, 1.0)
+        ax.text(angle, 1.28, label, rotation=rot, ha='center', va='center', fontsize=12, rotation_mode='anchor')
+    ax.set_ylim(0, 1.20)
     yticks = [0.0, 0.20, 0.40, 0.60, 0.80, 1.0]
     ax.set_yticks(yticks)
     ax.set_yticklabels([f"{int(y*100)}%" for y in yticks])
-    plt.savefig(ruta_salida.replace('.jpg', '.png'), format='png', bbox_inches='tight', dpi=300)
+    plt.savefig(ruta_salida.replace('.jpg', '.png'),
+            format='png', bbox_inches='tight', pad_inches=0.2, dpi=300)
     plt.close(fig)
     return viabilidad
