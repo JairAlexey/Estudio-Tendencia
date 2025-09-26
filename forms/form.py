@@ -370,15 +370,17 @@ def mostrar_formulario_edicion(id):
         row = cur.fetchone()
         prioridad_actual = row[0] if row else PRIORITY_DEFAULT
 
-    # Tipo de carpeta y prioridad
+    # Tipo de carpeta y prioridad (primer selectbox)
     tipo_carpeta = st.selectbox("Tipo de carpeta", 
                                ["POSGRADOS TENDENCIA", "CARRERAS PREGRADO"], 
-                               index=0 if "POSGRADOS" in tipo_carpeta else 1)
+                               index=0 if "POSGRADOS" in tipo_carpeta else 1,
+                               key=f"tipo_carpeta_1_{id}")  # Añadir key única
     
     prioridad_label = st.selectbox(
         "Prioridad de procesamiento", 
         ["Alta", "Media", "Baja"], 
-        index=["Alta", "Media", "Baja"].index(PRIORIDAD_INV_MAP.get(prioridad_actual, "Media"))
+        index=["Alta", "Media", "Baja"].index(PRIORIDAD_INV_MAP.get(prioridad_actual, "Media")),
+        key=f"prioridad_{id}"  # Añadir key única
     )
 
     # Tendencias
@@ -392,7 +394,6 @@ def mostrar_formulario_edicion(id):
         modalidad = cur.fetchall()
 
     # --- Formulario ---
-    tipo_carpeta = st.selectbox("Tipo de carpeta", ["POSGRADOS TENDENCIA", "CARRERAS PREGRADO"], index=0 if "POSGRADOS" in tipo_carpeta else 1)
     # Carrera referencia
     tipo_carpeta_lower = tipo_carpeta.lower()
     carreras_filtradas = []
