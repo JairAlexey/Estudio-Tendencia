@@ -10,5 +10,3 @@ pyodbc
 streamlit-option-menu
 streamlit-elements
 python-pptx>=0.6.21
-pdf2image>=1.16.3
-pywin32

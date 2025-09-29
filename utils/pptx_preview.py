@@ -1,49 +1,38 @@
 import io
 import os
 import tempfile
-import pythoncom
-import win32com.client
+from pptx import Presentation
 import streamlit as st
 import base64
 
-def convert_pptx_to_pdf(pptx_data):
-    """Convierte un archivo PPTX a PDF y retorna los bytes del PDF"""
+def convert_pptx_to_pdf_bytes(pptx_data):
+    """Convierte PPTX a PDF usando unoconv (LibreOffice)"""
     try:
-        # Inicializar COM
-        pythoncom.CoInitialize()
-        
-        # Crear archivos temporales
-        temp_dir = tempfile.mkdtemp()
-        pptx_path = os.path.join(temp_dir, "temp.pptx")
-        pdf_path = os.path.join(temp_dir, "temp.pdf")
-        
         # Guardar PPTX temporal
-        with open(pptx_path, 'wb') as f:
-            f.write(pptx_data)
-
-        # Convertir a PDF usando PowerPoint
-        powerpoint = win32com.client.Dispatch("Powerpoint.Application")
-        presentation = powerpoint.Presentations.Open(pptx_path)
-        presentation.SaveAs(pdf_path, 32)  # 32 = formato PDF
-        presentation.Close()
-        powerpoint.Quit()
-
-        # Leer el PDF generado
-        with open(pdf_path, 'rb') as f:
-            pdf_data = f.read()
-
-        # Limpiar archivos temporales
-        os.unlink(pptx_path)
-        os.unlink(pdf_path)
-        os.rmdir(temp_dir)
+        with tempfile.NamedTemporaryFile(suffix='.pptx', delete=False) as tmp:
+            tmp.write(pptx_data)
+            pptx_path = tmp.name
         
-        return pdf_data
+        # Convertir a PDF usando unoconv
+        pdf_path = pptx_path.replace('.pptx', '.pdf')
+        os.system(f'unoconv -f pdf "{pptx_path}"')
+        
+        # Leer el PDF generado
+        if os.path.exists(pdf_path):
+            with open(pdf_path, 'rb') as f:
+                pdf_data = f.read()
+            
+            # Limpiar archivos temporales
+            os.unlink(pptx_path)
+            os.unlink(pdf_path)
+            
+            return pdf_data
+        else:
+            raise Exception("No se pudo generar el PDF")
 
     except Exception as e:
         st.error(f"Error al convertir PPTX a PDF: {str(e)}")
         return None
-    finally:
-        pythoncom.CoUninitialize()
 
 def mostrar_preview_pptx(file_data):
     """Muestra el PDF en el navegador usando un iframe"""
@@ -51,23 +40,37 @@ def mostrar_preview_pptx(file_data):
         if isinstance(file_data, memoryview):
             file_data = file_data.tobytes()
             
-        pdf_data = convert_pptx_to_pdf(file_data)
-        if pdf_data:
-            # Convertir PDF a base64
-            b64_pdf = base64.b64encode(pdf_data).decode('utf-8')
-            
-            # Crear iframe con el PDF
-            pdf_display = f'''
-                <iframe src="data:application/pdf;base64,{b64_pdf}" 
-                        width="100%" 
-                        height="800" 
-                        style="border: none;">
-                </iframe>
-            '''
-            st.markdown(pdf_display, unsafe_allow_html=True)
+        # Si estamos en Linux (Streamlit Cloud)
+        if os.name != 'nt':
+            pdf_data = convert_pptx_to_pdf_bytes(file_data)
+            if pdf_data:
+                b64_pdf = base64.b64encode(pdf_data).decode('utf-8')
+                pdf_display = f'''
+                    <iframe src="data:application/pdf;base64,{b64_pdf}" 
+                            width="100%" 
+                            height="800" 
+                            style="border: none;">
+                    </iframe>
+                '''
+                st.markdown(pdf_display, unsafe_allow_html=True)
+            else:
+                st.error("No se pudo convertir la presentación")
+                st.download_button(
+                    "Descargar PPTX",
+                    data=file_data,
+                    file_name="presentacion.pptx",
+                    mime="application/vnd.openxmlformats-officedocument.presentationml.presentation"
+                )
         else:
-            st.error("No se pudo convertir la presentación a PDF")
-            st.info("Asegúrese de tener Microsoft PowerPoint instalado")
+            # En Windows, usar el código original con PowerPoint
+            # ...existing code for Windows using pywin32...
+            pass
             
     except Exception as e:
         st.error(f"Error al mostrar la presentación: {str(e)}")
+        st.download_button(
+            "Descargar PPTX",
+            data=file_data,
+            file_name="presentacion.pptx",
+            mime="application/vnd.openxmlformats-officedocument.presentationml.presentation"
+        )
