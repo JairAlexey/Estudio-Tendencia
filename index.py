@@ -375,7 +375,7 @@ def pagina_formulario():
 
 # --- Reporte proyecto ---
 def pagina_reporte(id):
-    if st.button("Regresar a proyectos", key="volver_inicio_ver"):
+    if st.button("Regresar a proyectos", key=f"volver_inicio_ver_index_{id}"):  # Modificada esta línea
         st.session_state["page"] = "proyectos"
         st.rerun()
     
