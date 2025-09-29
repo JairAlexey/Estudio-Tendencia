@@ -1,5 +1,7 @@
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.action_chains import ActionChains
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 import time
 from scrapers.linkedin_modules.linkedin_project import buscar_proyecto_en_pagina
 
@@ -8,11 +10,22 @@ def paginar_y_buscar_carpeta(driver, carpeta_buscar, buscar_carpeta_en_pagina, u
     Busca la carpeta en la página actual y en todas las páginas de paginación.
     Devuelve True si la carpeta fue encontrada y navega a ella.
     """
+    # Agregar espera adicional para carga inicial
+    time.sleep(TIEMPO_ESPERA_MEDIO * 2)
+    
     encontrada = buscar_carpeta_en_pagina(driver, carpeta_buscar)
     if encontrada:
         return True
 
     try:
+        # Espera explícita por la paginación
+        WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((
+                By.CSS_SELECTOR,
+                ".saved-folders-layout .artdeco-pagination ul.artdeco-pagination__pages li"
+            ))
+        )
+        
         paginacion_carpetas = driver.find_elements(
             By.CSS_SELECTOR,
             ".saved-folders-layout .artdeco-pagination ul.artdeco-pagination__pages li",

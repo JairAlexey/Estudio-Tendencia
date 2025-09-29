@@ -9,149 +9,6 @@ import re
 import pandas as pd
 import unicodedata
 
-# Listas de carreras para el selectbox de Carrera Linkedin
-NOMBRES_POSTGRADO = [
-    "MAESTRIA EN CREACION Y PRODUCCION DE CONTENIDOS DIGITALES",
-    "M. DESARROLLO E INNOVACION DE ALIMENTOS",
-    "M. INTERPRETACION MUSICAL",
-    "M. CREACION MUSICAL",
-    "DIRECCION DE COMPRAS MENCION EN PROCUREMENT",
-    "DIRECCION DE NEGOCIOS DIGITALES",
-    "EDUCACION BASICA",
-    "INNOVACION ORGANIZACIONAL Y TRANSFORMACION ESTRATEGICA",
-    "INTELIGENCIA ARTIFICIAL APLICADA AL MARKETING DIGITAL",
-    "ENFERMERIA MENCION EN PRACTICA AVANZADA EN CUIDADOS CRITICOS",
-    "ENFERMERIA MENCION EN PRACTICA AVANZADA EN ENFERMERIA QUIRURGICA",
-    "M. ENFERMERIA NEONATAL",
-    "M. IMAGENOLOGIA INTERVENCIONISTA",
-    "M. ENFERMERIA MENCION EN LIDERAZGO Y GESTION DE ENFERMERIA",
-    "MAESTRIA EN ADMINISTRACION Y GESTION DE NEGOCIOS VETERINARIOS",
-    "M. ADMINISTRACIÓN DE SERVICIOS DE SALUD ESPECIALIZADOS",
-    "M. TERAPIA Y ASESORÍA FAMILIAR SISTÉMICA",
-    "M. PSICOTERAPIA",
-    "MAESTRIA EN CIBERSEGURIDAD",
-    "MAESTRIA EN TALENTO HUMANO",
-    "COMUNICACION ESTRATEGICA Y GESTION CORPORATIVA",
-    "MARKETING DIGITAL",
-    "ESPECIALIDAD MEDICINA INTERNA",
-    "MAESTRIA EN COMERCIO EXTERIOR",
-    "GERENCIA POLITICA, GOBERNANZA Y GOBERNABILIDAD",
-    "NEUROMARKETING",
-    "GERIATRIA",
-    "MAESTRIA DIRECCION NEGOCIOS DEPORTIVOS",
-    "DIREECCION EMPRESARIAL EN ARQUITECTURA Y DISEÑO",
-    "MAESTRIA GESTION ESTRATEGICA DE TALENTO HUMANO",
-    "CARDIOLOGIA",
-    "PEDIATRIA",
-    "ORTODONCIA",
-    "ODONTOPEDIATRIA",
-    "NEURORREHABILITACION",
-    "NEUMOLOGIA",
-    "MEDICINA CRITICA Y CUIDADOS INTENSIVOS",
-    "SALUD PUBLICA",
-    "GINECOLOGIA",
-    "ANESTESIOLOGIA",
-    "MEDICINA DEL TRABAJO",
-    "DERECHO PENAL, MENCION EN CRIMINALIDAD COMPLEJA",
-    "ENDODONCIA",
-    "REHABILITACION ORAL Y PROTESIS IMPLANTO ASISTIDA",
-    "GERENCIA DE SISTEMAS Y TECNOLOGIA EMPRESARIAL",
-    "ADMINISTRACION Y GERENCIA ORGANIZACIONAL MAGO",
-    "MERCADOTECNIA, MENCION ESTRATEGIA DIGITAL",
-    "ADMINISTRACION MBA",
-    "FINANZAS CON MENCION EN MERCADO DE VALORES Y BANCA",
-    "GESTION DE PROYECTOS",
-    "TELECOMUNICACIONES",
-    "EXPERIENCIA DEL USUARIO",
-    "AGROINDUSTRIA, MENCION CALIDAD Y SEGURIDAD ALIMENTARIA",
-    "DERECHO DIGITAL E INNOVACION MENCION ECONOMIA, CONFIANZA Y TRANS DIGITAL",
-    "ARBITRAJE COMERCIAL Y DE INVERSIONES",
-    "COMUNICACION POLITICA",
-    "FILOSOFIA, POLITICA Y ECONOMIA (PPE)",
-    "GESTION DE LA SEGURIDAD DE LA INFORMACION",
-    "DIRECCION DE OPERACIONES Y SEGURIDAD INDUSTRIAL MDO",
-    "DESARROLLO E INNOVACION DE ALIMENTOS",
-    "URBANISMO MENCION GESTION DE LA CIUDAD",
-    "DIRECCION Y POSTPRODUCCION AUDIOVISUAL DIGITAL",
-    "GESTION DEL TALENTO HUMANO, MENCION DESARROLLO ORGANIZACIONAL",
-    "DERECHO PROCESAL CONSTITUCIONAL",
-    "TERAPIA RESPIRATORIA",
-    "TERAPIA MANUAL ORTOPEDICA INTEGRAL",
-    "NEUROLOGIA",
-    "ENDOCRINOLOGIA",
-    "CIRUGIA GENERAL",
-    "ORTOPEDIA Y TRAUMATOLOGIA",
-    "ENFERMERIA",
-    "NEUROPSICOLOGIA CLINICA",
-    "GESTION POR PROCESOS CON MENCION EN TRANSFORMACION DIGITAL",
-    "MERCADOTECNIA, MENCION EN GERENCIA DE MARCA",
-    "PERIODONCIA E IMPLANTOLOGIA QUIRURGICA",
-    "DISEÑO ARQUITECTONICO",
-    "ECONOMETRIA",
-    "PEOPLE ANALYTICS"
-]
-NOMBRES_PREGRADO = [
-    "CIENCIAS DE LA EDUCACIÓN",
-    "DERECHO PRESENCIAL",
-    "DERECHO EN LINEA",
-    "REGULACION LEGAL DE LA INTELIGENCIA ARTIFICIAL",
-    "INTERPRETACION MUSICAL",
-    "CONTABILIDAD Y AUDITORIA",
-    "INFORMATICA",
-    "SEGURIDAD INFORMATICA Y PROTECCION DE DATOS",
-    "MARKETING EN LINEA",
-    "FINANZAS Y CONTABILIDAD",
-    "LOGISTICA Y TRANSPORTE",
-    "CIENCIA DE DATOS",
-    "REALIDAD VIRTUAL Y VIDEOJUEGOS",
-    "DISEÑO DE MODAS",
-    "PSICOLOGIA ORGANIZACIONAL",
-    "INGENIERIA AEROESPACIAL",
-    "TECNOLOGIAS DE LA INFORMACION",
-    "NEGOCIOS DEPORTIVOS",
-    "PSICOLOGIA CLINICA",
-    "TECNOLOGIA EN GASTRONOMIA",
-    "MECANICA",
-    "PSICOPEDAGOGIA",
-    "AMBIENTAL",
-    "EDUCACION INICIAL BILINGÜE",
-    "EDUCACION",
-    "ELECTRONICA Y AUTOMATIZACION",
-    "BIOTECNOLOGIA",
-    "MULTIMEDIA Y PRODUCCION AUDIOVISUAL",
-    "CIENCIAS POLITICAS",
-    "ADMINISTRACION DE EMPRESAS",
-    "DISEÑO GRAFICO",
-    "SONIDO Y ACUSTICA",
-    "INDUSTRIAL",
-    "ODONTOLOGIA",
-    "SOFTWARE",
-    "COMUNICACION",
-    "ECONOMIA",
-    "MUSICA",
-    "ENFERMERIA",
-    "PSICOLOGIA",
-    "GASTRONOMIA",
-    "NEGOCIOS INTERNACIONALES",
-    "RELACIONES INTERNACIONALES",
-    "DERECHO",
-    "AGROINDUSTRIA",
-    "MERCADOTECNIA",
-    "NEGOCIOS DIGITALES",
-    "TELECOMUNICACIONES",
-    "PUBLICIDAD",
-    "TURISMO",
-    "FINANZAS",
-    "CINE",
-    "MEDICINA",
-    "PERIODISMO",
-    "DISEÑO DE PRODUCTOS",
-    "FISIOTERAPIA",
-    "VETERINARIA",
-    "DISEÑO DE INTERIORES",
-    "ARQUITECTURA"
-]
-
 # Definir mapeos de prioridad como constantes globales
 PRIORITY_DEFAULT = 2  # Media por defecto
 PRIORIDAD_MAP = {"Alta": 1, "Media": 2, "Baja": 3}
@@ -171,6 +28,21 @@ def obtener_carreras_por_nivel(nivel):
         st.error(f"Error al consultar carreras: {e}")
         return []
 
+def obtener_proyectos_carpeta(tipo_carpeta):
+    """Obtiene los proyectos de una carpeta específica desde la base de datos"""
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT DISTINCT nombre_proyecto 
+                FROM carpetas 
+                WHERE tipo_carpeta = %s 
+                ORDER BY nombre_proyecto
+            """, (tipo_carpeta,))
+            return [row[0] for row in cur.fetchall()]
+    except Exception as e:
+        st.error(f"Error al consultar proyectos: {e}")
+        return []
+
 def normalizar_texto(texto):
     if not texto:
         return ""
@@ -181,9 +53,14 @@ def normalizar_texto(texto):
 
 def mostrar_formulario():
     # Tipo de carpeta fuera del formulario para actualización en tiempo real
-
-    tipo_carpeta = st.selectbox("Tipo de carpeta", ["Seleccione un tipo...", "POSGRADOS TENDENCIA", "CARRERAS PREGRADO"])
+    tipo_carpeta = st.selectbox("Tipo de carpeta", 
+                               ["Seleccione un tipo...", "POSGRADOS TENDENCIA", "CARRERAS PREGRADO"])
     
+    # Obtener proyectos según el tipo de carpeta seleccionado
+    proyectos_linkedin = []
+    if tipo_carpeta != "Seleccione un tipo...":
+        proyectos_linkedin = obtener_proyectos_carpeta(tipo_carpeta)
+
     # Agregar selector de prioridad
     prioridad_label = st.selectbox("Prioridad de procesamiento", 
                                   ["Alta", "Media", "Baja"], 
@@ -201,20 +78,19 @@ def mostrar_formulario():
             elif "posgrado" in tipo_carpeta_lower:
                 carreras_filtradas = obtener_carreras_por_nivel("Posgrado")
         if carreras_filtradas:
-            nombre_proyecto_1 = st.selectbox("Nombre de la Carrera Referencia", ["Seleccione una carrera..."] + carreras_filtradas)
+            nombre_proyecto_1 = st.selectbox("Nombre de la Carrera Referencia", 
+                                           ["Seleccione una carrera..."] + carreras_filtradas)
         else:
-            nombre_proyecto_1 = st.selectbox("Nombre de la Carrera Referencia", ["Seleccione una carrera..."])
-        # --- Carrera linkedin (nuevo selectbox dependiente del tipo de carpeta) ---
-        if "posgrado" in tipo_carpeta.lower():
-            opciones_linkedin = NOMBRES_POSTGRADO
-        elif "pregrado" in tipo_carpeta.lower():
-            opciones_linkedin = NOMBRES_PREGRADO
-        else:
-            opciones_linkedin = []
-        carrera_linkedin_input = st.selectbox("Nombre de la Carrera Linkedin", opciones_linkedin)
-        # --- Proyecto 2: Carrera Estudio ---
-        st.subheader("Carrera Estudio")
-        nombre_proyecto_2 = st.text_input("Nombre de la Carrera Estudio")
+            nombre_proyecto_1 = st.selectbox("Nombre de la Carrera Referencia", 
+                                           ["Seleccione una carrera..."])
+
+        # --- Carrera linkedin (usando datos de la base de datos) ---
+        carrera_linkedin_input = st.selectbox("Nombre de la Carrera Linkedin",
+                                            ["Seleccione una carrera..."] + proyectos_linkedin)
+
+        # --- Proyecto 2: Carrera Estudio (usando los mismos datos de LinkedIn) ---
+        nombre_proyecto_2 = st.selectbox("Nombre de la Carrera Estudio",
+                                     ["Seleccione una carrera..."] + proyectos_linkedin)
 
         # --- SEMRUSH ---
         st.subheader("Palabra a consultar en SEMRUSH")
@@ -405,21 +281,25 @@ def mostrar_formulario_edicion(id):
         nombre_proyecto_1 = st.selectbox("Nombre de la Carrera Referencia", carreras_filtradas, index=carreras_filtradas.index(carrera_referencia) if carrera_referencia in carreras_filtradas else 0)
     else:
         nombre_proyecto_1 = st.selectbox("Nombre de la Carrera Referencia", [carrera_referencia])
-    # --- Carrera linkedin (nuevo selectbox dependiente del tipo de carpeta) ---
-    if "posgrado" in tipo_carpeta.lower():
-        opciones_linkedin = NOMBRES_POSTGRADO
-    elif "pregrado" in tipo_carpeta.lower():
-        opciones_linkedin = NOMBRES_PREGRADO
-    else:
-        opciones_linkedin = []
-    # Selecciona el valor actual si existe, si no el primero
-    if carrera_linkedin and carrera_linkedin in opciones_linkedin:
-        idx_linkedin = opciones_linkedin.index(carrera_linkedin)
-    else:
-        idx_linkedin = 0
-    carrera_linkedin_input = st.selectbox("Nombre de la Carrera Linkedin", opciones_linkedin, index=idx_linkedin)
+    # --- Carrera linkedin (usando datos de la base de datos) ---
+    proyectos_linkedin = obtener_proyectos_carpeta(tipo_carpeta)
+    carrera_actual_index = 0
+    if carrera_linkedin in proyectos_linkedin:
+        carrera_actual_index = proyectos_linkedin.index(carrera_linkedin)
+    carrera_linkedin_input = st.selectbox(
+        "Nombre de la Carrera Linkedin", 
+        proyectos_linkedin,
+        index=carrera_actual_index
+    )
     # Carrera estudio
-    nombre_proyecto_2 = st.text_input("Nombre de la Carrera Estudio", value=carrera_estudio)
+    carrera_estudio_index = 0
+    if carrera_estudio in proyectos_linkedin:
+        carrera_estudio_index = proyectos_linkedin.index(carrera_estudio)
+    nombre_proyecto_2 = st.selectbox(
+        "Nombre de la Carrera Estudio",
+        proyectos_linkedin,
+        index=carrera_estudio_index
+    )
     # SEMRUSH
     palabra_semrush = st.text_input("Palabra clave", value=palabra_semrush)
     # Trends

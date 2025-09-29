@@ -163,6 +163,7 @@ def crear_tablas():
             id SERIAL PRIMARY KEY,
             tipo_carpeta VARCHAR(100) NOT NULL,
             nombre_proyecto VARCHAR(255) NOT NULL,
+            url_proyecto TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             UNIQUE(tipo_carpeta, nombre_proyecto)
         );

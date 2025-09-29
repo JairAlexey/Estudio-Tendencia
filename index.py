@@ -375,135 +375,20 @@ def pagina_formulario():
 
 # --- Reporte proyecto ---
 def pagina_reporte(id):
-    # Obtener nombre del proyecto con manejo de errores y rollback
-    conn, cur = get_conn_cursor()
-    try:
-        cur.execute("SELECT carrera_estudio FROM proyectos_tendencias WHERE id=%s", (id,))
-        row = cur.fetchone()
-        nombre_proyecto = row[0] if row else "Proyecto desconocido"
-        nombre_proyecto = " ".join([w.capitalize() for w in nombre_proyecto.split()])
-    except Exception as e:
-        conn.rollback()
-        cur.close()
-        conn.close()
-        st.error(f"Error en la base de datos: {e}")
-        return
-    cur.close()
-    conn.close()
-
     if st.button("Regresar a proyectos", key="volver_inicio_ver"):
         st.session_state["page"] = "proyectos"
         st.rerun()
+    
+    from pages.reporte import mostrar_pagina_reporte
+    mostrar_pagina_reporte(id)
 
-    # Importar la lógica de reporte desde app.py
-    try:
-        import sys
-        sys.path.append(".")
-        from scrapers.linkedin_modules.linkedin_database import listar_proyectos
-        from app import procesar_proyecto
-        proyectos = listar_proyectos()
-        proyecto = next((p for p in proyectos if p["id"] == id), None)
-        if not proyecto:
-            st.error("Proyecto no encontrado.")
-            return
-        nombre_pestana = f"{proyecto['id']} - {proyecto['carrera_referencia']} vs {proyecto['carrera_estudio']}"
-        st.subheader(f"Evaluación para {nombre_proyecto}")
-        with st.spinner("Procesando reporte..."):
-            procesar_proyecto(id, nombre_pestana)
-        import pandas as pd
-        st.subheader("Rango Evaluación Final")
-        df_rango = pd.DataFrame(
-            {
-                "Rango": ["0% - 60%", "61% - 70%", "71% - 100%"],
-                "Evaluación": [
-                    "Definitivamente No Viable",
-                    "Para revisión adicional",
-                    "Viable",
-                ],
-            }
-        )
-        st.dataframe(df_rango, width="stretch", hide_index=True)
-    except Exception as e:
-        # Si ocurre un error en la consulta, intentar rollback de la conexión global si existe
-        try:
-            conn, cur = get_conn_cursor()
-            conn.rollback()
-            cur.close()
-            conn.close()
-        except Exception:
-            pass
-        st.error(f"ERROR mostrando reporte: {e}")
-        
-# --- Presentación ---
 def pagina_presentacion(id):
-    # Diccionario de traducción y color/ícono para presentación
-    estado_traducido_presentacion = {
-        "queued": ("En cola", "#6c757d", "⏳"),
-        "running": ("Procesando", "#ffc107", "🟡"),
-        "finished": ("Completado", "#28a745", "🟢"),
-        "error": ("Error", "#dc3545", "🔴"),
-    }
-    # Obtener nombre del proyecto
-    conn, cur = get_conn_cursor()
-    cur.execute("SELECT carrera_estudio FROM proyectos_tendencias WHERE id=%s", (id,))
-    row = cur.fetchone()
-    nombre_proyecto = row[0] if row else "Proyecto desconocido"
-    cur.close()
-    conn.close()
-    st.title(f"Presentación generada para: {nombre_proyecto}")
     if st.button("Regresar a proyectos", key="volver_inicio_presentacion"):
         st.session_state["page"] = "proyectos"
         st.rerun()
-    # Mostrar estado de la presentación
-    conn2, cur2 = get_conn_cursor()
-    cur2.execute("SELECT status, file_name, file_data, error FROM presentation_queue WHERE proyecto_id=%s ORDER BY created_at DESC", (id,))
-    row = cur2.fetchone()
-    cur2.close()
-    conn2.close()
-    status = None
-    if row:
-        status, file_name, file_data, error = row
-        texto, color, icono = estado_traducido_presentacion.get(status, (status, "#800080", "🟣"))
-        st.markdown(f"""
-            <div style='border:2px solid {color}; border-radius:12px; padding:1.2rem; margin:1.2rem 0; background:#f8f9fa;'>
-                <h4 style='margin:0 0 0.5rem 0;'>Estado de la presentación</h4>
-                <div style='font-size:1.1rem; color:{color}; font-weight:bold;'>{icono} {texto}</div>
-            </div>
-        """, unsafe_allow_html=True)
-        if status == "finished" and file_data:
-            # Convertir a bytes si es memoryview
-            if isinstance(file_data, memoryview):
-                file_data = file_data.tobytes()
-            st.download_button(
-                label="📥 Descargar presentación",
-                data=file_data,
-                file_name=file_name or "presentacion.pptx",
-                mime="application/vnd.openxmlformats-officedocument.presentationml.presentation"
-            )
-        if status == "error" and error:
-            st.error(f"Error: {error}")
-    else:
-        st.markdown("<div style='border:2px solid #800080; border-radius:12px; padding:1.2rem; margin:1.2rem 0; background:#f8f9fa;'><h4>Estado de la presentación</h4><div style='font-size:1.1rem; color:#800080; font-weight:bold;'>🟣 Sin registro</div></div>", unsafe_allow_html=True)
-    # Botón para generar presentación solo si no está en proceso o ya finalizada
-    if not status or status in ["error", "finished"]:
-        if st.button("Reintentar generación", key=f"reintentar_presentacion_{id}_presentacion"):
-            try:
-                conn3, cur3 = get_conn_cursor()
-                cur3.execute("SELECT id FROM presentation_queue WHERE proyecto_id=%s AND status IN ('queued','running')", (id,))
-                existe = cur3.fetchone()
-                if not existe:
-                    cur3.execute("""
-                        INSERT INTO presentation_queue (proyecto_id, status, tries, created_at)
-                        VALUES (%s, 'queued', 0, CURRENT_TIMESTAMP)
-                    """, (id,))
-                    conn3.commit()
-                cur3.close()
-                conn3.close()
-            except Exception as e:
-                st.error(f"Error reintentando presentación: {e}")
-                return
-            st.info("Proyecto reintentado para generación de presentación.")
-            st.rerun()
+    
+    from pages.presentacion import mostrar_pagina_presentacion
+    mostrar_pagina_presentacion(id)
 
 # --- Layout principal ---
 def main():
