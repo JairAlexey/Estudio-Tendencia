@@ -379,15 +379,15 @@ def pagina_reporte(id):
         st.session_state["page"] = "proyectos"
         st.rerun()
     
-    from pages.reporte import mostrar_pagina_reporte
-    mostrar_pagina_reporte(id)
+    from pages.tabla import mostrar_pagina_tabla
+    mostrar_pagina_tabla(id)
 
 def pagina_presentacion(id):
     if st.button("Regresar a proyectos", key="volver_inicio_presentacion"):
         st.session_state["page"] = "proyectos"
         st.rerun()
     
-    from pages.presentacion import mostrar_pagina_presentacion
+    from pages.reporte import mostrar_pagina_presentacion
     mostrar_pagina_presentacion(id)
 
 # --- Layout principal ---
