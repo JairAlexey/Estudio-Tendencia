@@ -10,3 +10,4 @@ pyodbc
 streamlit-option-menu
 streamlit-elements
 python-pptx>=0.6.21
+psycopg2-binary  # Agregado para soporte PostgreSQL en Linux
