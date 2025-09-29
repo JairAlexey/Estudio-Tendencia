@@ -23,10 +23,6 @@ def mostrar_pagina_reporte(id):
     cur.close()
     conn.close()
 
-    if st.button("Regresar a proyectos", key=f"volver_inicio_ver_reporte_{id}"):  # Modificada esta línea
-        st.session_state["page"] = "proyectos"
-        st.rerun()
-
     # Importar la lógica de reporte desde app.py
     try:
         import sys
