@@ -166,6 +166,17 @@ def crear_tablas():
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             UNIQUE(tipo_carpeta, nombre_proyecto)
         );
+        ''',
+        '''
+        CREATE TABLE IF NOT EXISTS carpetas_queue (
+            id SERIAL PRIMARY KEY,
+            status VARCHAR(20) NOT NULL DEFAULT 'queued',
+            tries INTEGER NOT NULL DEFAULT 0,
+            error TEXT,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            started_at TIMESTAMP,
+            finished_at TIMESTAMP
+        );
         '''
     ]
     for sql in tablas:

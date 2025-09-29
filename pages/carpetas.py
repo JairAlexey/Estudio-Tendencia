@@ -1,4 +1,5 @@
 import streamlit as st
+import time
 from conexion import get_connection
 from scrapers.carpetas_linkedin import scraper_carpetas
 
@@ -48,15 +49,75 @@ def mostrar_pagina_carpetas():
     col1, col2 = st.columns([3,1])
     with col2:
         if st.button("Actualizar Proyectos", type="primary"):
-            with st.spinner("Actualizando proyectos desde LinkedIn..."):
-                if scraper_carpetas():
-                    st.success("Proyectos actualizados correctamente")
-                else:
-                    st.error("Error al actualizar proyectos")
+            conn = get_connection()
+            cur = conn.cursor()
+            
+            # Verificar si ya hay una actualización en proceso
+            cur.execute("""
+                SELECT status, error
+                FROM carpetas_queue
+                ORDER BY created_at DESC
+                LIMIT 1
+            """)
+            last_job = cur.fetchone()
+            
+            if last_job and last_job[0] in ['queued', 'running']:
+                st.warning("Ya hay una actualización en proceso. Por favor espera.")
+            else:
+                # Crear nuevo trabajo en la cola
+                cur.execute("""
+                    INSERT INTO carpetas_queue (status)
+                    VALUES ('queued')
+                    RETURNING id
+                """)
+                job_id = cur.fetchone()[0]
+                conn.commit()
+                st.success(f"Actualización de carpetas iniciada (ID: {job_id})")
+                st.info("Este proceso se ejecutará en segundo plano. La página se actualizará automáticamente.")
+                time.sleep(2)
                 st.rerun()
+            
+            cur.close()
+            conn.close()
+
+    # Mostrar estado de la última actualización
+    conn = get_connection()
+    cur = conn.cursor()
+    
+    cur.execute("""
+        SELECT id, status, error, created_at
+        FROM carpetas_queue
+        ORDER BY created_at DESC
+        LIMIT 1
+    """)
+    last_update = cur.fetchone()
+    
+    if last_update:
+        status_map = {
+            'queued': ('⏳ En cola', 'blue'),
+            'running': ('🔄 Actualizando...', 'orange'),
+            'completed': ('✅ Actualización completada', 'green'),
+            'error': ('❌ Error en la actualización', 'red')
+        }
+        status_text, status_color = status_map.get(last_update[1], ('Estado desconocido', 'gray'))
+        
+        st.markdown(f"""
+            <div style='
+                border: 1px solid {status_color};
+                border-radius: 5px;
+                padding: 10px;
+                margin-bottom: 20px;
+            '>
+                <p style='margin:0; color:{status_color};'>{status_text}</p>
+                <p style='margin:0; font-size:0.8em;'>Última actualización: {last_update[3].strftime('%Y-%m-%d %H:%M:%S')}</p>
+            </div>
+        """, unsafe_allow_html=True)
+        
+        if last_update[1] == 'error' and last_update[2]:
+            with st.expander("Ver detalles del error"):
+                st.error(last_update[2])
 
     # Select box para elegir el tipo de carpeta
-    conn = get_connection()
     cur = conn.cursor()
     
     cur.execute("SELECT DISTINCT tipo_carpeta FROM carpetas ORDER BY tipo_carpeta")
