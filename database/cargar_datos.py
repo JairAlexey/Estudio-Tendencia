@@ -1,7 +1,7 @@
 import pandas as pd
 from conexion import conn, cursor
 
-ARCHIVO_MERCADO = "db/EnfermeriaNeonatal.xlsx"
+ARCHIVO_MERCADO = "files/EnfermeriaNeonatal.xlsx"
 
 HOJAS = ["Carreras", "Codigos", "SemrushBase", "GoogleTrendsBase"]
 

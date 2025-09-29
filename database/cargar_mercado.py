@@ -1,7 +1,7 @@
 import pandas as pd
 from conexion import conn, cursor
 
-ARCHIVO_MERCADO = "db/mercado.xlsx"
+ARCHIVO_MERCADO = "files/mercado.xlsx"
 HOJAS = ["Total Ingresos", "Ventas 12", "Ventas 0"]
 
 def cargar_mercado():

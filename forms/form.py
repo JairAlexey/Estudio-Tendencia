@@ -3,8 +3,7 @@ import streamlit as st
 import sys
 sys.path.append("..")
 from conexion import conn, cursor
-sys.path.append("../..")
-from codigos import obtener_codigos_ciiu
+# Eliminada la importación de codigos
 import re
 import pandas as pd
 import unicodedata
@@ -13,6 +12,20 @@ import unicodedata
 PRIORITY_DEFAULT = 2  # Media por defecto
 PRIORIDAD_MAP = {"Alta": 1, "Media": 2, "Baja": 3}
 PRIORIDAD_INV_MAP = {1: "Alta", 2: "Media", 3: "Baja"}
+
+# Función movida desde codigos.py
+def obtener_codigos_ciiu(hoja_origen="Total Ingresos"):
+    try:
+        cursor.execute(
+            "SELECT DISTINCT actividad_economica FROM mercado_datos WHERE hoja_origen = %s AND actividad_economica IS NOT NULL",
+            (hoja_origen,)
+        )
+        rows = cursor.fetchall()
+        codigos = [row[0] for row in rows]
+        return codigos
+    except Exception as e:
+        st.error(f"ERROR al leer códigos CIIU desde la base de datos: {e}")
+        return []
 
 def obtener_carreras_por_nivel(nivel):
     try:
