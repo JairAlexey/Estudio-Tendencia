@@ -156,6 +156,16 @@ def crear_tablas():
             facultad_proponente VARCHAR(200),
             cargo_proponente VARCHAR(100)
         );
+        ''',
+        # # # carpetas
+        '''
+        CREATE TABLE IF NOT EXISTS carpetas (
+            id SERIAL PRIMARY KEY,
+            tipo_carpeta VARCHAR(100) NOT NULL,
+            nombre_proyecto VARCHAR(255) NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(tipo_carpeta, nombre_proyecto)
+        );
         '''
     ]
     for sql in tablas:

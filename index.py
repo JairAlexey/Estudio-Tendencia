@@ -12,11 +12,13 @@ def get_conn_cursor():
 # --- Navegación ---
 def mostrar_navegacion(key):
     selected = option_menu(
-        menu_title=None,  # Oculta título
-        options=["Proyectos", "Formulario"],
-        icons=["house", "ui-checks"],  # Iconos de Bootstrap
+        menu_title=None,
+        options=["Proyectos", "Formulario", "Carpetas"],  # Agregado "Carpetas"
+        icons=["house", "ui-checks", "folder"],  # Agregado ícono para carpetas
         menu_icon="cast",
-        default_index=0 if st.session_state.get("page", "proyectos") == "proyectos" else 1,
+        default_index=0 if st.session_state.get("page", "proyectos") == "proyectos" else (
+            1 if st.session_state.get("page") == "formulario" else 2
+        ),
         orientation="horizontal",
         styles={
             "container": {"padding": "0!important", "background-color": "#1e293b"},
@@ -32,11 +34,12 @@ def mostrar_navegacion(key):
         },
         key=key 
     )
+    
     # Solo actualiza la página si no está en una acción especial
     # Si se acaba de guardar exitosamente, no sobrescribir la página
     if st.session_state.get("exito_guardado"):
         return "proyectos"
-    if st.session_state.get("page", "proyectos") in ["proyectos", "formulario", "form", "f"]:
+    if st.session_state.get("page", "proyectos") in ["proyectos", "formulario", "carpetas"]:
         st.session_state["page"] = selected.lower()
     return st.session_state["page"]
 
@@ -306,7 +309,7 @@ def pagina_inicio():
 
 # --- Editar proyecto ---
 def pagina_editar(id):
-    if st.button("Regresar al proyectos", key="volver_inicio_editar"):
+    if st.button("Regresar a proyectos", key="volver_inicio_editar"):
         st.session_state["page"] = "proyectos"
         st.rerun()
     try:
@@ -388,7 +391,7 @@ def pagina_reporte(id):
     cur.close()
     conn.close()
 
-    if st.button("Regresar al proyectos", key="volver_inicio_ver"):
+    if st.button("Regresar a proyectos", key="volver_inicio_ver"):
         st.session_state["page"] = "proyectos"
         st.rerun()
 
@@ -448,7 +451,7 @@ def pagina_presentacion(id):
     cur.close()
     conn.close()
     st.title(f"Presentación generada para: {nombre_proyecto}")
-    if st.button("Regresar al proyectos", key="volver_inicio_presentacion"):
+    if st.button("Regresar a proyectos", key="volver_inicio_presentacion"):
         st.session_state["page"] = "proyectos"
         st.rerun()
     # Mostrar estado de la presentación
@@ -506,12 +509,15 @@ def pagina_presentacion(id):
 def main():
 
     page = st.session_state.get("page", "proyectos")
-    # Solo mostrar navegación en proyectos y formulario
-    if page in ["proyectos", "formulario", "form", "f"]:
+    # Mostrar navegación en las páginas principales
+    if page in ["proyectos", "formulario", "carpetas"]:
         page = mostrar_navegacion("nav_main")
-        if page in ["formulario", "form", "f"]:
+        if page == "formulario":
             st.session_state["limpiar_formulario"] = True
             pagina_formulario()
+        elif page == "carpetas":
+            from pages.carpetas import mostrar_pagina_carpetas
+            mostrar_pagina_carpetas()
         else:
             pagina_inicio()
     elif page == "editar":
