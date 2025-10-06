@@ -6,34 +6,46 @@ ARCHIVO_MERCADO = "files/EnfermeriaNeonatal.xlsx"
 HOJAS = ["Carreras", "Codigos", "SemrushBase", "GoogleTrendsBase"]
 
 def cargar_carreras_facultad(path_excel):
-    df = pd.read_excel(path_excel, sheet_name="Carreras")
-    insertados = 0
-    for _, row in df.iterrows():
-        try:
-            cursor.execute("""
-                INSERT INTO carreras_facultad (Facultad, Nivel, Carrera)
-                VALUES (%s, %s, %s)
-            """, (row['Facultad'], row['Nivel'], row['Carrera']))
-            insertados += 1
-        except Exception:
-            pass
-    conn.commit()
-    print(f"carreras_facultad: {insertados} registros insertados exitosamente.")
+    try:
+        df = pd.read_excel(path_excel, sheet_name="Carreras")
+        insertados = 0
+        for _, row in df.iterrows():
+            try:
+                cursor.execute("""
+                    INSERT INTO carreras_facultad (Facultad, Nivel, Carrera)
+                    VALUES (%s, %s, %s)
+                    ON CONFLICT DO NOTHING
+                """, (row['Facultad'], row['Nivel'], row['Carrera']))
+                insertados += 1
+            except Exception as e:
+                print(f"Error insertando carrera {row.get('Carrera', 'N/A')}: {e}")
+                continue
+        conn.commit()
+        print(f"carreras_facultad: {insertados} registros insertados exitosamente.")
+    except Exception as e:
+        print(f"Error cargando carreras_facultad: {e}")
+        conn.rollback()
 
 def cargar_codigos_carrera(path_excel):
-    df = pd.read_excel(path_excel, sheet_name="Codigos")
-    insertados = 0
-    for _, row in df.iterrows():
-        try:
-            cursor.execute("""
-                INSERT INTO codigos_carrera (ID_Carrera, Codigo)
-                VALUES (%s, %s)
-            """, (int(row['ID Carrera']), str(row['Codigo'])))
-            insertados += 1
-        except Exception:
-            pass
-    conn.commit()
-    print(f"codigos_carrera: {insertados} registros insertados exitosamente.")
+    try:
+        df = pd.read_excel(path_excel, sheet_name="Codigos")
+        insertados = 0
+        for _, row in df.iterrows():
+            try:
+                cursor.execute("""
+                    INSERT INTO codigos_carrera (ID_Carrera, Codigo)
+                    VALUES (%s, %s)
+                    ON CONFLICT DO NOTHING
+                """, (int(row['ID Carrera']), str(row['Codigo'])))
+                insertados += 1
+            except Exception as e:
+                print(f"Error insertando código: {e}")
+                continue
+        conn.commit()
+        print(f"codigos_carrera: {insertados} registros insertados exitosamente.")
+    except Exception as e:
+        print(f"Error cargando codigos_carrera: {e}")
+        conn.rollback()
 
 def cargar_semrush_base(path_excel):
     df = pd.read_excel(path_excel, sheet_name="SemrushBase")

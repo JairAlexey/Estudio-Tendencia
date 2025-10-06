@@ -1,7 +1,7 @@
 from pptx import Presentation
 
 # Ruta de la plantilla
-TEMPLATE_PATH = '../db/base/Viable.pptx'
+TEMPLATE_PATH = '../files/base/Viable.pptx'
 
 # Cargar la presentación
 prs = Presentation(TEMPLATE_PATH)

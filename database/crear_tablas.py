@@ -14,7 +14,8 @@ def crear_tablas():
             palabra_semrush VARCHAR(200),
             codigo_ciiu VARCHAR(50),
             carrera_linkedin VARCHAR(200),
-            mensaje_error TEXT
+            mensaje_error TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
         ''',
         '''
@@ -48,13 +49,14 @@ def crear_tablas():
         '''
         CREATE TABLE IF NOT EXISTS linkedin (
             id SERIAL PRIMARY KEY,
-            proyecto_id INTEGER REFERENCES proyectos_tendencias(id),
+            proyecto_id INTEGER REFERENCES proyectos_tendencias(id) ON DELETE CASCADE,
             Tipo VARCHAR(50),
             Region VARCHAR(100),
             Profesionales INTEGER,
             AnunciosEmpleo INTEGER,
             PorcentajeAnunciosProfesionales DECIMAL(10,2),
-            DemandaContratacion VARCHAR(50)
+            DemandaContratacion VARCHAR(50),
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
         ''',
         # # # modalidad_oferta
@@ -70,10 +72,11 @@ def crear_tablas():
         '''
         CREATE TABLE IF NOT EXISTS semrush (
             id SERIAL PRIMARY KEY,
-            proyecto_id INTEGER REFERENCES proyectos_tendencias(id),
+            proyecto_id INTEGER REFERENCES proyectos_tendencias(id) ON DELETE CASCADE,
             VisionGeneral VARCHAR(200),
             Palabras INTEGER,
-            Volumen INTEGER
+            Volumen INTEGER,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
         ''',
         # # # semrush_base
@@ -180,9 +183,15 @@ def crear_tablas():
         );
         '''
     ]
+    
     for sql in tablas:
-        cursor.execute(sql)
-    conn.commit()
+        try:
+            cursor.execute(sql)
+            conn.commit()
+        except Exception as e:
+            print(f"Error creando tabla: {e}")
+            conn.rollback()
+    
     print("Todas las tablas han sido creadas correctamente.")
 
 if __name__ == "__main__":

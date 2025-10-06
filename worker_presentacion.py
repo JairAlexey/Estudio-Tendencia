@@ -1,7 +1,6 @@
 import os
 import sys
 import time
-import dropbox
 import psycopg2
 
 # Configurar variables de entorno para evitar conflictos de rutas
@@ -34,7 +33,7 @@ def procesar_presentacion_queue():
                     cur.execute("UPDATE presentation_queue SET status='running', started_at=CURRENT_TIMESTAMP WHERE id=%s", (queue_id,))
                     conn.commit()
                 # Generar gráfico radar y calcular viabilidad
-                ruta_img = f"db/imagenes/grafico_radar_{proyecto_id}.png"
+                ruta_img = f"files/imagenes/grafico_radar_{proyecto_id}.png"
                 viabilidad = generar_grafico_radar_desde_bd(proyecto_id, ruta_img)
                 # Generar presentación PPTX pasando viabilidad
                 generar_reporte(proyecto_id, viabilidad)
@@ -47,7 +46,7 @@ def procesar_presentacion_queue():
                     nombre_archivo = f"{row[0].replace(' ', '_')}.pptx"
                 else:
                     nombre_archivo = f"Presentacion_{proyecto_id}.pptx"
-                output_path = os.path.join('db/presentaciones', nombre_archivo)
+                output_path = os.path.join('files/presentaciones', nombre_archivo)
                 if not os.path.exists(output_path):
                     raise FileNotFoundError(f"No se encontró el archivo PPTX generado: {output_path}")
                 # Leer archivo como binario y guardar en la base de datos

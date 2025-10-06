@@ -355,9 +355,9 @@ def semrush_scraper():
             # 7. GUARDAR DATOS EN LA BASE DE DATOS
             datos_para_guardar = [
                 {
-                    "VisionGeneral": str(vision_general),
-                    "Palabras": palabras,
-                    "Volumen": volumen,
+                    "VisionGeneral": str(int(vision_general)),  # Convertir a int y luego string
+                    "Palabras": int(palabras),
+                    "Volumen": int(volumen),
                 }
             ]
 

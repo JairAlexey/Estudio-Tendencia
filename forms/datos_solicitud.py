@@ -5,19 +5,27 @@ from conexion import conn
 
 def mostrar_formulario_datos_solicitud(proyecto_id):
     # Obtener el nombre del proyecto
-    with conn.cursor() as cur:
-        cur.execute("SELECT carrera_estudio FROM proyectos_tendencias WHERE id=%s", (proyecto_id,))
-        row = cur.fetchone()
-        nombre_proyecto = row[0] if row else "Proyecto desconocido"
-        nombre_proyecto = " ".join([w.capitalize() for w in nombre_proyecto.split()])
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT carrera_estudio FROM proyectos_tendencias WHERE id=%s", (proyecto_id,))
+            row = cur.fetchone()
+            nombre_proyecto = row[0] if row else "Proyecto desconocido"
+            nombre_proyecto = " ".join([w.capitalize() for w in nombre_proyecto.split()])
+    except Exception as e:
+        st.error(f"Error obteniendo datos del proyecto: {e}")
+        return
 
     # Consultar si ya existe registro previo
-    with conn.cursor() as cur:
-        cur.execute('''
-            SELECT facultad_propuesta, duracion, modalidad, nombre_proponente, facultad_proponente, cargo_proponente
-            FROM datos_solicitud WHERE proyecto_id=%s
-        ''', (proyecto_id,))
-        datos_previos = cur.fetchone()
+    try:
+        with conn.cursor() as cur:
+            cur.execute('''
+                SELECT facultad_propuesta, duracion, modalidad, nombre_proponente, facultad_proponente, cargo_proponente
+                FROM datos_solicitud WHERE proyecto_id=%s
+            ''', (proyecto_id,))
+            datos_previos = cur.fetchone()
+    except Exception as e:
+        st.error(f"Error consultando datos previos: {e}")
+        datos_previos = None
 
     st.markdown(
         f"""
@@ -74,4 +82,5 @@ def mostrar_formulario_datos_solicitud(proyecto_id):
                         conn.commit()
                     st.success("Datos de solicitud guardados correctamente.")
                 except Exception as e:
+                    conn.rollback()
                     st.error(f"Error al guardar datos de solicitud: {e}")

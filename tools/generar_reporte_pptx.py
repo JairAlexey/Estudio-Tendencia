@@ -33,13 +33,13 @@ def generar_reporte(proyecto_id, viabilidad=None):
     # Seleccionar plantilla según viabilidad
     if viabilidad is not None:
         if viabilidad <= 60:
-            template_path = 'db/base/NoViable.pptx'
+            template_path = 'files/base/NoViable.pptx'
         elif viabilidad <= 70:
-            template_path = 'db/base/Revision.pptx'
+            template_path = 'files/base/Revision.pptx'
         else:
-            template_path = 'db/base/Viable.pptx'
+            template_path = 'files/base/Viable.pptx'
     else:
-        template_path = 'db/base/Viable.pptx'
+        template_path = 'files/base/Viable.pptx'
     prs = Presentation(template_path)
     slide = prs.slides[1]
     shape_map = {
@@ -102,13 +102,13 @@ def generar_reporte(proyecto_id, viabilidad=None):
                 sp = slide_img.shapes._spTree
                 sp.remove(shape._element)
                 # Inserta la nueva imagen
-                ruta_img = f"db/imagenes/grafico_radar_{proyecto_id}.png"
+                ruta_img = f"files/imagenes/grafico_radar_{proyecto_id}.png"
                 slide_img.shapes.add_picture(ruta_img, left, top, width, height)
                 break
     except Exception as e:
         print(f"No se pudo reemplazar la imagen en el slide 3: {e}")
     nombre_archivo = f"{datos['nombre_programa'].replace(' ', '_')}.pptx"
-    output_path = os.path.join('db/presentaciones', nombre_archivo)
+    output_path = os.path.join('files/presentaciones', nombre_archivo)
     prs.save(output_path)
     print(f"Reporte guardado en: {output_path}")
 

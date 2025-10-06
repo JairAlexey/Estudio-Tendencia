@@ -392,8 +392,12 @@ def pagina_presentacion(id):
 
 # --- Layout principal ---
 def main():
-
+    # Inicializar page si no existe
+    if "page" not in st.session_state:
+        st.session_state["page"] = "proyectos"
+    
     page = st.session_state.get("page", "proyectos")
+    
     # Mostrar navegación en las páginas principales
     if page in ["proyectos", "formulario", "carpetas"]:
         page = mostrar_navegacion("nav_main")
@@ -409,23 +413,43 @@ def main():
         id = st.session_state.get("id", None)
         if id:
             pagina_editar(id)
+        else:
+            st.error("ID de proyecto no encontrado")
+            st.session_state["page"] = "proyectos"
+            st.rerun()
     elif page == "eliminar":
         id = st.session_state.get("id", None)
         if id:
             pagina_eliminar(id)
+        else:
+            st.error("ID de proyecto no encontrado")
+            st.session_state["page"] = "proyectos"
+            st.rerun()
     elif page == "reporte":
         id = st.session_state.get("id", None)
         if id:
             pagina_reporte(id)
+        else:
+            st.error("ID de proyecto no encontrado")
+            st.session_state["page"] = "proyectos"
+            st.rerun()
     elif page == "datos_solicitud":
         id = st.session_state.get("id", None)
         if id:
             from forms.datos_solicitud import mostrar_formulario_datos_solicitud
             mostrar_formulario_datos_solicitud(id)
+        else:
+            st.error("ID de proyecto no encontrado")
+            st.session_state["page"] = "proyectos"
+            st.rerun()
     elif page == "presentacion":
         id = st.session_state.get("id", None)
         if id:
             pagina_presentacion(id)
+        else:
+            st.error("ID de proyecto no encontrado")
+            st.session_state["page"] = "proyectos"
+            st.rerun()
 
 if __name__ == "__main__":
     main()

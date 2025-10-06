@@ -48,8 +48,6 @@ def calcular_valor_general(parametro, proyecto_id):
             return calc_linkedin(proyecto_id)
         elif parametro == "Mercado":
             resultado = calc_mercado(proyecto_id)
-            if resultado == 0:
-                st.warning("No se encontraron datos de Mercado en la base de datos.")
             return resultado
         return 0
     except Exception as e:
@@ -176,14 +174,14 @@ def mostrar_pagina_tabla(id):
         row = cur.fetchone()
         nombre_proyecto = row[0] if row else "Proyecto desconocido"
         nombre_proyecto = " ".join([w.capitalize() for w in nombre_proyecto.split()])
+        conn.commit()  # Commit successful read
     except Exception as e:
         conn.rollback()
-        cur.close()
-        conn.close()
         st.error(f"Error en la base de datos: {e}")
         return
-    cur.close()
-    conn.close()
+    finally:
+        cur.close()
+        conn.close()
 
     # Procesar y mostrar el reporte
     try:
@@ -194,22 +192,6 @@ def mostrar_pagina_tabla(id):
             return
         nombre_pestana = f"{proyecto['id']} - {proyecto['carrera_referencia']} vs {proyecto['carrera_estudio']}"
         st.subheader(f"Evaluación para {nombre_proyecto}")
-        
-        # Botón de depuración
-        if st.button("🔍 Ejecutar con Depuración Detallada"):
-            st.subheader("Logs de Depuración")
-            with st.expander("Ver logs detallados", expanded=True):
-                import io
-                import sys
-                from contextlib import redirect_stdout, redirect_stderr
-                
-                # Capturar todos los prints
-                f = io.StringIO()
-                with redirect_stdout(f), redirect_stderr(f):
-                    procesar_proyecto(id, nombre_pestana)
-                
-                output = f.getvalue()
-                st.text(output)
         
         with st.spinner("Procesando reporte..."):
             procesar_proyecto(id, nombre_pestana)
@@ -227,13 +209,4 @@ def mostrar_pagina_tabla(id):
         )
         st.dataframe(df_rango, width="stretch", hide_index=True)
     except Exception as e:
-        # Si ocurre un error en la consulta, intentar rollback de la conexión global si existe
-        try:
-            conn = get_connection()
-            cur = conn.cursor()
-            conn.rollback()
-            cur.close()
-            conn.close()
-        except Exception:
-            pass
         st.error(f"ERROR mostrando reporte: {e}")

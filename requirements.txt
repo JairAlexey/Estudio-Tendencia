@@ -1,4 +1,4 @@
-streamlit
+streamlit==1.50.0
 pytrends
 undetected-chromedriver
 python-dotenv
@@ -6,9 +6,10 @@ selenium
 openpyxl
 xlwings
 setuptools
+matplotlib
 pyodbc
-streamlit-option-menu
-streamlit-elements
+streamlit-option-menu==0.4.0
+streamlit-elements==0.1.0
 python-pptx>=0.6.21
 psycopg2-binary
 psutil

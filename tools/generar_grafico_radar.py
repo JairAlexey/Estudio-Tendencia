@@ -24,14 +24,7 @@ def generar_grafico_radar_desde_bd(proyecto_id, ruta_salida):
     valor_linkedin = float(row[3]) if row[3] is not None else 0.0
     valor_mercado = float(row[4]) if row[4] is not None else 0.0
 
-    # Calcular valores según reglas
-    competencia_avg = (valor_competencia_presencialidad + valor_competencia_virtualidad) / 2
-    busqueda_pct = round(valor_busqueda)
-    competencia_pct = round(competencia_avg)
-    linkedin_pct = round(valor_linkedin)
-    mercado_pct = round(valor_mercado)
-
-    # Calcular valores según reglas
+    # Calcular valores según reglas (solo una vez)
     competencia_avg = (valor_competencia_presencialidad + valor_competencia_virtualidad) / 2
     busqueda_pct = round((valor_busqueda / 35) * 100)
     competencia_pct = round((competencia_avg / 25) * 100)
