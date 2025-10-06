@@ -25,13 +25,13 @@ def esperar_y_refrescar_si_banner(
         print(f"Banner error - Refrescando... ({intento}/{max_intentos})")
         time.sleep(espera_seg)
         driver.refresh()
-        time.sleep(TIEMPO_ESPERA_PAGINA * 2)
+        time.sleep(TIEMPO_ESPERA_PAGINA * 3)  # Increased wait time after refresh
         if hay_banner_error(driver):
             print(f"Banner aún presente después del refresh {intento}")
             continue
         filtro_ok = False
         for intento_filtro in range(5):
-            div_ubicacion = esperar_elemento(driver, By.CSS_SELECTOR, 'div.query-facet[data-query-type="LOCATION"]', timeout=4)
+            div_ubicacion = esperar_elemento(driver, By.CSS_SELECTOR, 'div.query-facet[data-query-type="LOCATION"]', timeout=8)  # Increased timeout
             if div_ubicacion:
                 try:
                     if div_ubicacion.is_displayed() and div_ubicacion.is_enabled():

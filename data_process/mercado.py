@@ -39,9 +39,17 @@ def calc_mercado(proyecto_id):
 
     # Código CIIU de la carrera a consultar (puede ser lista o string)
     codigos_consultar = [codigo_ciiu_consultar.strip()] if codigo_ciiu_consultar else []
-    if not codigos_consultar:
-        print("ERROR: No se encontró código CIIU para la carrera a consultar.")
+    
+    # Validar que el código no sea vacío o inválido (pero '0' es válido)
+    if not codigos_consultar or codigos_consultar[0] in ['', 'None', 'null']:
+        print(f"ERROR: Código CIIU inválido o vacío: {codigo_ciiu_consultar}")
+        print("SUGERENCIA: Verificar que el proyecto tenga un código CIIU válido en la base de datos")
         return 0
+    
+    if codigos_consultar[0] == '0':
+        print(f"INFORMACIÓN: Código CIIU '0' detectado - Se usarán valores de 0 para todas las hojas (comportamiento esperado)")
+    else:
+        print(f"INFORMACIÓN: Código CIIU válido encontrado: {codigos_consultar[0]}")
 
     resultados_carreraReferencia = {}
     resultados_carreraConsultar = {}
@@ -131,7 +139,10 @@ def calc_mercado(proyecto_id):
         print(f"Valor consultar ({hoja}): {valor_consultar} (tipo: {type(valor_consultar)})")
 
         if valor_consultar is None or valor_consultar == 0:
-            print(f"ADVERTENCIA: Valor consultar es None o 0 para hoja '{hoja}' - Esta hoja será omitida del cálculo")
+            if codigos_consultar[0] == '0':
+                print(f"INFORMACIÓN: Valor consultar es 0 para hoja '{hoja}' (esperado con código CIIU '0') - Esta hoja será omitida del cálculo")
+            else:
+                print(f"ADVERTENCIA: Valor consultar es None o 0 para hoja '{hoja}' - Esta hoja será omitida del cálculo")
             hojas_omitidas.append(f"{hoja} (valor_consultar={valor_consultar})")
             continue
 

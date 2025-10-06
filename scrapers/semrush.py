@@ -141,7 +141,7 @@ def extraer_datos_semrush(driver, carrera):
         - Palabras: div.sm-keywords-table-header__item-value[data-testid="all-keywords"]
         - Volumen: div.sm-keywords-table-header__item-value[data-testid="total-volume"]
     """
-    time.sleep(6)  # Esperar carga inicial
+    time.sleep(10)  # Esperar carga inicial
 
     # 1. VISION GENERAL
     vision_general = 0

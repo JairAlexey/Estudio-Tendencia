@@ -5,7 +5,7 @@ from selenium.webdriver.support import expected_conditions as EC
 import time
 from scrapers.linkedin_modules.linkedin_project import buscar_proyecto_en_pagina
 
-def paginar_y_buscar_carpeta(driver, carpeta_buscar, buscar_carpeta_en_pagina, url, TIEMPO_ESPERA_CORTO=1, TIEMPO_ESPERA_MEDIO=2):
+def paginar_y_buscar_carpeta(driver, carpeta_buscar, buscar_carpeta_en_pagina, url, TIEMPO_ESPERA_CORTO=3, TIEMPO_ESPERA_MEDIO=5):
     """
     Busca la carpeta en la página actual y en todas las páginas de paginación.
     Devuelve True si la carpeta fue encontrada y navega a ella.
@@ -49,7 +49,7 @@ def paginar_y_buscar_carpeta(driver, carpeta_buscar, buscar_carpeta_en_pagina, u
                 continue
     return False
 
-def paginar_y_buscar_proyecto(driver, proyecto_buscar, UBICACIONES, carpeta_buscar, resultados_finales, buscar_proyecto_en_pagina, extraer_datos_reporte, TIEMPO_ESPERA_CORTO=1, TIEMPO_ESPERA_PAGINA=3):
+def paginar_y_buscar_proyecto(driver, proyecto_buscar, UBICACIONES, carpeta_buscar, resultados_finales, buscar_proyecto_en_pagina, extraer_datos_reporte, TIEMPO_ESPERA_CORTO=3, TIEMPO_ESPERA_PAGINA=6):
     """
     Busca el proyecto en la página actual y en todas las páginas de paginación.
     Devuelve True si el proyecto fue encontrado y procesado.
@@ -101,7 +101,7 @@ def paginar_y_buscar_proyecto(driver, proyecto_buscar, UBICACIONES, carpeta_busc
                 continue
     return False
 
-def reintentar_elementos_fallidos(driver, elementos_fallidos, url, UBICACIONES, buscar_carpeta_en_pagina, buscar_proyecto_en_pagina, extraer_datos_reporte, TIEMPO_ESPERA_CORTO=1, TIEMPO_ESPERA_MEDIO=2, TIEMPO_ESPERA_PAGINA=3):
+def reintentar_elementos_fallidos(driver, elementos_fallidos, url, UBICACIONES, buscar_carpeta_en_pagina, buscar_proyecto_en_pagina, extraer_datos_reporte, TIEMPO_ESPERA_CORTO=3, TIEMPO_ESPERA_MEDIO=5, TIEMPO_ESPERA_PAGINA=6):
     """
     Reintenta procesar los elementos fallidos (carpetas/proyectos) recorriendo la paginación.
     """

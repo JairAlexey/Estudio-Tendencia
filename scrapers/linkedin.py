@@ -11,6 +11,7 @@ from scrapers.linkedin_modules.linkedin_pagination import (
 )
 from scrapers.linkedin_modules.driver_config import (
     limpiar_singleton_lock,
+    limpiar_perfil_completo,  # Add this import
     crear_opciones_chrome,
     iniciar_driver,
     login_linkedin,
@@ -21,6 +22,7 @@ from scrapers.linkedin_modules.linkedin_banner import esperar_y_refrescar_si_ban
 from scrapers.linkedin_modules.linkedin_utils import hay_banner_error, esperar_elemento
 from scrapers.linkedin_modules.linkedin_banner import esperar_y_refrescar_si_banner
 import os
+import psutil
 import time
 from dotenv import load_dotenv
 
@@ -32,17 +34,17 @@ ERROR_SELECTORS = [
 ]
 
 # === CONFIGURACIÓN GLOBAL DE TIEMPOS ===
-TIEMPO_ESPERA_CORTO = 1   # segundos para esperas cortas  
-TIEMPO_ESPERA_MEDIO = 2   # segundos para esperas medias
-TIEMPO_ESPERA_LARGO = 4   # segundos para esperas largas
-TIEMPO_ESPERA_BANNER = 40 # espera cuando aparece el banner de error (reducido considerablemente)
-TIEMPO_ESPERA_PAGINA = 3  # espera larga para recarga de página
+TIEMPO_ESPERA_CORTO = 3   # segundos para esperas cortas  
+TIEMPO_ESPERA_MEDIO = 5   # segundos para esperas medias
+TIEMPO_ESPERA_LARGO = 8   # segundos para esperas largas
+TIEMPO_ESPERA_BANNER = 60 # espera cuando aparece el banner de error (reducido considerablemente)
+TIEMPO_ESPERA_PAGINA = 6  # espera larga para recarga de página
 
 
-def linkedin_scraper():
+def linkedin_scraper(limpiar_perfil_al_inicio=False):
     # -----------------------------------------------------------------------------
     # CONFIGURACIÓN: Cargar variables de entorno y definir parámetros iniciales
-    # -----------------------------------------------------------------------------
+    # ----------------------------------------------------------------------------
 
     import sys
     load_dotenv()
@@ -61,7 +63,35 @@ def linkedin_scraper():
     UBICACIONES = ["Ecuador", "América Latina"]
     user_data_dir = r"C:\Users\User\Documents\TRABAJO - UDLA\Estudio-Tendencia\profile"
     profile_directory = "Default"
-    limpiar_singleton_lock(user_data_dir, profile_directory)
+    
+    # Detectar si viene del worker (el worker ya hizo limpieza completa)
+    # Verificar si el proceso padre es el worker
+    viene_del_worker = False
+    try:
+        
+        proceso_actual = psutil.Process()
+        proceso_padre = proceso_actual.parent()
+        if proceso_padre and ('worker' in proceso_padre.name().lower() or 'worker_scraper' in ' '.join(proceso_padre.cmdline())):
+            viene_del_worker = True
+            print(f"🔗 Detectado que viene del worker - perfil ya limpiado")
+    except:
+        # Si no se puede detectar, asumir que NO viene del worker
+        pass
+    
+    # Solo hacer limpieza si NO viene del worker o si se especifica explícitamente
+    if not viene_del_worker and not limpiar_perfil_al_inicio:
+        # Limpieza básica para ejecuciones directas
+        print(f"🧹 Limpieza básica de perfil para ejecución directa")
+        limpiar_singleton_lock(user_data_dir, profile_directory)
+    elif limpiar_perfil_al_inicio:
+        # Limpieza completa solo si se especifica explícitamente
+        print(f"🔄 Limpieza completa de perfil solicitada para proyecto {proyecto_id}")
+        if not limpiar_perfil_completo(user_data_dir, profile_directory, espera_inicial=3, espera_recreacion=2):
+            print("❌ Error en limpieza de perfil, continuando con limpieza básica...")
+            limpiar_singleton_lock(user_data_dir, profile_directory)
+    else:
+        print(f"✅ Perfil ya limpiado por worker - continuando directamente")
+    
     options = crear_opciones_chrome(user_data_dir, profile_directory)
     driver = iniciar_driver(options)
     try:
@@ -77,7 +107,6 @@ def linkedin_scraper():
         if not reportes:
             print(f"❌ No se encontraron datos para el proyecto {proyecto_id}")
             return
-
         resultados_finales = []
         elementos_fallidos = []
 

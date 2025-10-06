@@ -12,8 +12,8 @@ from scrapers.linkedin_modules.linkedin_utils import (
 )
 
 def extraer_datos_reporte(driver, UBICACION, carpeta_nombre, proyecto_nombre,
-                         TIEMPO_ESPERA_CORTO=1, TIEMPO_ESPERA_MEDIO=2, TIEMPO_ESPERA_LARGO=4,
-                         TIEMPO_ESPERA_BANNER=40, TIEMPO_ESPERA_PAGINA=3,
+                         TIEMPO_ESPERA_CORTO=3, TIEMPO_ESPERA_MEDIO=5, TIEMPO_ESPERA_LARGO=8,
+                         TIEMPO_ESPERA_BANNER=60, TIEMPO_ESPERA_PAGINA=6,
                          esperar_resultados_o_banner=None,
                          esperar_y_refrescar_si_banner=None):
     """
@@ -458,7 +458,8 @@ def extraer_datos_reporte(driver, UBICACION, carpeta_nombre, proyecto_nombre,
             resultado_filtro = aplicar_filtro(driver, UBICACION)
             
             if resultado_filtro is True:
-                # Verificar que haya datos disponibles
+                # Verificar que haya datos disponibles con espera adicional
+                time.sleep(TIEMPO_ESPERA_MEDIO)  # Espera adicional antes de verificar datos
                 top_cards = driver.find_elements(By.CSS_SELECTOR, "li.overview-layout__top-card")
                 if top_cards and len(top_cards) > 0:
                     # Verificar que las tarjetas tienen datos reales
@@ -501,7 +502,7 @@ def extraer_datos_reporte(driver, UBICACION, carpeta_nombre, proyecto_nombre,
                 continue
             else:
                 print(f"Fallo en intento {intentos}")
-                # Si hay banner de error, esperar 40s antes de refrescar
+                # Si hay banner de error, esperar tiempo aumentado antes de refrescar
                 if hay_banner_error(driver):
                     print(f"Banner detectado tras fallo, esperando {TIEMPO_ESPERA_BANNER}s antes de refrescar...")
                     if callable(esperar_y_refrescar_si_banner):

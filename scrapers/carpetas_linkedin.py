@@ -14,12 +14,12 @@ import time
 from dotenv import load_dotenv
 from conexion import conn, cursor
 
-# Configuración de tiempos
-TIEMPO_ESPERA_CORTO = 1
-TIEMPO_ESPERA_MEDIO = 2
-TIEMPO_ESPERA_LARGO = 4
-TIEMPO_ESPERA_BANNER = 40
-TIEMPO_ESPERA_PAGINA = 3
+# Configuración de tiempos - Increased all values
+TIEMPO_ESPERA_CORTO = 3   # Increased from 1 to 3
+TIEMPO_ESPERA_MEDIO = 5   # Increased from 2 to 5
+TIEMPO_ESPERA_LARGO = 8   # Increased from 4 to 8
+TIEMPO_ESPERA_BANNER = 60 # Increased from 40 to 60
+TIEMPO_ESPERA_PAGINA = 6  # Increased from 3 to 6
 
 def guardar_proyecto_carpeta(tipo_carpeta, nombre_proyecto, url_proyecto=None):
     """Guarda o actualiza un proyecto en la base de datos"""

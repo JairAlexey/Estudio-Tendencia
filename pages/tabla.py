@@ -194,6 +194,23 @@ def mostrar_pagina_tabla(id):
             return
         nombre_pestana = f"{proyecto['id']} - {proyecto['carrera_referencia']} vs {proyecto['carrera_estudio']}"
         st.subheader(f"Evaluación para {nombre_proyecto}")
+        
+        # Botón de depuración
+        if st.button("🔍 Ejecutar con Depuración Detallada"):
+            st.subheader("Logs de Depuración")
+            with st.expander("Ver logs detallados", expanded=True):
+                import io
+                import sys
+                from contextlib import redirect_stdout, redirect_stderr
+                
+                # Capturar todos los prints
+                f = io.StringIO()
+                with redirect_stdout(f), redirect_stderr(f):
+                    procesar_proyecto(id, nombre_pestana)
+                
+                output = f.getvalue()
+                st.text(output)
+        
         with st.spinner("Procesando reporte..."):
             procesar_proyecto(id, nombre_pestana)
             

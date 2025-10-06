@@ -14,8 +14,8 @@ def reset_profile_dir():
         shutil.rmtree(PROFILE_DIR)
     os.makedirs(PROFILE_DIR)
 
-# Llamar a la función al inicio del script
-reset_profile_dir()
+# NO llamar a la función al inicio del script - ahora se hará por proyecto
+# reset_profile_dir()
 import traceback
 import subprocess
 from scrapers.linkedin_modules.linkedin_database import (
@@ -24,11 +24,51 @@ from scrapers.linkedin_modules.linkedin_database import (
     mark_job_completed,
     mark_job_failed,
 )
+from scrapers.linkedin_modules.driver_config import limpiar_perfil_completo
 from conexion import conn
 
 
 SLEEP_SECONDS = int(os.getenv("WORKER_POLL_SECONDS", "5"))
 
+
+def limpiar_perfil_proyecto(proyecto_id):
+    """
+    Limpia el perfil de Chrome al inicio de cada proyecto.
+    Incluye esperas para no interferir con otros procesos.
+    """
+    print(f"🧹 Iniciando limpieza de perfil para proyecto {proyecto_id}...")
+    
+    try:
+        # Usar la función optimizada del driver_config
+        user_data_dir = PROFILE_DIR
+        profile_directory = "Default"
+        
+        limpieza_exitosa = limpiar_perfil_completo(
+            user_data_dir, 
+            profile_directory, 
+            espera_inicial=3,  # Espera inicial antes de limpiar
+            espera_recreacion=2  # Espera después de recrear
+        )
+        
+        if limpieza_exitosa:
+            print(f"✅ Perfil limpiado exitosamente para proyecto {proyecto_id}")
+        else:
+            print(f"⚠️ Limpieza de perfil falló para proyecto {proyecto_id}, usando limpieza básica...")
+            # Fallback a limpieza básica
+            reset_profile_dir()
+            
+        return limpieza_exitosa
+        
+    except Exception as e:
+        print(f"❌ Error en limpieza de perfil para proyecto {proyecto_id}: {e}")
+        # Fallback a limpieza básica
+        try:
+            reset_profile_dir()
+            print(f"✅ Limpieza básica aplicada como fallback")
+            return True
+        except Exception as e2:
+            print(f"❌ Error crítico en limpieza de perfil: {e2}")
+            return False
 
 def run_subprocess(module_path: str, proyecto_id: int) -> tuple[int, str, str]:
     project_root = os.path.dirname(os.path.abspath(__file__))
@@ -63,30 +103,67 @@ def process_job(job):
     proyecto_id = job["proyecto_id"]
     mark_job_running(job_id)
     try:
-        print(f"[worker] Job {job_id} iniciado (proyecto_id={proyecto_id})")
+        print(f"\n{'='*60}")
+        print(f"🚀 INICIANDO PROCESAMIENTO DEL PROYECTO {proyecto_id}")
+        print(f"   Job ID: {job_id}")
+        print(f"{'='*60}")
+        
+        # LIMPIAR PERFIL AL INICIO DE CADA PROYECTO
+        print(f"📂 Paso 1: Limpieza de perfil de Chrome...")
+        perfil_limpio = limpiar_perfil_proyecto(proyecto_id)
+        
+        if not perfil_limpio:
+            print(f"⚠️ Advertencia: Limpieza de perfil no completamente exitosa, pero continuando...")
+        
+        # Espera adicional para estabilizar después de la limpieza
+        print(f"⏸️ Esperando 5 segundos para estabilizar...")
+        time.sleep(5)
+        
+        print(f"📡 Paso 2: Ejecutando LinkedIn scraper...")
         rc1, out1, err1 = run_subprocess(os.path.join("scrapers", "linkedin.py"), proyecto_id)
         if rc1 != 0:
             raise RuntimeError(f"linkedin.py fallo rc={rc1}: {err1[:500]}")
+        
+        print(f"🔍 Paso 3: Ejecutando SEMrush scraper...")
         rc2, out2, err2 = run_subprocess(os.path.join("scrapers", "semrush.py"), proyecto_id)
         if rc2 != 0:
             raise RuntimeError(f"semrush.py fallo rc={rc2}: {err2[:500]}")
+        
         mark_job_completed(job_id)
-        print(f"[worker] Job {job_id} completado ✔")
+        print(f"\n✅ PROYECTO {proyecto_id} COMPLETADO EXITOSAMENTE")
+        print(f"   Job {job_id} marcado como completado")
+        print(f"{'='*60}")
+        
     except Exception as e:
         tb = traceback.format_exc()
         mark_job_failed(job_id, f"{e}\n{tb}")
-        print(f"[worker] Job {job_id} fallo ✖: {e}")
+        print(f"\n❌ PROYECTO {proyecto_id} FALLÓ")
+        print(f"   Job {job_id} marcado como fallido")
+        print(f"   Error: {e}")
+        print(f"{'='*60}")
 
 def main():
-    print("Worker iniciado. Escuchando cola 'scraper_queue'...")
+    print("🔄 Worker Scraper iniciado")
+    print(f"   Tiempo de inicio: {time.strftime('%Y-%m-%d %H:%M:%S')}")
+    print("   Escuchando cola 'scraper_queue'...")
+    print("   ⚙️ Configurado para limpiar perfil al inicio de cada proyecto")
+    
     while True:
         job = fetch_next_job()
         if not job:
+            print("😴 No hay trabajos en cola, esperando...")
             time.sleep(SLEEP_SECONDS)
             continue
-        print(f"Procesando job {job['id']} (proyecto_id={job['proyecto_id']})")
+            
+        print(f"\n📋 Nuevo trabajo detectado:")
+        print(f"   Job ID: {job['id']}")
+        print(f"   Proyecto ID: {job['proyecto_id']}")
+        
         process_job(job)
-
+        
+        # Pausa entre proyectos para estabilidad
+        print(f"\n⏸️ Pausa de 10 segundos antes del siguiente proyecto...")
+        time.sleep(10)
 
 if __name__ == "__main__":
     main()

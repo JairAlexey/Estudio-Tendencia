@@ -6,6 +6,8 @@ ECU = 0.15
 LATAM = 0.10
 
 def calc_linkedin(proyecto_id):
+    print(f"[LinkedIn] Fuente: Base de Datos (proyecto_id={proyecto_id})")
+    
     # Obtener datos desde la base de datos
     data = extraer_datos_tabla("linkedin", proyecto_id)
     if not data:
@@ -13,6 +15,9 @@ def calc_linkedin(proyecto_id):
         return 0
 
     df = pd.DataFrame(data)
+    print(f"[DEBUG] DataFrame LinkedIn shape: {df.shape}")
+    print(f"[DEBUG] Columnas disponibles: {df.columns.tolist()}")
+    print(f"[DEBUG] Datos LinkedIn:\n{df}")
 
     # ECUADOR
     # Usar nombres de columnas en minúsculas para compatibilidad con PostgreSQL
