@@ -81,7 +81,7 @@ def validar_trends_data(df_trends):
         promedio = row.get("Promedio", "")
         
         # Ignorar filas completamente vacías
-        if not palabra and not promedio:
+        if not palabra and (promedio == "" or promedio is None):
             continue
             
         # Validar palabra
@@ -91,11 +91,15 @@ def validar_trends_data(df_trends):
             
         # Validar y convertir promedio
         try:
+            # Considerar explícitamente "0" como valor válido
             if isinstance(promedio, str):
                 promedio = promedio.replace(',', '.').strip()
-            if not promedio:
+                
+            if promedio == "" or promedio is None:
                 errores.append(f"Fila {idx + 1}: El promedio no puede estar vacío")
                 continue
+                
+            # Convertir a float - el valor 0 es válido
             promedio_float = float(promedio)
             trends_validas.append({"palabra": palabra, "promedio": promedio_float})
         except ValueError:
