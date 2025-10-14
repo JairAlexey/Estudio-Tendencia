@@ -6,10 +6,10 @@ TEMPLATE_PATH = '../files/base/InvestigacionMercados.pptx'
 # Cargar la presentación
 prs = Presentation(TEMPLATE_PATH)
 
-# Acceder a la diapositiva 3 (índice 3)
+
 slide = prs.slides[1]
 
-print('Textos de cada shape en la diapositiva 3:')
+print('Textos de cada shape:')
 for i, shape in enumerate(slide.shapes):
     if shape.has_text_frame:
         print(f"Shape {i}: {shape.text}")

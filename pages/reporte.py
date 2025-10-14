@@ -20,68 +20,125 @@ def mostrar_pagina_presentacion(id):
     
     st.title(f"Presentación generada para: {nombre_proyecto}")
     
-    # Mostrar estado de la presentación
+    # Mostrar estado de las presentaciones
     with conn.cursor() as cur:
         cur.execute("""
-            SELECT status, file_name, file_data, error 
+            SELECT id, status, file_name, file_data, error, tipo_reporte 
             FROM presentation_queue 
             WHERE proyecto_id=%s AND status = 'finished'
             ORDER BY finished_at DESC 
-            LIMIT 1
         """, (id,))
-        row = cur.fetchone()
+        rows = cur.fetchall()
+    
+    if rows:
+        # Organizar por tipo de reporte
+        reportes = {}
+        for row in rows:
+            queue_id, status, file_name, file_data, error, tipo_reporte = row
+            tipo_reporte = tipo_reporte or 'viabilidad'  # Por defecto
+            
+            if tipo_reporte not in reportes:
+                reportes[tipo_reporte] = (queue_id, status, file_name, file_data, error)
+                
+        # Mostrar pestañas para los diferentes tipos de reportes
+        if reportes:
+            tab_titles = []
+            for tipo in reportes:
+                if tipo == 'viabilidad':
+                    tab_titles.append("📊 Reporte de Viabilidad")
+                elif tipo == 'mercado':
+                    tab_titles.append("📈 Investigación de Mercado")
+                else:
+                    tab_titles.append(f"📑 {tipo.capitalize()}")
+            
+            tabs = st.tabs(tab_titles)
+            
+            for i, (tipo, datos) in enumerate(reportes.items()):
+                queue_id, status, file_name, file_data, error = datos
+                
+                with tabs[i]:
+                    if isinstance(file_data, memoryview):
+                        file_data = file_data.tobytes()
+                    
+                    texto, color, icono = estado_traducido_presentacion.get(status, (status, "#800080", "🟣"))
+                    
+                    st.markdown(f"""
+                        <div style='border:2px solid {color}; border-radius:12px; padding:1.2rem; margin:1.2rem 0; background:#f8f9fa;'>
+                            <h4 style='margin:0 0 0.5rem 0;'>Estado de la presentación</h4>
+                            <div style='font-size:1.1rem; color:{color}; font-weight:bold;'>{icono} {texto}</div>
+                        </div>
+                    """, unsafe_allow_html=True)
+                    
+                    # Mostrar botones en columnas
+                    col1, col2 = st.columns(2)
+                    
+                    with col1:
+                        st.download_button(
+                            f"💾 Descargar {tipo.capitalize()} PPTX",
+                            data=file_data,
+                            file_name=file_name or f"presentacion_{tipo}.pptx",
+                            mime="application/vnd.openxmlformats-officedocument.presentationml.presentation",
+                            use_container_width=True,
+                            help=f"Descargar la presentación de {tipo} para ver en PowerPoint"
+                        )
+                        
+                    with col2:
+                        if st.button("🔄 Regenerar", key=f"regenerar_{tipo}_{id}", use_container_width=True, help=f"Volver a generar la presentación de {tipo}"):
+                            with conn.cursor() as cur:
+                                cur.execute("""
+                                    INSERT INTO presentation_queue (proyecto_id, status, tries, created_at, tipo_reporte)
+                                    VALUES (%s, 'queued', 0, CURRENT_TIMESTAMP, %s)
+                                """, (id, tipo))
+                                conn.commit()
+                            st.info(f"✨ Presentación de {tipo} encolada para regeneración.")
+                            st.rerun()
+    else:
+        st.info("📄 No hay presentaciones disponibles para este proyecto.")
         
-    if row and row[0]:  # Si hay archivo
-        status, file_name, file_data, error = row
+        # Botones para generar diferentes tipos de presentaciones
+        st.subheader("Generar presentaciones")
         
-        if isinstance(file_data, memoryview):
-            file_data = file_data.tobytes()
+        # Opción para generar ambas presentaciones con un solo botón
+        if st.button("✨ Generar Ambas Presentaciones", key=f"generar_ambas_{id}", use_container_width=True):
+            with conn.cursor() as cur:
+                # Encolar reporte de viabilidad
+                cur.execute("""
+                    INSERT INTO presentation_queue (proyecto_id, status, tries, created_at, tipo_reporte)
+                    VALUES (%s, 'queued', 0, CURRENT_TIMESTAMP, 'viabilidad')
+                """, (id,))
+                
+                # Encolar reporte de mercado
+                cur.execute("""
+                    INSERT INTO presentation_queue (proyecto_id, status, tries, created_at, tipo_reporte)
+                    VALUES (%s, 'queued', 0, CURRENT_TIMESTAMP, 'mercado')
+                """, (id,))
+                
+                conn.commit()
+            st.success("✨ Ambas presentaciones encoladas para generación.")
+            st.rerun()
         
-        texto, color, icono = estado_traducido_presentacion.get(status, (status, "#800080", "🟣"))
-        
-        st.markdown(f"""
-            <div style='border:2px solid {color}; border-radius:12px; padding:1.2rem; margin:1.2rem 0; background:#f8f9fa;'>
-                <h4 style='margin:0 0 0.5rem 0;'>Estado de la presentación</h4>
-                <div style='font-size:1.1rem; color:{color}; font-weight:bold;'>{icono} {texto}</div>
-            </div>
-        """, unsafe_allow_html=True)
-        
-        # Mostrar botones en columnas
+        # O generar presentaciones individuales
+        st.subheader("O generar presentaciones individualmente:")
         col1, col2 = st.columns(2)
         
         with col1:
-            st.download_button(
-                "💾 Descargar PPTX",
-                data=file_data,
-                file_name=file_name or "presentacion.pptx",
-                mime="application/vnd.openxmlformats-officedocument.presentationml.presentation",
-                use_container_width=True,
-                help="Descargar la presentación para ver en PowerPoint"
-            )
-            
-        with col2:
-            if st.button("🔄 Regenerar", key=f"regenerar_{id}", use_container_width=True, help="Volver a generar la presentación"):
+            if st.button("✨ Generar Reporte de Viabilidad", key=f"generar_viabilidad_{id}", use_container_width=True):
                 with conn.cursor() as cur:
                     cur.execute("""
-                        INSERT INTO presentation_queue (proyecto_id, status, tries, created_at)
-                        VALUES (%s, 'queued', 0, CURRENT_TIMESTAMP)
+                        INSERT INTO presentation_queue (proyecto_id, status, tries, created_at, tipo_reporte)
+                        VALUES (%s, 'queued', 0, CURRENT_TIMESTAMP, 'viabilidad')
                     """, (id,))
                     conn.commit()
-                st.info("✨ Presentación encolada para regeneración.")
+                st.info("✨ Reporte de viabilidad encolado para generación.")
                 st.rerun()
-        
-    else:
-        st.info("📄 No hay presentación disponible para este proyecto.")
-        
-        # Botón centrado para primera generación
-        col1, col2, col3 = st.columns([1,2,1])
+                
         with col2:
-            if st.button("✨ Generar Presentación", key=f"generar_{id}", use_container_width=True):
+            if st.button("✨ Generar Investigación de Mercado", key=f"generar_mercado_{id}", use_container_width=True):
                 with conn.cursor() as cur:
                     cur.execute("""
-                        INSERT INTO presentation_queue (proyecto_id, status, tries, created_at)
-                        VALUES (%s, 'queued', 0, CURRENT_TIMESTAMP)
+                        INSERT INTO presentation_queue (proyecto_id, status, tries, created_at, tipo_reporte)
+                        VALUES (%s, 'queued', 0, CURRENT_TIMESTAMP, 'mercado')
                     """, (id,))
                     conn.commit()
-                st.info("✨ Presentación encolada para generación.")
+                st.info("✨ Investigación de mercado encolada para generación.")
                 st.rerun()
