@@ -1,0 +1,21 @@
+/* Hide the default sidebar - with !important to ensure it overrides other styles */
+section[data-testid="stSidebar"] {
+    display: none !important;
+    width: 0px !important;
+    height: 0px !important;
+    overflow: hidden !important;
+    visibility: hidden !important;
+    position: absolute !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+
+/* Adjust main content width and padding */
+.main .block-container {
+    max-width: 1200px;
+    padding-top: 2rem;
+    padding-right: 2rem;
+    padding-left: 2rem;
+    padding-bottom: 3rem;
+    margin: 0 auto;
+}

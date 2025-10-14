@@ -3,11 +3,38 @@ import pandas as pd
 import time
 from streamlit_option_menu import option_menu
 from conexion import get_connection
+import os
 
 # Helper para obtener conexión y cursor
 def get_conn_cursor():
     conn = get_connection()
     return conn, conn.cursor()
+
+# Improved CSS loading to prevent sidebar flash
+def load_css():
+    # First, direct CSS to immediately hide the sidebar
+    st.markdown("""
+        <style>
+        section[data-testid="stSidebar"] {
+            display: none !important;
+            width: 0px !important;
+            height: 0px !important;
+            visibility: hidden !important;
+            position: absolute !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+    
+    # Then load the full CSS file
+    css_file = os.path.join(os.path.dirname(__file__), ".streamlit", "style.css")
+    if os.path.exists(css_file):
+        with open(css_file) as f:
+            st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
+
+# Load CSS at the very beginning
+load_css()
 
 # --- Navegación ---
 def mostrar_navegacion(key):
