@@ -286,7 +286,7 @@ def pagina_inicio():
                 st.session_state["id"] = id
                 st.rerun()
         with col4:
-            st.button("📊 Reporte", key=f"presentacion_{id}", disabled=disabled, help="Reporte")
+            st.button("📊 PPTX", key=f"presentacion_{id}", disabled=disabled, help="Reporte")
             if not disabled and st.session_state.get(f"presentacion_{id}"):
                 st.session_state["page"] = "presentacion"
                 st.session_state["id"] = id
