@@ -398,8 +398,16 @@ def mostrar_formulario_edicion(id):
     )
     
     # --- Proyecto 2: Carrera Estudio (usando los mismos datos de LinkedIn) ---
-    nombre_proyecto_2 = st.selectbox("Nombre de la Carrera Estudio en Linkedin",
-                                     ["Seleccione una carrera..."] + proyectos_linkedin)
+    # FIX: Properly initialize the second project name dropdown with current value
+    carrera_estudio_index = 0
+    if carrera_estudio in proyectos_linkedin:
+        carrera_estudio_index = proyectos_linkedin.index(carrera_estudio)
+    nombre_proyecto_2 = st.selectbox(
+        "Nombre de la Carrera Estudio en Linkedin",
+        proyectos_linkedin,
+        index=carrera_estudio_index,
+        key=f"carrera_estudio_{id}"
+    )
 
     # --- SEMRUSH ---
     st.subheader("Palabra a consultar en SEMRUSH")
