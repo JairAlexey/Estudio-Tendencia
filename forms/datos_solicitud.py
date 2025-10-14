@@ -4,6 +4,17 @@ sys.path.append("..")
 from conexion import conn
 
 def mostrar_formulario_datos_solicitud(proyecto_id):
+    # Clear button state if it exists
+    if f"volver_datos_solicitud_{proyecto_id}" in st.session_state:
+        del st.session_state[f"volver_datos_solicitud_{proyecto_id}"]
+
+    # Use a consistent button style that works like in pagina_formulario
+    col1, col2 = st.columns([1, 5])
+    with col1:
+        if st.button("⬅️ Volver", key=f"volver_inicio_datos_{proyecto_id}", use_container_width=True):
+            st.session_state["page"] = "proyectos"
+            st.rerun()
+    
     # Obtener el nombre del proyecto
     try:
         with conn.cursor() as cur:
@@ -36,9 +47,7 @@ def mostrar_formulario_datos_solicitud(proyecto_id):
         """,
         unsafe_allow_html=True
     )
-    if st.button("Regresar al inicio", key="volver_inicio_datos_solicitud"):
-        st.session_state["page"] = "inicio"
-        st.rerun()
+
     with st.form("form_datos_solicitud"):
         facultad_propuesta = st.text_input("Facultad propuesta", value=datos_previos[0] if datos_previos else "")
         duracion = st.text_input("Duración", value=datos_previos[1] if datos_previos else "")

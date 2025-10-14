@@ -309,7 +309,7 @@ def pagina_inicio():
 
 # --- Editar proyecto ---
 def pagina_editar(id):
-    if st.button("Regresar a proyectos", key="volver_inicio_editar"):
+    if st.button("⬅️ Volver", key="volver_inicio_editar"):
         st.session_state["page"] = "proyectos"
         st.rerun()
     try:
@@ -353,14 +353,33 @@ def pagina_eliminar(id):
 
 # --- Formulario ---
 def pagina_formulario():
-    # Limpiar los campos del formulario al entrar
-    if st.session_state.get("limpiar_formulario", True):
-        import pandas as pd
-        st.session_state["df_trends"] = pd.DataFrame({"Palabra": [""], "Promedio": [""]})
-        st.session_state["modalidad_oferta"] = pd.DataFrame({"Presencial": [""], "Virtual": [""]})
-        st.session_state["search_query"] = ""
-        st.session_state["limpiar_formulario"] = False
-    st.title("Formulario de Proyectos y Tendencias")
+    # Clear form button state if it exists
+    if f"volver_inicio_form_main" in st.session_state:
+        del st.session_state[f"volver_inicio_form_main"]
+        
+    # Agregar botón de regreso fuera del formulario con clearer intent
+    col1, col2 = st.columns([1, 5])
+    with col1:
+        # Limpiar los campos del formulario al entrar
+        if st.session_state.get("limpiar_formulario", True):
+            import pandas as pd
+            st.session_state["df_trends"] = pd.DataFrame({"Palabra": [""], "Promedio": [""]})
+            st.session_state["modalidad_oferta"] = pd.DataFrame({"Presencial": [""], "Virtual": [""]})
+            st.session_state["search_query"] = ""
+            st.session_state["limpiar_formulario"] = False
+            # Limpiar mensaje de éxito al entrar en formulario
+            if "mensaje_exito" in st.session_state:
+                del st.session_state["mensaje_exito"]
+            
+    st.title("Formulario de Proyectos")
+    
+    # Verificar y mostrar mensaje de éxito guardado en session_state
+    # (solo si viene de la acción de guardado, no al regresar al formulario)
+    if "mensaje_exito" in st.session_state and st.session_state.get("mostrar_mensaje", False):
+        st.success(st.session_state["mensaje_exito"])
+        # Limpiar la bandera de mostrar después de mostrar el mensaje
+        st.session_state["mostrar_mensaje"] = False
+    
     try:
         import sys
         sys.path.append(".")
@@ -375,7 +394,7 @@ def pagina_formulario():
 
 # --- Reporte proyecto ---
 def pagina_reporte(id):
-    if st.button("Regresar a proyectos", key=f"volver_inicio_ver_index_{id}"):  # Modificada esta línea
+    if st.button("⬅️ Volver", key="volver_inicio_reporte"):
         st.session_state["page"] = "proyectos"
         st.rerun()
     
@@ -383,7 +402,7 @@ def pagina_reporte(id):
     mostrar_pagina_tabla(id)
 
 def pagina_presentacion(id):
-    if st.button("Regresar a proyectos", key="volver_inicio_presentacion"):
+    if st.button("⬅️ Volver", key="volver_inicio_presentacion"):
         st.session_state["page"] = "proyectos"
         st.rerun()
     
@@ -396,6 +415,16 @@ def main():
     if "page" not in st.session_state:
         st.session_state["page"] = "proyectos"
     
+    # Check if the back button was pressed and handle it first
+    for key in list(st.session_state.keys()):
+        if (key.startswith("volver_inicio") or key.startswith("volver_datos_solicitud") or 
+            key.startswith("volver_inicio_datos")) and st.session_state[key]:
+            st.session_state["page"] = "proyectos"
+            # Clear the button state to prevent loops
+            st.session_state[key] = False
+            st.rerun()
+            break
+            
     page = st.session_state.get("page", "proyectos")
     
     # Mostrar navegación en las páginas principales
