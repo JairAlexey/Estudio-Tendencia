@@ -2,6 +2,8 @@ import streamlit as st
 import sys
 sys.path.append("..")
 from conexion import conn
+from components.loading import show_loading_spinner, loading_complete
+import time
 
 def mostrar_formulario_datos_solicitud(proyecto_id):
     # Clear button state if it exists
@@ -76,6 +78,9 @@ def mostrar_formulario_datos_solicitud(proyecto_id):
                 for err in errores:
                     st.warning(err)
             else:
+                # Show loading spinner
+                spinner = show_loading_spinner("Guardando datos de solicitud...")
+                
                 try:
                     with conn.cursor() as cur:
                         # Eliminar registro anterior si existe
@@ -89,7 +94,11 @@ def mostrar_formulario_datos_solicitud(proyecto_id):
                         ''', (proyecto_id, nombre_programa, facultad_propuesta, duracion, modalidad,
                              nombre_proponente, facultad_proponente, cargo_proponente))
                         conn.commit()
-                    st.success("Datos de solicitud guardados correctamente.")
+                    
+                    # Show success message with the spinner
+                    loading_complete(spinner, "¡Datos de solicitud guardados correctamente!")
+                    
                 except Exception as e:
+                    spinner.empty()  # Remove spinner on error
                     conn.rollback()
                     st.error(f"Error al guardar datos de solicitud: {e}")

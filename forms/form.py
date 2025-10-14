@@ -3,6 +3,7 @@ import streamlit as st
 import sys
 sys.path.append("..")
 from conexion import conn, cursor
+from components.loading import show_loading_spinner, loading_complete
 # Eliminada la importación de codigos
 import re
 import pandas as pd
@@ -223,6 +224,9 @@ def mostrar_formulario():
                 for err in errores:
                     st.warning(err)
             else:
+                # Show loading spinner
+                spinner = show_loading_spinner("Guardando proyecto y encolando scraper...")
+                
                 try:
                     # Normalizar campos antes de guardar
                     nombre_proyecto_1_norm = normalizar_texto(nombre_proyecto_1)
@@ -271,6 +275,9 @@ def mostrar_formulario():
                         from scrapers.linkedin_modules.linkedin_database import enqueue_scraper_job
                         enqueue_scraper_job(proyecto_id, priority=PRIORIDAD_MAP[prioridad_label])
                         
+                        # Show success message
+                        loading_complete(spinner, "¡Proyecto guardado y scraper encolado correctamente!")
+                        
                         # Guardar estado y mensaje con bandera de mostrar una sola vez
                         st.session_state["mensaje_exito"] = "Proyecto guardado y scraper encolado correctamente."
                         st.session_state["mostrar_mensaje"] = True  # Nueva bandera para controlar visualización
@@ -282,19 +289,20 @@ def mostrar_formulario():
                         # Redirigir a la página de inicio
                         st.session_state["page"] = "proyectos"
                         
-                        # Mostrar mensaje de éxito antes de redirigir
-                        st.success(st.session_state["mensaje_exito"])
-                        time.sleep(2)  # Dar tiempo para mostrar el mensaje
+                        # Allow the success message to be visible before redirecting
+                        time.sleep(1.5)
                         st.rerun()
                         
                     except Exception as e:
+                        spinner.empty()  # Remove spinner on error
                         st.warning(f"Proyecto guardado pero no se pudo encolar el scraper: {e}")
                         st.session_state["page"] = "proyectos"
                         st.rerun()
                         
                 except Exception as e:
+                    spinner.empty()  # Remove spinner on error
                     st.error(f"Error al guardar en la base de datos: {e}")
-                
+
 
 def mostrar_formulario_edicion(id):
     st.title("Editar Proyecto y Tendencias")
@@ -453,6 +461,9 @@ def mostrar_formulario_edicion(id):
             for err in errores:
                 st.warning(err)
         else:
+            # Show loading spinner
+            spinner = show_loading_spinner("Guardando cambios y actualizando proyecto...")
+            
             try:
                 # Get a new connection for saving changes
                 conn_guardar = get_connection()
@@ -512,11 +523,27 @@ def mostrar_formulario_edicion(id):
                     
                     # Enqueue the job
                     enqueue_scraper_job(id, priority=PRIORIDAD_MAP[prioridad_label])
-                    st.info("Scraper encolado para este proyecto.")
-                    st.success("Cambios guardados correctamente.")
+                    
+                    # Show success message
+                    loading_complete(spinner, "¡Cambios guardados y scraper encolado correctamente!")
+                    
+                    # Set session state variables for redirection
+                    st.session_state["mensaje_exito"] = "Cambios guardados y scraper encolado correctamente."
+                    st.session_state["mostrar_mensaje"] = True
+                    st.session_state["exito_guardado"] = True
+                    
+                    # Redirect to projects page
+                    st.session_state["page"] = "proyectos"
+                    
+                    # Allow success message to be visible before redirecting
+                    time.sleep(1.5)
+                    st.rerun()
+                    
                 except Exception as e:
+                    spinner.empty()  # Remove spinner on error
                     st.warning(f"No se pudo encolar el scraper: {e}")
             except Exception as e:
+                spinner.empty()  # Remove spinner on error
                 st.error(f"Error al guardar cambios: {e}")
                 # Try to rollback if possible
                 try:
