@@ -130,21 +130,21 @@ def crear_tablas():
         # );
         # ''',
         # # # # presentation_queue
-        '''
-        CREATE TABLE IF NOT EXISTS presentation_queue (
-            id SERIAL PRIMARY KEY,
-            proyecto_id INTEGER NOT NULL REFERENCES proyectos_tendencias(id),
-            status VARCHAR(20) NOT NULL DEFAULT 'queued',
-            tries INTEGER NOT NULL DEFAULT 0,
-            error TEXT,
-            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            started_at TIMESTAMP,
-            finished_at TIMESTAMP,
-            file_name VARCHAR(255),
-            file_data BYTEA,
-            tipo_reporte VARCHAR(50) DEFAULT 'viabilidad'
-        );
-        '''
+        # '''
+        # CREATE TABLE IF NOT EXISTS presentation_queue (
+        #     id SERIAL PRIMARY KEY,
+        #     proyecto_id INTEGER NOT NULL REFERENCES proyectos_tendencias(id),
+        #     status VARCHAR(20) NOT NULL DEFAULT 'queued',
+        #     tries INTEGER NOT NULL DEFAULT 0,
+        #     error TEXT,
+        #     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        #     started_at TIMESTAMP,
+        #     finished_at TIMESTAMP,
+        #     file_name VARCHAR(255),
+        #     file_data BYTEA,
+        #     tipo_reporte VARCHAR(50) DEFAULT 'viabilidad'
+        # );
+        # ''',
         # # # # mercado_datos
         # '''
         # CREATE TABLE IF NOT EXISTS mercado_datos (
@@ -189,7 +189,18 @@ def crear_tablas():
         #     started_at TIMESTAMP,
         #     finished_at TIMESTAMP
         # );
-        # '''
+        # ''',
+        '''
+        CREATE TABLE IF NOT EXISTS linkedin_aptitudes (
+            id SERIAL PRIMARY KEY,
+            proyecto_id INTEGER REFERENCES proyectos_tendencias(id) ON DELETE CASCADE,
+            carrera_estudio VARCHAR(200),
+            nombre VARCHAR(200),
+            cantidad INTEGER,
+            porcentaje VARCHAR(20),
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        '''
     ]
     
     for sql in tablas:
