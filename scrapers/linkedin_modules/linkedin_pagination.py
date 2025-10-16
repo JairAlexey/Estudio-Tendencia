@@ -12,8 +12,11 @@ def paginar_y_buscar_carpeta(driver, carpeta_buscar, buscar_carpeta_en_pagina, u
     """
     # Agregar espera adicional para carga inicial
     time.sleep(TIEMPO_ESPERA_MEDIO * 2)
-    
-    encontrada = buscar_carpeta_en_pagina(driver, carpeta_buscar)
+    try:
+        encontrada = buscar_carpeta_en_pagina(driver, carpeta_buscar)
+    except Exception as e:
+        print(f"Error buscando carpeta en página: {e}")
+        encontrada = False
     if encontrada:
         return True
 
@@ -25,12 +28,12 @@ def paginar_y_buscar_carpeta(driver, carpeta_buscar, buscar_carpeta_en_pagina, u
                 ".saved-folders-layout .artdeco-pagination ul.artdeco-pagination__pages li"
             ))
         )
-        
         paginacion_carpetas = driver.find_elements(
             By.CSS_SELECTOR,
             ".saved-folders-layout .artdeco-pagination ul.artdeco-pagination__pages li",
         )
-    except:
+    except Exception as e:
+        print(f"Error localizando paginación de carpetas: {e}")
         paginacion_carpetas = []
 
     if paginacion_carpetas:
@@ -42,21 +45,30 @@ def paginar_y_buscar_carpeta(driver, carpeta_buscar, buscar_carpeta_en_pagina, u
                 btn = li.find_element(By.TAG_NAME, "button")
                 ActionChains(driver).move_to_element(btn).click().perform()
                 time.sleep(TIEMPO_ESPERA_CORTO)
-                if buscar_carpeta_en_pagina(driver, carpeta_buscar):
-                    return True
+                try:
+                    if buscar_carpeta_en_pagina(driver, carpeta_buscar):
+                        return True
+                except Exception as e:
+                    print(f"Error buscando carpeta tras paginación: {e}")
             except Exception as e:
                 print("Error al cambiar página de carpetas:", e)
                 continue
     return False
 
-def paginar_y_buscar_proyecto(driver, proyecto_buscar, UBICACIONES, carpeta_buscar, resultados_finales, buscar_proyecto_en_pagina, extraer_datos_reporte, TIEMPO_ESPERA_CORTO=3, TIEMPO_ESPERA_PAGINA=6):
+def paginar_y_buscar_proyecto(driver, proyecto_buscar, UBICACIONES, carpeta_buscar, resultados_finales, 
+                            buscar_proyecto_en_pagina, extraer_datos_reporte, TIEMPO_ESPERA_CORTO=3, 
+                            TIEMPO_ESPERA_PAGINA=6, proyecto_id=None, tipo=None):
     """
     Busca el proyecto en la página actual y en todas las páginas de paginación.
-    Devuelve True si el proyecto fue encontrado y procesado.
     """
-    proyecto_encontrado = buscar_proyecto_en_pagina(
-        driver, proyecto_buscar, UBICACIONES, carpeta_buscar, resultados_finales, extraer_datos_reporte
-    )
+    try:
+        proyecto_encontrado = buscar_proyecto_en_pagina(
+            driver, proyecto_buscar, UBICACIONES, carpeta_buscar, 
+            resultados_finales, extraer_datos_reporte, proyecto_id, tipo
+        )
+    except Exception as e:
+        print(f"Error en buscar_proyecto_en_pagina: {e}")
+        proyecto_encontrado = False
     if proyecto_encontrado:
         return True
 
@@ -76,7 +88,7 @@ def paginar_y_buscar_proyecto(driver, proyecto_buscar, UBICACIONES, carpeta_busc
                 By.CSS_SELECTOR,
                 "div.artdeco-models-table-pagination__pagination-cmpt ul.artdeco-pagination__pages li",
             )
-            if i >= len(paginacion_reports):
+            if not paginacion_reports or i >= len(paginacion_reports):
                 print(f"Índice {i} fuera de rango para paginacion_reports (tamaño: {len(paginacion_reports)})")
                 break
             li = paginacion_reports[i]
@@ -87,49 +99,72 @@ def paginar_y_buscar_proyecto(driver, proyecto_buscar, UBICACIONES, carpeta_busc
                 btn = li.find_element(By.TAG_NAME, "button")
                 ActionChains(driver).move_to_element(btn).click().perform()
                 time.sleep(TIEMPO_ESPERA_CORTO)
-                if buscar_proyecto_en_pagina(
-                    driver,
-                    proyecto_buscar,
-                    UBICACIONES,
-                    carpeta_buscar,
-                    resultados_finales,
-                    extraer_datos_reporte
-                ):
-                    return True
+                try:
+                    if buscar_proyecto_en_pagina(
+                        driver,
+                        proyecto_buscar,
+                        UBICACIONES,
+                        carpeta_buscar,
+                        resultados_finales,
+                        extraer_datos_reporte,
+                        proyecto_id,
+                        tipo
+                    ):
+                        return True
+                except Exception as e:
+                    print(f"Error en buscar_proyecto_en_pagina tras paginación: {e}")
             except Exception as e:
                 print("Error al cambiar página de reportes:", e)
                 continue
     return False
 
-def reintentar_elementos_fallidos(driver, elementos_fallidos, url, UBICACIONES, buscar_carpeta_en_pagina, buscar_proyecto_en_pagina, extraer_datos_reporte, TIEMPO_ESPERA_CORTO=3, TIEMPO_ESPERA_MEDIO=5, TIEMPO_ESPERA_PAGINA=6):
+def reintentar_elementos_fallidos(
+    driver, elementos_fallidos, url, UBICACIONES,
+    buscar_carpeta_en_pagina, buscar_proyecto_en_pagina, extraer_datos_reporte,
+    TIEMPO_ESPERA_CORTO=3, TIEMPO_ESPERA_MEDIO=5, TIEMPO_ESPERA_PAGINA=6,
+    proyecto_id=None, tipo=None
+):
     """
     Reintenta procesar los elementos fallidos (carpetas/proyectos) recorriendo la paginación.
     """
     if not elementos_fallidos:
+        print("No hay elementos fallidos para reintentar.")
         return
 
     print(f"\nREINTENTANDO {len(elementos_fallidos)} elemento(s) que fallaron:")
     for i, fallido in enumerate(elementos_fallidos.copy(), 1):
-        elemento = fallido['elemento']
-        carpeta_buscar = fallido['carpeta']
-        proyecto_buscar = fallido['proyecto']
-        razon = fallido['razon']
+        elemento = fallido.get('elemento', {})
+        carpeta_buscar = fallido.get('carpeta', '')
+        proyecto_buscar = fallido.get('proyecto', '')
+        razon = fallido.get('razon', '')
 
         print(f"\nReintento {i}/{len(elementos_fallidos)}: {carpeta_buscar} -> {proyecto_buscar}")
         print(f"   Razón del fallo anterior: {razon}")
 
-        driver.get(url)
-        time.sleep(TIEMPO_ESPERA_MEDIO)
+        try:
+            driver.get(url)
+            time.sleep(TIEMPO_ESPERA_MEDIO)
+        except Exception as e:
+            print(f"Error navegando a url en reintento: {e}")
+            continue
 
-        encontrada = paginar_y_buscar_carpeta(driver, carpeta_buscar, buscar_carpeta_en_pagina, url, TIEMPO_ESPERA_CORTO, TIEMPO_ESPERA_MEDIO)
+        try:
+            encontrada = paginar_y_buscar_carpeta(driver, carpeta_buscar, buscar_carpeta_en_pagina, url, TIEMPO_ESPERA_CORTO, TIEMPO_ESPERA_MEDIO)
+        except Exception as e:
+            print(f"Error en paginar_y_buscar_carpeta durante reintento: {e}")
+            encontrada = False
         if not encontrada:
             print(f"Reintento fallido: Carpeta '{carpeta_buscar}' sigue sin encontrarse")
             continue
 
-        proyecto_encontrado = paginar_y_buscar_proyecto(
-            driver, proyecto_buscar, UBICACIONES, carpeta_buscar, fallido.get('resultados_finales', []),
-            buscar_proyecto_en_pagina, extraer_datos_reporte, TIEMPO_ESPERA_CORTO, TIEMPO_ESPERA_PAGINA
-        )
+        try:
+            proyecto_encontrado = buscar_proyecto_en_pagina(
+                driver, proyecto_buscar, UBICACIONES, carpeta_buscar, 
+                [], extraer_datos_reporte, proyecto_id, tipo
+            )
+        except Exception as e:
+            print(f"Error en buscar_proyecto_en_pagina durante reintento: {e}")
+            proyecto_encontrado = False
         if proyecto_encontrado:
             print(f"Reintento exitoso: '{proyecto_buscar}' procesado correctamente")
             elementos_fallidos.remove(fallido)

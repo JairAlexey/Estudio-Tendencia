@@ -161,20 +161,11 @@ def linkedin_scraper(limpiar_perfil_al_inicio=False):
                 proyecto_encontrado = paginar_y_buscar_proyecto(
                     driver, carrera, UBICACIONES, carpeta_buscar, resultados_temp,
                     buscar_proyecto_en_pagina,
-                    lambda *args, **kwargs: extraer_datos_reporte(
-                        *args, **kwargs,
-                        esperar_y_refrescar_si_banner=lambda driver, **kw: esperar_y_refrescar_si_banner(
-                            driver,
-                            hay_banner_error,
-                            esperar_elemento,
-                            TIEMPO_ESPERA_BANNER,
-                            TIEMPO_ESPERA_PAGINA,
-                            TIEMPO_ESPERA_MEDIO,
-                            TIEMPO_ESPERA_CORTO,
-                            **kw
-                        )
-                    ),
-                    TIEMPO_ESPERA_CORTO, TIEMPO_ESPERA_PAGINA
+                    extraer_datos_reporte,
+                    TIEMPO_ESPERA_CORTO, 
+                    TIEMPO_ESPERA_PAGINA,
+                    proyecto_id,
+                    tipo  # <-- Añadir aquí el tipo ("Referencia" o "Estudio")
                 )
                 if not proyecto_encontrado:
                     print(f"❌ No se encontró el proyecto '{carrera}' dentro de la carpeta '{carpeta_buscar}'.")
@@ -199,7 +190,8 @@ def linkedin_scraper(limpiar_perfil_al_inicio=False):
         reintentar_elementos_fallidos(
             driver, elementos_fallidos, url, UBICACIONES,
             buscar_carpeta_en_pagina, buscar_proyecto_en_pagina, extraer_datos_reporte,
-            TIEMPO_ESPERA_CORTO, TIEMPO_ESPERA_MEDIO, TIEMPO_ESPERA_PAGINA
+            TIEMPO_ESPERA_CORTO, TIEMPO_ESPERA_MEDIO, TIEMPO_ESPERA_PAGINA,
+            proyecto_id, tipo
         )
 
         # Guardar resultados en la base de datos

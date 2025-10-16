@@ -2,6 +2,10 @@ from selenium.webdriver.common.by import By
 import time
 from scrapers.linkedin_modules.linkedin_utils import normalizar_texto
 import unicodedata
+from .linkedin_skills import navegar_a_aptitudes, extraer_aptitudes
+from .linkedin_database import guardar_aptitudes
+from .linkedin_locations import navegar_a_ubicaciones, extraer_ubicaciones
+from scrapers.linkedin_modules.linkedin_database import guardar_ubicaciones
 
 def normalizar_texto(texto):
     if not isinstance(texto, str):
@@ -12,7 +16,8 @@ def normalizar_texto(texto):
     return texto.strip()
 
 def buscar_proyecto_en_pagina(
-    driver, proyecto_buscar, ubicaciones, carpeta_nombre, resultados_finales, extraer_datos_reporte, TIEMPO_ESPERA_MEDIO=2
+    driver, proyecto_buscar, ubicaciones, carpeta_nombre, resultados_finales, 
+    extraer_datos_reporte, proyecto_id, tipo, TIEMPO_ESPERA_MEDIO=2
 ):
     """
     Recorre las filas (reportes) de la tabla en la página actual.
@@ -52,6 +57,26 @@ def buscar_proyecto_en_pagina(
                     if datos:
                         resultados_ubicacion.append(datos)
                         ubicaciones_exitosas += 1
+                    # Extraer aptitudes por cada ubicación si es tipo Estudio
+                    if tipo == "Estudio":
+                        print(f"Extrayendo aptitudes para {texto} en {UBICACION}")
+                        if navegar_a_aptitudes(driver):
+                            aptitudes = extraer_aptitudes(driver, texto)
+                            if aptitudes:
+                                from scrapers.linkedin_modules.linkedin_database import guardar_aptitudes
+                                guardar_aptitudes(proyecto_id, texto, UBICACION, aptitudes)
+                            driver.back()
+                            time.sleep(TIEMPO_ESPERA_MEDIO)
+                # Extraer ubicaciones solo una vez por proyecto tipo Estudio y solo para América Latina
+                if tipo == "Estudio" and "América Latina" in ubicaciones:
+                    print(f"Extrayendo ubicaciones para {texto} (América Latina)")
+                    if navegar_a_ubicaciones(driver):
+                        ubicaciones_data = extraer_ubicaciones(driver)
+                        if ubicaciones_data:
+                            guardar_ubicaciones(proyecto_id, texto, "América Latina", ubicaciones_data)
+                        driver.back()
+                        time.sleep(TIEMPO_ESPERA_MEDIO)
+                
                 if resultados_ubicacion:
                     resultados_finales.extend(resultados_ubicacion)
                     if ubicaciones_exitosas < len(ubicaciones):

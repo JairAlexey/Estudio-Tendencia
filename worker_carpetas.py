@@ -19,7 +19,7 @@ def reset_profile_dir():
     os.makedirs(PROFILE_DIR, exist_ok=True)
 
 # Llamar a la función al inicio del script
-reset_profile_dir()
+# reset_profile_dir()
 
 from conexion import conn
 from scrapers.carpetas_linkedin import scraper_carpetas

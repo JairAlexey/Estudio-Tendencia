@@ -190,14 +190,26 @@ def crear_tablas():
         #     finished_at TIMESTAMP
         # );
         # ''',
+        # '''
+        # CREATE TABLE IF NOT EXISTS linkedin_aptitudes (
+        #     id SERIAL PRIMARY KEY,
+        #     proyecto_id INTEGER REFERENCES proyectos_tendencias(id) ON DELETE CASCADE,
+        #     carrera_estudio VARCHAR(200),
+        #     ubicacion VARCHAR(100),
+        #     nombre VARCHAR(200),
+        #     cantidad FLOAT,
+        #     porcentaje VARCHAR(20),
+        #     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        # );
+        # ''',
         '''
-        CREATE TABLE IF NOT EXISTS linkedin_aptitudes (
+        CREATE TABLE IF NOT EXISTS linkedin_ubicaciones (
             id SERIAL PRIMARY KEY,
             proyecto_id INTEGER REFERENCES proyectos_tendencias(id) ON DELETE CASCADE,
             carrera_estudio VARCHAR(200),
+            ubicacion VARCHAR(100),
             nombre VARCHAR(200),
-            cantidad INTEGER,
-            porcentaje VARCHAR(20),
+            cantidad FLOAT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
         '''

@@ -43,32 +43,34 @@ def limpiar_perfil_proyecto(proyecto_id):
         user_data_dir = PROFILE_DIR
         profile_directory = "Default"
         
-        limpieza_exitosa = limpiar_perfil_completo(
-            user_data_dir, 
-            profile_directory, 
-            espera_inicial=3,  # Espera inicial antes de limpiar
-            espera_recreacion=2  # Espera después de recrear
-        )
-        
-        if limpieza_exitosa:
-            print(f"✅ Perfil limpiado exitosamente para proyecto {proyecto_id}")
-        else:
-            print(f"⚠️ Limpieza de perfil falló para proyecto {proyecto_id}, usando limpieza básica...")
-            # Fallback a limpieza básica
-            reset_profile_dir()
-            
-        return limpieza_exitosa
+        # limpieza_exitosa = limpiar_perfil_completo(
+        #     user_data_dir, 
+        #     profile_directory, 
+        #     espera_inicial=3,  # Espera inicial antes de limpiar
+        #     espera_recreacion=2  # Espera después de recrear
+        # )
+        # if limpieza_exitosa:
+        #     print(f"✅ Perfil limpiado exitosamente para proyecto {proyecto_id}")
+        # else:
+        #     print(f"⚠️ Limpieza de perfil falló para proyecto {proyecto_id}, usando limpieza básica...")
+        #     reset_profile_dir()
+        # return limpieza_exitosa
+
+        # Solo mostrar mensaje de omisión
+        print(f"⚠️ Limpieza de perfil omitida por configuración (comentada en el código)")
+        return True
         
     except Exception as e:
         print(f"❌ Error en limpieza de perfil para proyecto {proyecto_id}: {e}")
         # Fallback a limpieza básica
-        try:
-            reset_profile_dir()
-            print(f"✅ Limpieza básica aplicada como fallback")
-            return True
-        except Exception as e2:
-            print(f"❌ Error crítico en limpieza de perfil: {e2}")
-            return False
+        # try:
+        #     reset_profile_dir()
+        #     print(f"✅ Limpieza básica aplicada como fallback")
+        #     return True
+        # except Exception as e2:
+        #     print(f"❌ Error crítico en limpieza de perfil: {e2}")
+        #     return False
+        return True
 
 def run_subprocess(module_path: str, proyecto_id: int) -> tuple[int, str, str]:
     project_root = os.path.dirname(os.path.abspath(__file__))

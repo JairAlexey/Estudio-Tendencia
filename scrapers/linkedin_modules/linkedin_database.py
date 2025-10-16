@@ -262,7 +262,11 @@ def fetch_next_job():
     if row:
         started_at = row[2]
         if started_at:
-            delta = datetime.datetime.now(datetime.timezone.utc) - started_at
+            # Normalizar ambos datetimes a naive (sin tzinfo)
+            now = datetime.datetime.now()
+            if started_at.tzinfo is not None:
+                started_at = started_at.replace(tzinfo=None)
+            delta = now - started_at
             if delta.total_seconds() > 600:
                 cursor.execute(
                     """
@@ -328,3 +332,74 @@ def mark_job_failed(job_id, error_message, max_retries=3):
         (new_status, tries, str(error_message)[:4000], new_status, job_id),
     )
     conn.commit()
+
+def guardar_aptitudes(proyecto_id, carrera_estudio, ubicacion, aptitudes):
+    """Guarda las aptitudes extraídas en la base de datos"""
+    print(f"[DB] Guardando aptitudes para proyecto_id={proyecto_id}, carrera_estudio={carrera_estudio}, ubicacion={ubicacion}, total={len(aptitudes)}")
+    ensure_connection()
+    if not is_connected():
+        print("No hay conexión a PostgreSQL. No se pueden guardar aptitudes.")
+        return
+    try:
+        cursor.execute("""
+            DELETE FROM linkedin_aptitudes 
+            WHERE proyecto_id = %s AND carrera_estudio = %s AND ubicacion = %s
+        """, (proyecto_id, carrera_estudio, ubicacion))
+        for aptitud in aptitudes:
+            cantidad = aptitud["cantidad"]
+            try:
+                cantidad = float(cantidad) if cantidad is not None else None
+            except Exception:
+                cantidad = None
+            cursor.execute("""
+                INSERT INTO linkedin_aptitudes 
+                (proyecto_id, carrera_estudio, ubicacion, nombre, cantidad, porcentaje)
+                VALUES (%s, %s, %s, %s, %s, %s)
+            """, (
+                proyecto_id,
+                carrera_estudio,
+                ubicacion,
+                aptitud["nombre"],
+                cantidad, 
+                aptitud["porcentaje"]
+            ))
+        conn.commit()
+        print(f"[DB] Guardadas {len(aptitudes)} aptitudes para el proyecto {proyecto_id} en ubicacion {ubicacion}")
+    except Exception as e:
+        print(f"Error guardando aptitudes: {e}")
+        conn.rollback()
+
+def guardar_ubicaciones(proyecto_id, carrera_estudio, ubicacion, ubicaciones):
+    """Guarda las ubicaciones extraídas en la base de datos"""
+    print(f"[DB] Guardando ubicaciones para proyecto_id={proyecto_id}, carrera_estudio={carrera_estudio}, ubicacion={ubicacion}, total={len(ubicaciones)}")
+    ensure_connection()
+    if not is_connected():
+        print("No hay conexión a PostgreSQL. No se pueden guardar ubicaciones.")
+        return
+    try:
+        cursor.execute("""
+            DELETE FROM linkedin_ubicaciones 
+            WHERE proyecto_id = %s AND carrera_estudio = %s AND ubicacion = %s
+        """, (proyecto_id, carrera_estudio, ubicacion))
+        for ubic in ubicaciones:
+            cantidad = ubic["profesionales"]
+            try:
+                cantidad = float(cantidad) if cantidad is not None else None
+            except Exception:
+                cantidad = None
+            cursor.execute("""
+                INSERT INTO linkedin_ubicaciones 
+                (proyecto_id, carrera_estudio, ubicacion, nombre, cantidad)
+                VALUES (%s, %s, %s, %s, %s)
+            """, (
+                proyecto_id,
+                carrera_estudio,
+                ubicacion,
+                ubic["ubicacion"],
+                cantidad
+            ))
+        conn.commit()
+        print(f"[DB] Guardadas {len(ubicaciones)} ubicaciones para el proyecto {proyecto_id} en ubicacion {ubicacion}")
+    except Exception as e:
+        print(f"Error guardando ubicaciones: {e}")
+        conn.rollback()
