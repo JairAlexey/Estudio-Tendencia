@@ -144,8 +144,8 @@ def procesar_proyecto(proyecto_id, nombre_archivo):
             )
             for p in parametros
         ],
-        "Presencialidad": presencialidad_resultados,
-        "Virtualidad": virtualidad_resultados,
+        "Presencialidad": [f"{v:.0f}%" for v in presencialidad_resultados],
+        "Virtualidad": [f"{v:.0f}%" for v in virtualidad_resultados],
     }
 
     df = pd.DataFrame(datos)
@@ -160,7 +160,7 @@ def procesar_proyecto(proyecto_id, nombre_archivo):
     styled_df = (
         df.style.apply(resaltar_filas, axis=1)
         .set_table_styles([{"selector": "th", "props": [("color", "black")]}])
-        .format({"Presencialidad": lambda x: f"{x:.0f}%", "Virtualidad": lambda x: f"{x:.0f}%"})
+        # El formato ya incluye el símbolo %, así que no lo agregamos aquí
     )
 
     st.dataframe(styled_df, width="stretch", hide_index=True)
