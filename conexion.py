@@ -33,8 +33,9 @@ def is_connected():
 
 def ensure_connection():
     global conn, cursor
-    if cursor is None:
-        print("Cursor es None. Intentando reconectar a PostgreSQL...")
+    # Si el cursor es None o está cerrado, reconectar
+    if cursor is None or getattr(cursor, 'closed', False):
+        print("Cursor es None o está cerrado. Intentando reconectar a PostgreSQL...")
         try:
             conn = get_connection()
             cursor = conn.cursor()

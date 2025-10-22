@@ -14,12 +14,12 @@ import time
 from dotenv import load_dotenv
 from conexion import conn, cursor
 
-# Configuración de tiempos - Increased all values
-TIEMPO_ESPERA_CORTO = 3   # Increased from 1 to 3
-TIEMPO_ESPERA_MEDIO = 5   # Increased from 2 to 5
-TIEMPO_ESPERA_LARGO = 8   # Increased from 4 to 8
-TIEMPO_ESPERA_BANNER = 60 # Increased from 40 to 60
-TIEMPO_ESPERA_PAGINA = 6  # Increased from 3 to 6
+# Configuración de tiempos - AUMENTADOS para LinkedIn lento
+TIEMPO_ESPERA_CORTO = 8   # antes: 3
+TIEMPO_ESPERA_MEDIO = 10  # antes: 5
+TIEMPO_ESPERA_LARGO = 12  # antes: 8
+TIEMPO_ESPERA_BANNER = 60 # antes: 60
+TIEMPO_ESPERA_PAGINA = 9 # antes: 6
 
 def guardar_proyecto_carpeta(tipo_carpeta, nombre_proyecto, url_proyecto=None):
     """Guarda o actualiza un proyecto en la base de datos"""
@@ -43,6 +43,8 @@ def extraer_proyectos_pagina(driver):
     rows = driver.find_elements(By.CSS_SELECTOR, "tr.artdeco-models-table-row")
     if rows:
         driver.execute_script("arguments[0].scrollIntoView(true);", rows[0])
+        # Espera adicional para asegurar carga de la tabla
+        time.sleep(TIEMPO_ESPERA_LARGO)
 
     for row in rows:
         try:
@@ -78,7 +80,7 @@ def procesar_paginacion(driver, proyectos_lista):
             
             try:
                 # Encuentra todos los botones de página
-                botones = WebDriverWait(driver, 10).until(
+                botones = WebDriverWait(driver, 30).until(
                     EC.presence_of_all_elements_located((
                         By.CSS_SELECTOR, 
                         "ul.artdeco-pagination__pages--number li.artdeco-pagination__indicator--number"
@@ -100,7 +102,7 @@ def procesar_paginacion(driver, proyectos_lista):
                     print(f"Navegando a la siguiente página...")
                     btn = siguiente.find_element(By.TAG_NAME, "button")
                     driver.execute_script("arguments[0].click();", btn)
-                    time.sleep(TIEMPO_ESPERA_MEDIO)
+                    time.sleep(TIEMPO_ESPERA_PAGINA)
                 else:
                     print("No hay más páginas disponibles")
                     break
