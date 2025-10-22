@@ -8,13 +8,14 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 # Now import from the parent directory
 from conexion import conn, cursor
 
-ARCHIVO_MERCADO = "../files/mercado.xlsx"
+# Nuevo archivo de entrada
+ARCHIVO_MERCADO = "../files/mercado_cr.xlsx"
 HOJAS = ["Total Ingresos", "Ventas 12", "Ventas 0"]
 
-def cargar_mercado():
+def cargar_mercado_cr():
     try:
-        # Limpiar datos existentes
-        cursor.execute("DELETE FROM mercado_datos")
+        # Limpiar datos existentes en la nueva tabla
+        cursor.execute("DELETE FROM cr_mercado_datos")
         conn.commit()
         
         for hoja in HOJAS:
@@ -47,7 +48,7 @@ def cargar_mercado():
                 
                 try:
                     cursor.execute(
-                        "INSERT INTO mercado_datos (hoja_origen, actividad_economica, valor_2023) VALUES (%s, %s, %s)",
+                        "INSERT INTO cr_mercado_datos (hoja_origen, actividad_economica, valor_2023) VALUES (%s, %s, %s)",
                         (hoja, actividad, valor)
                     )
                     registros_insertados += 1
@@ -58,11 +59,11 @@ def cargar_mercado():
             print(f"Hoja {hoja}: {registros_insertados} registros insertados")
         
         conn.commit()
-        print("Datos cargados correctamente en mercado_datos.")
+        print("Datos cargados correctamente en cr_mercado_datos.")
         
     except Exception as e:
-        print(f"Error general cargando datos de mercado: {e}")
+        print(f"Error general cargando datos de mercado CR: {e}")
         conn.rollback()
 
 if __name__ == "__main__":
-    cargar_mercado()
+    cargar_mercado_cr()
