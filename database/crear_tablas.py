@@ -155,6 +155,15 @@ def crear_tablas():
             valor_2023 FLOAT
         );
         ''',
+        # # # cr_mercado_datos
+        '''
+        CREATE TABLE IF NOT EXISTS cr_mercado_datos (
+            id SERIAL PRIMARY KEY,
+            hoja_origen VARCHAR(50),
+            actividad_economica VARCHAR(200),
+            valor_2023 FLOAT
+        );
+        ''',
         # # # datos_solicitud
         '''
         CREATE TABLE IF NOT EXISTS datos_solicitud (

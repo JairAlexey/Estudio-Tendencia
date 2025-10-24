@@ -16,10 +16,27 @@ PRIORIDAD_MAP = {"Alta": 1, "Media": 2, "Baja": 3}
 PRIORIDAD_INV_MAP = {1: "Alta", 2: "Media", 3: "Baja"}
 
 # Función movida desde codigos.py
-def obtener_codigos_ciiu(hoja_origen="Total Ingresos"):
+def obtener_codigos_ciiu(hoja_origen="Total Ingresos", tipo_carpeta=None):
+    """
+    Obtiene los códigos CIIU según el tipo de carpeta.
+    
+    Args:
+        hoja_origen: Nombre de la hoja (default: "Total Ingresos")
+        tipo_carpeta: Tipo de carpeta seleccionado. Si es "CARRERAS PREGRADO CR" usa cr_mercado_datos,
+                     de lo contrario usa mercado_datos
+    
+    Returns:
+        Lista de códigos CIIU
+    """
     try:
+        # Determinar qué tabla usar según el tipo de carpeta
+        if tipo_carpeta and "pregrado cr" in tipo_carpeta.lower():
+            tabla = "cr_mercado_datos"
+        else:
+            tabla = "mercado_datos"
+        
         cursor.execute(
-            "SELECT DISTINCT actividad_economica FROM mercado_datos WHERE hoja_origen = %s AND actividad_economica IS NOT NULL",
+            f"SELECT DISTINCT actividad_economica FROM {tabla} WHERE hoja_origen = %s AND actividad_economica IS NOT NULL",
             (hoja_origen,)
         )
         rows = cursor.fetchall()
@@ -41,6 +58,20 @@ def obtener_carreras_por_nivel(nivel):
         except:
             pass
         st.error(f"Error al consultar carreras: {e}")
+        return []
+
+def obtener_tipos_carpeta():
+    """Obtiene los tipos de carpeta disponibles desde la base de datos"""
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT DISTINCT tipo_carpeta 
+                FROM carpetas 
+                ORDER BY tipo_carpeta
+            """)
+            return [row[0] for row in cur.fetchall()]
+    except Exception as e:
+        st.error(f"Error al consultar tipos de carpeta: {e}")
         return []
 
 def obtener_proyectos_carpeta(tipo_carpeta):
@@ -119,8 +150,10 @@ def mostrar_formulario():
     id_ticket = st.text_input("ID del Ticket", placeholder="Ingrese el ID del ticket")
     
     # Tipo de carpeta fuera del formulario para actualización en tiempo real
-    tipo_carpeta = st.selectbox("Tipo de carpeta", 
-                               ["Seleccione un tipo...", "POSGRADOS TENDENCIA", "CARRERAS PREGRADO"])
+    tipos_carpeta_disponibles = obtener_tipos_carpeta()
+    tipos_carpeta_opciones = ["Seleccione un tipo..."] + tipos_carpeta_disponibles if tipos_carpeta_disponibles else ["Seleccione un tipo..."]
+    
+    tipo_carpeta = st.selectbox("Tipo de carpeta", tipos_carpeta_opciones)
     
     # Obtener proyectos según el tipo de carpeta seleccionado
     proyectos_linkedin = []
@@ -139,9 +172,14 @@ def mostrar_formulario():
         tipo_carpeta_lower = tipo_carpeta.lower()
         carreras_filtradas = []
         if tipo_carpeta != "Seleccione un tipo...":
-            if "pregrado" in tipo_carpeta_lower:
+            # Si es específicamente Costa Rica
+            if "pregrado cr" in tipo_carpeta_lower:
+                carreras_filtradas = obtener_carreras_por_nivel("Pregrado CR")
+            # Si contiene "pregrado" pero no CR
+            elif "pregrado" in tipo_carpeta_lower:
                 carreras_filtradas = obtener_carreras_por_nivel("Pregrado")
-            elif "posgrado" in tipo_carpeta_lower:
+            # Si contiene "posgrado" o "maestria"
+            elif "posgrado" in tipo_carpeta_lower or "maestria" in tipo_carpeta_lower:
                 carreras_filtradas = obtener_carreras_por_nivel("Posgrado")
         if carreras_filtradas:
             nombre_proyecto_1 = st.selectbox("Nombre de la Carrera Referencia", 
@@ -177,7 +215,7 @@ def mostrar_formulario():
 
         # --- Código CIIU ---
         st.subheader("Código CIIU")
-        codigos_ciiu = obtener_codigos_ciiu()
+        codigos_ciiu = obtener_codigos_ciiu(tipo_carpeta=tipo_carpeta)
         codigo_ciiu = st.selectbox("Seleccione el código CIIU", ["Seleccione un código..."] + codigos_ciiu)
 
         # --- Modalidad de Oferta ---
@@ -322,6 +360,7 @@ def mostrar_formulario_edicion(id):
     
     # Get a fresh connection for each query
     from conexion import get_connection
+
     
     # Obtener datos actuales del proyecto
     try:
@@ -351,10 +390,22 @@ def mostrar_formulario_edicion(id):
         st.error(f"Error obteniendo prioridad: {e}")
         prioridad_actual = PRIORITY_DEFAULT
 
+    # ID Ticket
+    id_ticket = st.text_input("ID del Ticket", value=id_ticket_actual, key=f"id_ticket_{id}")
+
     # Tipo de carpeta y prioridad (primer selectbox)
+    tipos_carpeta_disponibles = obtener_tipos_carpeta()
+    tipos_carpeta_opciones = tipos_carpeta_disponibles if tipos_carpeta_disponibles else [tipo_carpeta_original]
+    
+    # Encontrar el índice del tipo de carpeta original
+    try:
+        tipo_index = tipos_carpeta_opciones.index(tipo_carpeta_original) if tipo_carpeta_original in tipos_carpeta_opciones else 0
+    except:
+        tipo_index = 0
+    
     tipo_carpeta = st.selectbox("Tipo de carpeta", 
-                               ["POSGRADOS TENDENCIA", "CARRERAS PREGRADO"], 
-                               index=0 if "POSGRADOS" in tipo_carpeta_original else 1,
+                               tipos_carpeta_opciones, 
+                               index=tipo_index,
                                key=f"tipo_carpeta_1_{id}")  # Añadir key única
     
     prioridad_label = st.selectbox(
@@ -363,9 +414,6 @@ def mostrar_formulario_edicion(id):
         index=["Alta", "Media", "Baja"].index(PRIORIDAD_INV_MAP.get(prioridad_actual, "Media")),
         key=f"prioridad_{id}"  # Añadir key única
     )
-
-    # ID Ticket
-    id_ticket = st.text_input("ID del Ticket", value=id_ticket_actual, key=f"id_ticket_{id}")
 
     # Tendencias - use a new connection
     try:
@@ -393,9 +441,14 @@ def mostrar_formulario_edicion(id):
     # Carrera referencia
     tipo_carpeta_lower = tipo_carpeta.lower()
     carreras_filtradas = []
-    if "pregrado" in tipo_carpeta_lower:
+    # Si es específicamente Costa Rica
+    if "pregrado cr" in tipo_carpeta_lower:
+        carreras_filtradas = obtener_carreras_por_nivel("Pregrado CR")
+    # Si contiene "pregrado" pero no CR
+    elif "pregrado" in tipo_carpeta_lower:
         carreras_filtradas = obtener_carreras_por_nivel("Pregrado")
-    elif "posgrado" in tipo_carpeta_lower:
+    # Si contiene "posgrado" o "maestria"
+    elif "posgrado" in tipo_carpeta_lower or "maestria" in tipo_carpeta_lower:
         carreras_filtradas = obtener_carreras_por_nivel("Posgrado")
     if carreras_filtradas:
         nombre_proyecto_1 = st.selectbox("Nombre de la Carrera Referencia", carreras_filtradas, index=carreras_filtradas.index(carrera_referencia_original) if carrera_referencia_original in carreras_filtradas else 0)
@@ -444,7 +497,7 @@ def mostrar_formulario_edicion(id):
     except Exception as e:
         st.error(f"ERROR al crear DataFrame de tendencias: {e}")
     # Código CIIU
-    codigos_ciiu = obtener_codigos_ciiu()
+    codigos_ciiu = obtener_codigos_ciiu(tipo_carpeta=tipo_carpeta)
     codigo_ciiu = st.selectbox("Seleccione el código CIIU", codigos_ciiu, index=codigos_ciiu.index(codigo_ciiu_original) if codigo_ciiu_original in codigos_ciiu else 0)
     # Modalidad de oferta
     st.subheader("Modalidad de Oferta")
