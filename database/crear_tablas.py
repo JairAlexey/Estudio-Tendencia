@@ -222,6 +222,7 @@ def crear_tablas():
             modelo_prioridad BOOLEAN NOT NULL DEFAULT TRUE,
             modelo_tendencia BOOLEAN NOT NULL DEFAULT FALSE,
             enviada_viabilidad BOOLEAN NOT NULL DEFAULT FALSE,
+            solicitud_inv_mercados BOOLEAN NOT NULL DEFAULT FALSE,
             enviada_inv_mercados BOOLEAN NOT NULL DEFAULT FALSE,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP

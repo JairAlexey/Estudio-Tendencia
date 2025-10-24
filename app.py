@@ -135,34 +135,44 @@ def pagina_inicio():
         }
         /* Botones personalizados por columna */
         div[data-testid="stButton"] button[data-testid="stBaseButton-secondary"] {
-            min-width: 125px;
-            height: 38px; /* un poco más alto para texto */
-            border-radius: 8px !important;
-            font-weight: 600;
-            font-size: 15px;
-            margin: 0 2px;
+            min-width: 100px;
+            height: 32px;
+            border-radius: 6px !important;
+            font-weight: 500;
+            font-size: 12px;
+            margin: 0 4px;
             background-color: #f8f9fa !important;
             color: #222 !important;
             border: 1px solid #ddd !important;
             box-shadow: none !important;
-            padding: 0 8px !important;
+            padding: 0 6px !important;
             display: flex !important;
             flex-direction: column !important;
             align-items: center !important;
             justify-content: center !important;
+            transition: all 0.2s ease !important;
+        }
+        div[data-testid="stButton"] button[data-testid="stBaseButton-secondary"]:hover {
+            background-color: #e9ecef !important;
+            border-color: #adb5bd !important;
+            transform: translateY(-1px);
         }
         div[data-testid="stButton"] button[data-testid="stBaseButton-secondary"] span.small-btn-label {
-            font-size: 11px !important;
+            font-size: 10px !important;
             font-weight: 400 !important;
-            margin-top: -2px !important;
+            margin-top: -1px !important;
             color: #444 !important;
-            letter-spacing: 0.2px;
+            letter-spacing: 0.1px;
         }
         /* Solo el botón Eliminar será rojo */
-        div[data-testid="stColumn"]:nth-child(5) button[data-testid="stBaseButton-secondary"] {
+        div[data-testid="stColumn"]:nth-child(6) button[data-testid="stBaseButton-secondary"] {
             background-color: #ff0000 !important;
             color: #fff !important;
             border: 1px solid #ff0000 !important;
+        }
+        div[data-testid="stColumn"]:nth-child(6) button[data-testid="stBaseButton-secondary"]:hover {
+            background-color: #dc3545 !important;
+            border-color: #dc3545 !important;
         }
         </style>
         """, unsafe_allow_html=True)
@@ -266,7 +276,7 @@ def pagina_inicio():
             if st.button(f"Ver error del scraper", key=f"ver_error_{id}"):
                 st.warning(mensaje_error)
 
-        col1, col2, col3, col4, col5 = st.columns(5)
+        col1, col2, col3, col4, col5, col6 = st.columns(6)
         disabled = st.session_state.get("botones_deshabilitados", False)
         with col1:
             st.button("✏️ Editar", key=f"editar_{id}", disabled=disabled, help="Editar")
@@ -281,19 +291,25 @@ def pagina_inicio():
                 st.session_state["id"] = id
                 st.rerun()
         with col3:
+            st.button("🔍 Seguir", key=f"seguimiento_{id}", disabled=disabled, help="Seguimiento")
+            if not disabled and st.session_state.get(f"seguimiento_{id}"):
+                st.session_state["page"] = "seguimiento"
+                st.session_state["id"] = id
+                st.rerun()
+        with col4:
             reporte_disabled = disabled or estado != "completed"
             st.button("📑 Tabla", key=f"reporte_{id}", disabled=reporte_disabled, help="Tabla")
             if not reporte_disabled and st.session_state.get(f"reporte_{id}"):
                 st.session_state["page"] = "reporte"
                 st.session_state["id"] = id
                 st.rerun()
-        with col4:
+        with col5:
             st.button("📊 PPTX", key=f"presentacion_{id}", disabled=disabled, help="Reporte")
             if not disabled and st.session_state.get(f"presentacion_{id}"):
                 st.session_state["page"] = "presentacion"
                 st.session_state["id"] = id
                 st.rerun()            
-        with col5:
+        with col6:
             st.button("🗑️ Eliminar", key=f"eliminar_{id}", disabled=disabled, help="Eliminar")
             if not disabled and st.session_state.get(f"eliminar_{id}"):
                 st.session_state["confirmar_eliminar_id"] = id
@@ -447,7 +463,7 @@ def main():
     # Check if the back button was pressed and handle it first
     for key in list(st.session_state.keys()):
         if (key.startswith("volver_inicio") or key.startswith("volver_datos_solicitud") or 
-            key.startswith("volver_inicio_datos")) and st.session_state[key]:
+            key.startswith("volver_inicio_datos") or key.startswith("volver_inicio_seguimiento")) and st.session_state[key]:
             st.session_state["page"] = "proyectos"
             # Clear the button state to prevent loops
             st.session_state[key] = False
@@ -487,6 +503,15 @@ def main():
         id = st.session_state.get("id", None)
         if id:
             pagina_reporte(id)
+        else:
+            st.error("ID de proyecto no encontrado")
+            st.session_state["page"] = "proyectos"
+            st.rerun()
+    elif page == "seguimiento":
+        id = st.session_state.get("id", None)
+        if id:
+            from pages.seguimiento import mostrar_pagina_seguimiento
+            mostrar_pagina_seguimiento(id)
         else:
             st.error("ID de proyecto no encontrado")
             st.session_state["page"] = "proyectos"
