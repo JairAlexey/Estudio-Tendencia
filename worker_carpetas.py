@@ -30,7 +30,7 @@ def fetch_next_job():
     """Obtiene el siguiente trabajo de la cola"""
     with conn.cursor() as cur:
         cur.execute("""
-            SELECT id
+            SELECT id, tipo_carpeta
             FROM carpetas_queue
             WHERE status = 'queued'
             ORDER BY created_at ASC
@@ -39,7 +39,7 @@ def fetch_next_job():
         """)
         row = cur.fetchone()
         if row:
-            return {"id": row[0]}
+            return {"id": row[0], "tipo_carpeta": row[1]}
     return None
 
 def mark_job_running(job_id):
@@ -80,11 +80,12 @@ def mark_job_failed(job_id, error):
 def process_job(job):
     """Procesa un trabajo de actualización de carpetas"""
     try:
-        print(f"Procesando job {job['id']}")
+        tipo_carpeta = job.get('tipo_carpeta')
+        print(f"Procesando job {job['id']}" + (f" para tipo de carpeta: {tipo_carpeta}" if tipo_carpeta else ""))
         mark_job_running(job['id'])
         
-        # Ejecutar el scraper de carpetas
-        if scraper_carpetas():
+        # Ejecutar el scraper de carpetas con el tipo de carpeta específico
+        if scraper_carpetas(tipo_carpeta=tipo_carpeta):
             mark_job_completed(job['id'])
             print(f"Job {job['id']} completado exitosamente")
         else:

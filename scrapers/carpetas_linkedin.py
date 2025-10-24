@@ -15,27 +15,40 @@ from dotenv import load_dotenv
 from conexion import conn, cursor
 
 # Configuración de tiempos - AUMENTADOS para LinkedIn lento
-TIEMPO_ESPERA_CORTO = 8   # antes: 3
-TIEMPO_ESPERA_MEDIO = 10  # antes: 5
-TIEMPO_ESPERA_LARGO = 12  # antes: 8
-TIEMPO_ESPERA_BANNER = 60 # antes: 60
-TIEMPO_ESPERA_PAGINA = 9 # antes: 6
+TIEMPO_ESPERA_CORTO = 3   # largo: 8
+TIEMPO_ESPERA_MEDIO = 5  # largo: 10
+TIEMPO_ESPERA_LARGO = 8  # largo: 10
+TIEMPO_ESPERA_BANNER = 60 # largo: 60
+TIEMPO_ESPERA_PAGINA = 6 # largo: 16
+
+def proyecto_existe_en_bd(tipo_carpeta, nombre_proyecto):
+    """Verifica si un proyecto ya existe en la base de datos"""
+    try:
+        cursor.execute("""
+            SELECT COUNT(*) FROM carpetas 
+            WHERE tipo_carpeta = %s AND nombre_proyecto = %s
+        """, (tipo_carpeta, nombre_proyecto))
+        count = cursor.fetchone()[0]
+        return count > 0
+    except Exception as e:
+        print(f"Error al verificar proyecto: {e}")
+        return False
 
 def guardar_proyecto_carpeta(tipo_carpeta, nombre_proyecto, url_proyecto=None):
-    """Guarda o actualiza un proyecto en la base de datos"""
+    """Guarda un proyecto nuevo en la base de datos (solo si no existe)"""
     try:
         cursor.execute("""
             INSERT INTO carpetas (tipo_carpeta, nombre_proyecto, url_proyecto)
             VALUES (%s, %s, %s)
             ON CONFLICT (tipo_carpeta, nombre_proyecto) 
-            DO UPDATE SET url_proyecto = EXCLUDED.url_proyecto
+            DO NOTHING
         """, (tipo_carpeta, nombre_proyecto, url_proyecto))
         conn.commit()
+        return True
     except Exception as e:
         conn.rollback()  # Rollback on error
         print(f"Error al guardar proyecto {nombre_proyecto} en carpeta {tipo_carpeta}: {e}")
         return False
-    return True
 
 def extraer_proyectos_pagina(driver):
     """Extrae todos los proyectos de la página actual"""
@@ -70,13 +83,34 @@ def extraer_proyectos_pagina(driver):
             
     return proyectos
 
-def procesar_paginacion(driver, proyectos_lista):
-    """Procesa la paginación usando el selector correcto de los botones de página"""
+def procesar_paginacion(driver, proyectos_lista, tipo_carpeta):
+    """Procesa la paginación usando el selector correcto de los botones de página.
+    Se detiene cuando NO encuentra ningún proyecto nuevo en la página actual."""
     try:
         while True:
             # Extraer proyectos de la página actual
             proyectos_pagina = extraer_proyectos_pagina(driver)
+            
+            # Verificar cuántos proyectos nuevos hay en esta página
+            proyectos_nuevos_pagina = []
+            proyectos_existentes_pagina = []
+            
+            for proyecto in proyectos_pagina:
+                if proyecto_existe_en_bd(tipo_carpeta, proyecto['titulo']):
+                    proyectos_existentes_pagina.append(proyecto)
+                    print(f"  ⊗ Ya existe: {proyecto['titulo']}")
+                else:
+                    proyectos_nuevos_pagina.append(proyecto)
+                    print(f"  ✓ Nuevo: {proyecto['titulo']}")
+            
+            # Si NO hay proyectos nuevos en esta página, detener el proceso
+            if len(proyectos_nuevos_pagina) == 0:
+                print(f"\n⚠ No se encontraron proyectos nuevos en esta página. Deteniendo scrapeo de '{tipo_carpeta}'.")
+                break
+            
+            # Si hay proyectos nuevos, agregar todos los proyectos de esta página a la lista
             proyectos_lista.extend(proyectos_pagina)
+            print(f"  → Agregados {len(proyectos_pagina)} proyectos de esta página ({len(proyectos_nuevos_pagina)} nuevos, {len(proyectos_existentes_pagina)} existentes)")
             
             try:
                 # Encuentra todos los botones de página
@@ -114,7 +148,7 @@ def procesar_paginacion(driver, proyectos_lista):
     except Exception as e:
         print(f"Error en paginación: {e}")
 
-def listar_proyectos_en_carpeta(driver, carpeta_nombre, url):
+def listar_proyectos_en_carpeta(driver, carpeta_nombre, url, tipo_carpeta):
     """Lista todos los proyectos en una carpeta específica"""
     proyectos = []
     
@@ -136,7 +170,7 @@ def listar_proyectos_en_carpeta(driver, carpeta_nombre, url):
         time.sleep(TIEMPO_ESPERA_MEDIO)
         
         # Procesar todas las páginas de proyectos
-        procesar_paginacion(driver, proyectos)
+        procesar_paginacion(driver, proyectos, tipo_carpeta)
         
         return proyectos
 
@@ -146,7 +180,16 @@ def listar_proyectos_en_carpeta(driver, carpeta_nombre, url):
         traceback.print_exc()
         return []
 
-def scraper_carpetas():
+def scraper_carpetas(tipo_carpeta=None):
+    """
+    Ejecuta el scraper de carpetas de LinkedIn.
+    
+    Args:
+        tipo_carpeta: Tipo de carpeta específico a scrapear. Si es None, scrapea todas las carpetas.
+    
+    Returns:
+        bool: True si el proceso fue exitoso, False en caso contrario.
+    """
     load_dotenv()
     EMAIL = os.getenv("LINKEDIN_USER")
     PASSWORD = os.getenv("LINKEDIN_PASS")
@@ -155,8 +198,17 @@ def scraper_carpetas():
         print("❌ Faltan credenciales de LinkedIn.")
         return False
 
-    CARPETAS = ["POSGRADOS TENDENCIA", "CARRERAS PREGRADO"]
-    user_data_dir = r"C:\Usuarios\Alexey\Documents\TRABAJO - UDLA\Estudio-Tendencia\profile"
+    # Definir todas las carpetas disponibles
+    CARPETAS = ["POSGRADOS TENDENCIA", "CARRERAS PREGRADO", "CARRERAS PREGRADO CR"]
+    
+    # Si se especifica un tipo de carpeta, solo procesar esa
+    if tipo_carpeta:
+        if tipo_carpeta not in CARPETAS:
+            print(f"❌ Tipo de carpeta '{tipo_carpeta}' no es válido.")
+            return False
+        CARPETAS = [tipo_carpeta]
+    
+    user_data_dir = r"C:\Users\User\Documents\TRABAJO - UDLA\Estudio-Tendencia\profile"
     profile_directory = "Default"
     
     print("1. Limpiando perfil anterior...")
@@ -179,24 +231,31 @@ def scraper_carpetas():
         driver.get(url)
         time.sleep(TIEMPO_ESPERA_MEDIO)
 
-        total_proyectos = 0
+        total_proyectos_nuevos = 0
+        total_proyectos_existentes = 0
+        
         for carpeta in CARPETAS:
             print(f"\n=== Procesando carpeta: {carpeta} ===")
-            # Usar la nueva función listar_proyectos_en_carpeta
-            proyectos = listar_proyectos_en_carpeta(driver, carpeta, url)
+            # Usar la nueva función listar_proyectos_en_carpeta (optimizada)
+            proyectos = listar_proyectos_en_carpeta(driver, carpeta, url, carpeta)
             
             # Guardar cada proyecto en la base de datos
             for proyecto in proyectos:
-                if guardar_proyecto_carpeta(carpeta, proyecto['titulo'], proyecto['url']):
-                    print(f"✓ Guardado: {proyecto['titulo']} en {carpeta}")
-                    total_proyectos += 1
+                if proyecto_existe_en_bd(carpeta, proyecto['titulo']):
+                    total_proyectos_existentes += 1
+                else:
+                    if guardar_proyecto_carpeta(carpeta, proyecto['titulo'], proyecto['url']):
+                        print(f"✓ Guardado: {proyecto['titulo']} en {carpeta}")
+                        total_proyectos_nuevos += 1
 
-            # Volver a la página principal de carpetas
-            driver.get(url)
-            time.sleep(TIEMPO_ESPERA_PAGINA)
+            # Volver a la página principal de carpetas (solo si procesamos múltiples carpetas)
+            if len(CARPETAS) > 1:
+                driver.get(url)
+                time.sleep(TIEMPO_ESPERA_PAGINA)
 
         print(f"\n=== Resumen Final ===")
-        print(f"Total de proyectos procesados: {total_proyectos}")
+        print(f"Total de proyectos nuevos: {total_proyectos_nuevos}")
+        print(f"Total de proyectos existentes (no agregados): {total_proyectos_existentes}")
         return True
 
     except Exception as e:

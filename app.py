@@ -223,8 +223,6 @@ def pagina_inicio():
 
     if search_query:
         proyectos = [p for p in proyectos if search_query.lower() in p[1].lower() or search_query.lower() in p[2].lower()]
-    else:
-        proyectos = proyectos[:3]
 
     for proyecto in proyectos:
         id, nombre, tipo, mensaje_error = proyecto

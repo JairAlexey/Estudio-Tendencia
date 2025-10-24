@@ -184,6 +184,7 @@ def crear_tablas():
         CREATE TABLE IF NOT EXISTS carpetas_queue (
             id SERIAL PRIMARY KEY,
             status VARCHAR(20) NOT NULL DEFAULT 'queued',
+            tipo_carpeta VARCHAR(100),
             tries INTEGER NOT NULL DEFAULT 0,
             error TEXT,
             created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,

@@ -333,7 +333,7 @@ def mostrar_formulario_edicion(id):
                 st.error("Proyecto no encontrado.")
                 conn_proyecto.close()
                 return
-            tipo_carpeta, carrera_referencia, carrera_estudio, palabra_semrush, codigo_ciiu, carrera_linkedin, id_ticket_actual = proyecto
+            tipo_carpeta_original, carrera_referencia_original, carrera_estudio_original, palabra_semrush_original, codigo_ciiu_original, carrera_linkedin_original, id_ticket_actual = proyecto
         conn_proyecto.close()
     except Exception as e:
         st.error(f"Error obteniendo datos del proyecto: {e}")
@@ -354,7 +354,7 @@ def mostrar_formulario_edicion(id):
     # Tipo de carpeta y prioridad (primer selectbox)
     tipo_carpeta = st.selectbox("Tipo de carpeta", 
                                ["POSGRADOS TENDENCIA", "CARRERAS PREGRADO"], 
-                               index=0 if "POSGRADOS" in tipo_carpeta else 1,
+                               index=0 if "POSGRADOS" in tipo_carpeta_original else 1,
                                key=f"tipo_carpeta_1_{id}")  # Añadir key única
     
     prioridad_label = st.selectbox(
@@ -398,15 +398,15 @@ def mostrar_formulario_edicion(id):
     elif "posgrado" in tipo_carpeta_lower:
         carreras_filtradas = obtener_carreras_por_nivel("Posgrado")
     if carreras_filtradas:
-        nombre_proyecto_1 = st.selectbox("Nombre de la Carrera Referencia", carreras_filtradas, index=carreras_filtradas.index(carrera_referencia) if carrera_referencia in carreras_filtradas else 0)
+        nombre_proyecto_1 = st.selectbox("Nombre de la Carrera Referencia", carreras_filtradas, index=carreras_filtradas.index(carrera_referencia_original) if carrera_referencia_original in carreras_filtradas else 0)
     else:
-        nombre_proyecto_1 = st.selectbox("Nombre de la Carrera Referencia", [carrera_referencia])
+        nombre_proyecto_1 = st.selectbox("Nombre de la Carrera Referencia", [carrera_referencia_original])
     
     # --- Carrera linkedin (usando datos de la base de datos) ---
     proyectos_linkedin = obtener_proyectos_carpeta(tipo_carpeta)
     carrera_actual_index = 0
-    if carrera_linkedin in proyectos_linkedin:
-        carrera_actual_index = proyectos_linkedin.index(carrera_linkedin)
+    if carrera_linkedin_original in proyectos_linkedin:
+        carrera_actual_index = proyectos_linkedin.index(carrera_linkedin_original)
     carrera_linkedin_input = st.selectbox(
         "Nombre de la Carrera Referencia en Linkedin", 
         proyectos_linkedin,
@@ -416,8 +416,8 @@ def mostrar_formulario_edicion(id):
     # --- Proyecto 2: Carrera Estudio (usando los mismos datos de LinkedIn) ---
     # FIX: Properly initialize the second project name dropdown with current value
     carrera_estudio_index = 0
-    if carrera_estudio in proyectos_linkedin:
-        carrera_estudio_index = proyectos_linkedin.index(carrera_estudio)
+    if carrera_estudio_original in proyectos_linkedin:
+        carrera_estudio_index = proyectos_linkedin.index(carrera_estudio_original)
     nombre_proyecto_2 = st.selectbox(
         "Nombre de la Carrera Estudio en Linkedin",
         proyectos_linkedin,
@@ -427,7 +427,7 @@ def mostrar_formulario_edicion(id):
 
     # --- SEMRUSH ---
     st.subheader("Palabra a consultar en SEMRUSH")
-    palabra_semrush = st.text_input("Palabra clave", value=palabra_semrush)
+    palabra_semrush = st.text_input("Palabra clave", value=palabra_semrush_original)
 
     # --- Trends ---
     st.subheader("Trends (palabras y promedios)")
@@ -445,7 +445,7 @@ def mostrar_formulario_edicion(id):
         st.error(f"ERROR al crear DataFrame de tendencias: {e}")
     # Código CIIU
     codigos_ciiu = obtener_codigos_ciiu()
-    codigo_ciiu = st.selectbox("Seleccione el código CIIU", codigos_ciiu, index=codigos_ciiu.index(codigo_ciiu) if codigo_ciiu in codigos_ciiu else 0)
+    codigo_ciiu = st.selectbox("Seleccione el código CIIU", codigos_ciiu, index=codigos_ciiu.index(codigo_ciiu_original) if codigo_ciiu_original in codigos_ciiu else 0)
     # Modalidad de oferta
     st.subheader("Modalidad de Oferta")
     modalidad_limpia = [list(row) for row in modalidad]
@@ -538,23 +538,67 @@ def mostrar_formulario_edicion(id):
                 conn_guardar.commit()
                 conn_guardar.close()
                 
+                # Comparar valores originales con los nuevos para determinar si se necesita reencolar el scraper
+                hay_cambios_significativos = False
+                
+                # Normalizar valores originales para comparación
+                nombre_proyecto_1_original_norm = normalizar_texto(carrera_referencia_original)
+                nombre_proyecto_2_original_norm = normalizar_texto(carrera_estudio_original)
+                palabra_semrush_original_norm = normalizar_texto(palabra_semrush_original)
+                carrera_linkedin_original_norm = normalizar_texto(carrera_linkedin_original)
+                
+                # Comparar campos principales
+                if (tipo_carpeta != tipo_carpeta_original or
+                    nombre_proyecto_1_norm != nombre_proyecto_1_original_norm or
+                    nombre_proyecto_2_norm != nombre_proyecto_2_original_norm or
+                    palabra_semrush_norm != palabra_semrush_original_norm or
+                    codigo_ciiu != codigo_ciiu_original or
+                    carrera_linkedin_input_norm != carrera_linkedin_original_norm):
+                    hay_cambios_significativos = True
+                
+                # Comparar tendencias
+                if not hay_cambios_significativos:
+                    tendencias_originales = {(row[0], row[1]) for row in tendencias}
+                    tendencias_nuevas = {(trend["palabra"], trend["promedio"]) for trend in trends_data}
+                    if tendencias_originales != tendencias_nuevas:
+                        hay_cambios_significativos = True
+                
+                # Comparar modalidad de oferta
+                if not hay_cambios_significativos:
+                    if modalidad:
+                        presencial_original = modalidad[0][0] if len(modalidad[0]) > 0 else ""
+                        virtual_original = modalidad[0][1] if len(modalidad[0]) > 1 else ""
+                        presencial_nuevo = df_modalidad.iloc[0].get("Presencial", "") if df_modalidad.shape[0] > 0 else ""
+                        virtual_nuevo = df_modalidad.iloc[0].get("Virtual", "") if df_modalidad.shape[0] > 0 else ""
+                        if presencial_original != presencial_nuevo or virtual_original != virtual_nuevo:
+                            hay_cambios_significativos = True
+                
                 try:
                     from scrapers.linkedin_modules.linkedin_database import enqueue_scraper_job
-                    # Use a fresh connection for queue operations
-                    conn_queue = get_connection()
-                    with conn_queue.cursor() as cur:
-                        cur.execute("DELETE FROM scraper_queue WHERE proyecto_id=%s AND status IN ('queued','retry')", (id,))
-                    conn_queue.commit()
-                    conn_queue.close()
                     
-                    # Enqueue the job
-                    enqueue_scraper_job(id, priority=PRIORIDAD_MAP[prioridad_label])
+                    if hay_cambios_significativos:
+                        # Use a fresh connection for queue operations
+                        conn_queue = get_connection()
+                        with conn_queue.cursor() as cur:
+                            cur.execute("DELETE FROM scraper_queue WHERE proyecto_id=%s AND status IN ('queued','retry')", (id,))
+                        conn_queue.commit()
+                        conn_queue.close()
+                        
+                        # Enqueue the job
+                        enqueue_scraper_job(id, priority=PRIORIDAD_MAP[prioridad_label])
+                        
+                        # Show success message
+                        loading_complete(spinner, "¡Cambios guardados y scraper encolado correctamente!")
+                        
+                        # Set session state variables for redirection
+                        st.session_state["mensaje_exito"] = "Cambios guardados y scraper encolado correctamente."
+                    else:
+                        # Show success message without re-enqueuing
+                        loading_complete(spinner, "¡Cambios guardados correctamente!")
+                        
+                        # Set session state variables for redirection
+                        st.session_state["mensaje_exito"] = "Cambios guardados correctamente."
                     
-                    # Show success message
-                    loading_complete(spinner, "¡Cambios guardados y scraper encolado correctamente!")
-                    
-                    # Set session state variables for redirection
-                    st.session_state["mensaje_exito"] = "Cambios guardados y scraper encolado correctamente."
                     st.session_state["mostrar_mensaje"] = True
                     st.session_state["exito_guardado"] = True
                     

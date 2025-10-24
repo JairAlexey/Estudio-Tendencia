@@ -45,10 +45,19 @@ def mostrar_pagina_carpetas():
         </style>
     """, unsafe_allow_html=True)
 
-    # Botón para actualizar proyectos
-    col1, col2 = st.columns([3,1])
-    with col2:
-        if st.button("Actualizar Proyectos", type="primary"):
+    # Selector de tipo de carpeta para scrapear
+    CARPETAS_DISPONIBLES = ["POSGRADOS TENDENCIA", "CARRERAS PREGRADO", "CARRERAS PREGRADO CR"]
+    
+    col1, col2, col3 = st.columns([2, 2, 1])
+    with col1:
+        tipo_carpeta_scrapear = st.selectbox(
+            "Selecciona el tipo de carpeta a actualizar:",
+            ["Todas las carpetas"] + CARPETAS_DISPONIBLES,
+            key="tipo_carpeta_scrapear"
+        )
+    
+    with col3:
+        if st.button("🔍 Buscar nuevas carpetas", type="primary"):
             conn = get_connection()
             cur = conn.cursor()
             
@@ -64,15 +73,22 @@ def mostrar_pagina_carpetas():
             if last_job and last_job[0] in ['queued', 'running']:
                 st.warning("Ya hay una actualización en proceso. Por favor espera.")
             else:
+                # Determinar el tipo de carpeta a scrapear
+                tipo_a_scrapear = None if tipo_carpeta_scrapear == "Todas las carpetas" else tipo_carpeta_scrapear
+                
                 # Crear nuevo trabajo en la cola
                 cur.execute("""
-                    INSERT INTO carpetas_queue (status)
-                    VALUES ('queued')
+                    INSERT INTO carpetas_queue (status, tipo_carpeta)
+                    VALUES ('queued', %s)
                     RETURNING id
-                """)
+                """, (tipo_a_scrapear,))
                 job_id = cur.fetchone()[0]
                 conn.commit()
-                st.success(f"Actualización de carpetas iniciada (ID: {job_id})")
+                
+                if tipo_a_scrapear:
+                    st.success(f"Actualización de '{tipo_a_scrapear}' iniciada (ID: {job_id})")
+                else:
+                    st.success(f"Actualización de todas las carpetas iniciada (ID: {job_id})")
                 st.info("Este proceso se ejecutará en segundo plano. La página se actualizará automáticamente.")
                 time.sleep(2)
                 st.rerun()
