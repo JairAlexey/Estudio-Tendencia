@@ -61,7 +61,7 @@ def linkedin_scraper(limpiar_perfil_al_inicio=False):
     proyecto_id = int(sys.argv[1])
 
     UBICACIONES = ["Ecuador", "América Latina"]
-    user_data_dir = r"C:\Users\User\Documents\TRABAJO - UDLA\Estudio-Tendencia\profile"
+    user_data_dir = r"C:\Usuarios\Alexey\Documents\TRABAJO - UDLA\Estudio-Tendencia\profile"
     profile_directory = "Default"
     
     # Detectar si viene del worker (el worker ya hizo limpieza completa)

@@ -156,7 +156,7 @@ def scraper_carpetas():
         return False
 
     CARPETAS = ["POSGRADOS TENDENCIA", "CARRERAS PREGRADO"]
-    user_data_dir = r"C:\Users\User\Documents\TRABAJO - UDLA\Estudio-Tendencia\profile"
+    user_data_dir = r"C:\Usuarios\Alexey\Documents\TRABAJO - UDLA\Estudio-Tendencia\profile"
     profile_directory = "Default"
     
     print("1. Limpiando perfil anterior...")

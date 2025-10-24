@@ -5,7 +5,12 @@ from streamlit_option_menu import option_menu
 from conexion import get_connection
 import os
 
-st.set_page_config(page_title="Formulario de Proyectos", page_icon=":bar_chart:", layout="centered")
+st.set_page_config(
+    page_title="Análisis de Tendencias", 
+    page_icon="🗂️", 
+    layout="centered",
+    initial_sidebar_state="collapsed"
+)
 
 # Helper para obtener conexión y cursor
 def get_conn_cursor():
