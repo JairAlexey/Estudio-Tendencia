@@ -37,7 +37,7 @@ def mapear_a_pais(ubicacion):
     # Otros países de Latam pueden agregarse aquí
     return None
 
-def generar_mapa_latam(proyecto_id=10, ruta_salida="mapa_latam.png"):
+def generar_mapa_latam(proyecto_id=3, ruta_salida="mapa_latam.png"):
     # Leer ubicaciones desde la base de datos
     cursor.execute("""
         SELECT nombre, cantidad

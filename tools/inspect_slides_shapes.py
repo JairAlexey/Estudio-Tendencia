@@ -7,7 +7,7 @@ TEMPLATE_PATH = '../files/base/InvestigacionMercados.pptx'
 prs = Presentation(TEMPLATE_PATH)
 
 
-slide = prs.slides[4]
+slide = prs.slides[5]
 
 print('Textos de cada shape:')
 for i, shape in enumerate(slide.shapes):
