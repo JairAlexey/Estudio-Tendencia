@@ -5,6 +5,8 @@ from streamlit_option_menu import option_menu
 from conexion import get_connection
 import os
 
+st.set_page_config(page_title="Formulario de Proyectos", page_icon=":bar_chart:", layout="centered")
+
 # Helper para obtener conexión y cursor
 def get_conn_cursor():
     conn = get_connection()

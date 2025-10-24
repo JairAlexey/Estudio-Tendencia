@@ -115,6 +115,9 @@ def validar_trends_data(df_trends):
 def mostrar_formulario():
     # Remove the internal return button - this will be handled by app.py
     
+    # ID Ticket
+    id_ticket = st.text_input("ID del Ticket", placeholder="Ingrese el ID del ticket")
+    
     # Tipo de carpeta fuera del formulario para actualización en tiempo real
     tipo_carpeta = st.selectbox("Tipo de carpeta", 
                                ["Seleccione un tipo...", "POSGRADOS TENDENCIA", "CARRERAS PREGRADO"])
@@ -196,6 +199,8 @@ def mostrar_formulario():
         if enviado:
             # Validaciones de campos requeridos
             errores = []
+            if not id_ticket.strip():
+                errores.append("El campo 'ID del Ticket' es obligatorio.")
             if tipo_carpeta == "Seleccione un tipo...":
                 errores.append("El campo 'Tipo de carpeta' es obligatorio.")
             if nombre_proyecto_1 == "Seleccione una carrera..." or not nombre_proyecto_1:
@@ -237,8 +242,8 @@ def mostrar_formulario():
                     with conn.cursor() as cur:
                         cur.execute('''
                             INSERT INTO proyectos_tendencias (
-                                tipo_carpeta, carrera_referencia, carrera_estudio, palabra_semrush, codigo_ciiu, carrera_linkedin
-                            ) VALUES (%s, %s, %s, %s, %s, %s)
+                                tipo_carpeta, carrera_referencia, carrera_estudio, palabra_semrush, codigo_ciiu, carrera_linkedin, id_ticket
+                            ) VALUES (%s, %s, %s, %s, %s, %s, %s)
                             RETURNING id
                         ''', (
                             tipo_carpeta,
@@ -246,7 +251,8 @@ def mostrar_formulario():
                             nombre_proyecto_2_norm,
                             palabra_semrush_norm,
                             codigo_ciiu,
-                            carrera_linkedin_input_norm
+                            carrera_linkedin_input_norm,
+                            id_ticket.strip()
                         ))
                         proyecto_id_row = cur.fetchone()
                         if proyecto_id_row is None or proyecto_id_row[0] is None:
@@ -269,7 +275,14 @@ def mostrar_formulario():
                                 VALUES (%s, %s, %s)
                             ''', (proyecto_id, presencial, virtual))
 
+                        # Insertar registro en seguimiento_proyecto
+                        cur.execute('''
+                            INSERT INTO seguimiento_proyecto (proyecto_id)
+                            VALUES (%s)
+                        ''', (proyecto_id,))
+
                         conn.commit()
+
                     # Encolar job para el nuevo proyecto
                     try:
                         from scrapers.linkedin_modules.linkedin_database import enqueue_scraper_job
@@ -314,13 +327,13 @@ def mostrar_formulario_edicion(id):
     try:
         conn_proyecto = get_connection()
         with conn_proyecto.cursor() as cur:
-            cur.execute("SELECT tipo_carpeta, carrera_referencia, carrera_estudio, palabra_semrush, codigo_ciiu, carrera_linkedin FROM proyectos_tendencias WHERE id=%s", (id,))
+            cur.execute("SELECT tipo_carpeta, carrera_referencia, carrera_estudio, palabra_semrush, codigo_ciiu, carrera_linkedin, id_ticket FROM proyectos_tendencias WHERE id=%s", (id,))
             proyecto = cur.fetchone()
             if not proyecto:
                 st.error("Proyecto no encontrado.")
                 conn_proyecto.close()
                 return
-            tipo_carpeta, carrera_referencia, carrera_estudio, palabra_semrush, codigo_ciiu, carrera_linkedin = proyecto
+            tipo_carpeta, carrera_referencia, carrera_estudio, palabra_semrush, codigo_ciiu, carrera_linkedin, id_ticket_actual = proyecto
         conn_proyecto.close()
     except Exception as e:
         st.error(f"Error obteniendo datos del proyecto: {e}")
@@ -350,6 +363,9 @@ def mostrar_formulario_edicion(id):
         index=["Alta", "Media", "Baja"].index(PRIORIDAD_INV_MAP.get(prioridad_actual, "Media")),
         key=f"prioridad_{id}"  # Añadir key única
     )
+
+    # ID Ticket
+    id_ticket = st.text_input("ID del Ticket", value=id_ticket_actual, key=f"id_ticket_{id}")
 
     # Tendencias - use a new connection
     try:
@@ -445,6 +461,8 @@ def mostrar_formulario_edicion(id):
     guardado = st.button("Guardar cambios")
     if guardado:
         errores = []
+        if not id_ticket.strip():
+            errores.append("El campo 'ID del Ticket' es obligatorio.")
         if not nombre_proyecto_1:
             errores.append("El campo 'Carrera Referencia' es obligatorio.")
         if not nombre_proyecto_2.strip():
@@ -486,9 +504,9 @@ def mostrar_formulario_edicion(id):
                 with conn_guardar.cursor() as cur:
                     cur.execute('''
                         UPDATE proyectos_tendencias SET
-                            tipo_carpeta=%s, carrera_referencia=%s, carrera_estudio=%s, palabra_semrush=%s, codigo_ciiu=%s, carrera_linkedin=%s
+                            tipo_carpeta=%s, carrera_referencia=%s, carrera_estudio=%s, palabra_semrush=%s, codigo_ciiu=%s, carrera_linkedin=%s, id_ticket=%s
                         WHERE id=%s
-                    ''', (tipo_carpeta, nombre_proyecto_1_norm, nombre_proyecto_2_norm, palabra_semrush_norm, codigo_ciiu, carrera_linkedin_input_norm, id))
+                    ''', (tipo_carpeta, nombre_proyecto_1_norm, nombre_proyecto_2_norm, palabra_semrush_norm, codigo_ciiu, carrera_linkedin_input_norm, id_ticket.strip(), id))
 
                 # Eliminar tendencias
                 with conn_guardar.cursor() as cur:

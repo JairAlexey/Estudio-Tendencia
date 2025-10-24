@@ -21,6 +21,7 @@ def crear_tablas():
             palabra_semrush VARCHAR(200),
             codigo_ciiu VARCHAR(50),
             carrera_linkedin VARCHAR(200),
+            id_ticket VARCHAR(100),
             mensaje_error TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
@@ -212,6 +213,19 @@ def crear_tablas():
             cantidad FLOAT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
+        ''',
+        '''
+        CREATE TABLE IF NOT EXISTS seguimiento_proyecto (
+            id SERIAL PRIMARY KEY,
+            proyecto_id INTEGER NOT NULL REFERENCES proyectos_tendencias(id) ON DELETE CASCADE,
+            brief BOOLEAN NOT NULL DEFAULT TRUE,
+            modelo_prioridad BOOLEAN NOT NULL DEFAULT TRUE,
+            modelo_tendencia BOOLEAN NOT NULL DEFAULT FALSE,
+            enviada_viabilidad BOOLEAN NOT NULL DEFAULT FALSE,
+            enviada_inv_mercados BOOLEAN NOT NULL DEFAULT FALSE,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );        
         '''
     ]
     
