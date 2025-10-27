@@ -188,20 +188,25 @@ def pagina_inicio():
     
     conn, cur = get_conn_cursor()
     try:
-        cur.execute("SELECT id, carrera_estudio, tipo_carpeta, mensaje_error FROM proyectos_tendencias ORDER BY id DESC")
+        # Traer todos los proyectos (ahora incluye tipo_carpeta)
+        cur.execute("SELECT id, palabra_semrush, carrera_estudio, tipo_carpeta, mensaje_error FROM proyectos_tendencias")
         proyectos = cur.fetchall()
-        # Traer último estado de scraper por proyecto
+        # Traer último estado y fecha de finalización por proyecto
         cur.execute(
             """
-            SELECT proyecto_id, status
+            SELECT proyecto_id, status, finished_at
             FROM (
-                SELECT proyecto_id, status,
+                SELECT proyecto_id, status, finished_at,
                        ROW_NUMBER() OVER (PARTITION BY proyecto_id ORDER BY created_at DESC) rn
                 FROM scraper_queue
             ) t WHERE rn = 1
             """
         )
-        estados = {row[0]: row[1] for row in cur.fetchall()}
+        estados = {}
+        fechas_finalizacion = {}
+        for row in cur.fetchall():
+            estados[row[0]] = row[1]
+            fechas_finalizacion[row[0]] = row[2]
     except Exception as e:
         conn.rollback()
         st.error(f"Error en la base de datos: {e}")
@@ -211,6 +216,16 @@ def pagina_inicio():
     cur.close()
     conn.close()
 
+    # Ordenar proyectos por fecha de finalización (descendente), los sin fecha al final
+    proyectos_ordenados = sorted(
+        proyectos,
+        key=lambda p: (
+            fechas_finalizacion.get(p[0]) is not None,
+            fechas_finalizacion.get(p[0]) or 0
+        ),
+        reverse=True
+    )
+
     # Diccionario de traducción y color/ícono
     estado_traducido = {
         "pending": ("En cola", "#6c757d", "⏳"),      # Gris
@@ -219,15 +234,15 @@ def pagina_inicio():
         "error": ("Error", "#dc3545", "🔴"),         # Rojo
     }
 
-    if not proyectos:
+    if not proyectos_ordenados:
         st.info("No hay proyectos registrados.")
         return
 
     if search_query:
-        proyectos = [p for p in proyectos if search_query.lower() in p[1].lower() or search_query.lower() in p[2].lower()]
+        proyectos_ordenados = [p for p in proyectos_ordenados if search_query.lower() in p[1].lower() or search_query.lower() in p[2].lower()]
 
-    for proyecto in proyectos:
-        id, nombre, tipo, mensaje_error = proyecto
+    for proyecto in proyectos_ordenados:
+        id, nombre, carrera_estudio, tipo_carpeta, mensaje_error = proyecto
         # Línea negra de separación
         st.markdown("""
             <hr style='border: none; border-top: 3px solid #222; margin: 1.2rem 0 1.5rem 0;'>
@@ -269,7 +284,8 @@ def pagina_inicio():
                 box-shadow: 2px 2px 6px rgba(0,0,0,0.1);
             '>
                 <h4 style='margin:0'>{nombre} {error_icon_html}</h4>
-                <p style='margin:0; color:#555;'>{tipo}</p>
+                <p style='margin:0; color:#555;'>{carrera_estudio}</p>
+                <p style='margin:0; color:#555;'>{tipo_carpeta}</p>
                 <div style='margin-top:0.25rem; font-size: 0.9rem;'>
                     <div>{estado_html}</div>
                     <div>{solicitud_html}</div>
