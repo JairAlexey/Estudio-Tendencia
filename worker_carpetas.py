@@ -79,32 +79,68 @@ def mark_job_failed(job_id, error):
 
 def process_job(job):
     """Procesa un trabajo de actualización de carpetas"""
+    tipo_carpeta = job.get('tipo_carpeta')
+    print(f"\n📋 Nuevo trabajo de carpetas detectado:")
+    print(f"   Job ID: {job['id']}")
+    print(f"   Tipo de carpeta: {tipo_carpeta if tipo_carpeta else 'N/A'}")
+
+    print(f"\n{'='*60}")
+    print(f"🚀 INICIANDO PROCESAMIENTO DE CARPETAS PARA JOB {job['id']}")
+    print(f"   Tipo de carpeta: {tipo_carpeta if tipo_carpeta else 'N/A'}")
+    print(f"{'='*60}")
+
     try:
-        tipo_carpeta = job.get('tipo_carpeta')
-        print(f"Procesando job {job['id']}" + (f" para tipo de carpeta: {tipo_carpeta}" if tipo_carpeta else ""))
+        print(f"📂 Paso 1: Ejecutando scraper de carpetas...")
         mark_job_running(job['id'])
-        
+
         # Ejecutar el scraper de carpetas con el tipo de carpeta específico
         if scraper_carpetas(tipo_carpeta=tipo_carpeta):
             mark_job_completed(job['id'])
-            print(f"Job {job['id']} completado exitosamente")
+            print(f"\n✅ JOB {job['id']} COMPLETADO EXITOSAMENTE")
+            print(f"   Job {job['id']} marcado como completado")
+            print(f"{'='*60}")
         else:
             mark_job_failed(job['id'], "El scraper retornó False")
-            print(f"Job {job['id']} falló: el scraper retornó False")
-            
+            print(f"\n❌ JOB {job['id']} FALLÓ")
+            print(f"   Job {job['id']} marcado como error")
+            print(f"   Error: El scraper retornó False")
+            print(f"{'='*60}")
+
     except Exception as e:
         error_msg = f"Error procesando job {job['id']}: {str(e)}\n{traceback.format_exc()}"
-        print(error_msg)
+        print(f"\n❌ JOB {job['id']} FALLÓ")
+        print(f"   Job {job['id']} marcado como error")
+        print(f"   Error: {str(e)}")
+        print(f"{'='*60}")
         mark_job_failed(job['id'], error_msg)
 
 def main():
-    print("Worker de carpetas iniciado. Escuchando cola 'carpetas_queue'...")
-    while True:
-        job = fetch_next_job()
-        if not job:
-            time.sleep(SLEEP_SECONDS)
-            continue
-        process_job(job)
+    print("🔄 Worker Carpetas iniciado")
+    print(f"   Tiempo de inicio: {time.strftime('%Y-%m-%d %H:%M:%S')}")
+    print("   Escuchando cola 'carpetas_queue'...")
+    print("   ⚙️ Configurado para procesar carpetas al recibir trabajos")
+
+    last_no_job_print = 0
+    NO_JOB_PRINT_INTERVAL = 300  # segundos (5 minutos)
+    first_no_job = True
+
+    try:
+        while True:
+            job = fetch_next_job()
+            if not job:
+                now = time.time()
+                if first_no_job or (now - last_no_job_print > NO_JOB_PRINT_INTERVAL):
+                    print("😴 No hay trabajos de carpetas en cola, esperando...")
+                    last_no_job_print = now
+                    first_no_job = False
+                time.sleep(SLEEP_SECONDS)
+                continue
+            first_no_job = True  # Reset para la próxima vez que no haya trabajos
+            process_job(job)
+            print(f"\n⏸️ Pausa de 5 segundos antes de revisar la cola nuevamente...")
+            time.sleep(5)
+    except KeyboardInterrupt:
+        print("\n🛑 Worker de carpetas detenido por el usuario. Cerrando de forma segura...")
 
 if __name__ == "__main__":
     main()

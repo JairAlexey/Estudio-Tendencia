@@ -144,30 +144,43 @@ def process_job(job):
         print(f"   Error: {e}")
         print(f"{'='*60}")
 
+# ...existing code...
+
 def main():
     print("🔄 Worker Scraper iniciado")
     print(f"   Tiempo de inicio: {time.strftime('%Y-%m-%d %H:%M:%S')}")
     print("   Escuchando cola 'scraper_queue'...")
     print("   ⚙️ Configurado para limpiar perfil al inicio de cada proyecto")
     
-    while True:
-        job = fetch_next_job()
-        if not job:
-            print("😴 No hay trabajos en cola, esperando...")
-            time.sleep(SLEEP_SECONDS)
-            continue
+    last_no_job_print = 0
+    NO_JOB_PRINT_INTERVAL = 300  # segundos (5 minutos)
+    first_no_job = True
+
+    try:
+        while True:
+            job = fetch_next_job()
+            if not job:
+                now = time.time()
+                if first_no_job or (now - last_no_job_print > NO_JOB_PRINT_INTERVAL):
+                    print("😴 No hay trabajos en cola, esperando...")
+                    last_no_job_print = now
+                    first_no_job = False
+                time.sleep(SLEEP_SECONDS)
+                continue
+
+            first_no_job = True  # Reset para la próxima vez que no haya trabajos
+
+            print(f"\n📋 Nuevo trabajo detectado:")
+            print(f"   Job ID: {job['id']}")
+            print(f"   Proyecto ID: {job['proyecto_id']}")
             
-        print(f"\n📋 Nuevo trabajo detectado:")
-        print(f"   Job ID: {job['id']}")
-        print(f"   Proyecto ID: {job['proyecto_id']}")
-        
-        process_job(job)
-        
-        # Pausa entre proyectos para estabilidad
-        print(f"\n⏸️ Pausa de 10 segundos antes del siguiente proyecto...")
-        time.sleep(10)
+            process_job(job)
+            
+            # Pausa entre proyectos para estabilidad
+            print(f"\n⏸️ Pausa de 10 segundos antes del siguiente proyecto...")
+            time.sleep(10)
+    except KeyboardInterrupt:
+        print("\n🛑 Worker detenido por el usuario. Cerrando de forma segura...")
 
 if __name__ == "__main__":
     main()
-
-
