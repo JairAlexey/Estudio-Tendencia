@@ -34,9 +34,9 @@ ERROR_SELECTORS = [
 ]
 
 # === CONFIGURACIÓN GLOBAL DE TIEMPOS ===
-TIEMPO_ESPERA_CORTO = 3   # segundos para esperas cortas  
-TIEMPO_ESPERA_MEDIO = 5   # segundos para esperas medias
-TIEMPO_ESPERA_LARGO = 8   # segundos para esperas largas
+TIEMPO_ESPERA_CORTO = 2   # segundos para esperas cortas  
+TIEMPO_ESPERA_MEDIO = 3   # segundos para esperas medias
+TIEMPO_ESPERA_LARGO = 4   # segundos para esperas largas
 TIEMPO_ESPERA_BANNER = 60 # espera cuando aparece el banner de error (reducido considerablemente)
 TIEMPO_ESPERA_PAGINA = 6  # espera larga para recarga de página
 

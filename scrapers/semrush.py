@@ -58,27 +58,27 @@ def buscar_carrera_semrush(driver, carrera):
     """
     try:
         print(f"Localizando campo de busqueda...")
-        time.sleep(4)  # Esperar a que la pagina cargue completamente
+        time.sleep(8)  # Esperar a que la pagina cargue completamente
         # Localizar el div con contenteditable
         input_div = driver.find_element(
             By.CSS_SELECTOR, 'div[data-slate-editor="true"]'
         )
         input_div.click()
-        time.sleep(1)
+        time.sleep(4)
         
         print(f"Escribiendo carrera: '{carrera}'")
         # Limpiar el campo primero
         input_div.send_keys(Keys.CONTROL + 'a')
-        time.sleep(0.5)
+        time.sleep(1)
         input_div.send_keys(Keys.DELETE)
-        time.sleep(0.5)
+        time.sleep(1)
 
         # Escribir la carrera caracter por caracter
         for ch in carrera:
             input_div.send_keys(ch)
-            time.sleep(0.05)  # pequeno delay para cada caracter
+            time.sleep(0.5)  # pequeno delay para cada caracter
 
-        time.sleep(1)
+        time.sleep(4)
         print(f"Texto escrito: '{input_div.text.strip()}'")
 
         # Buscar el boton "Buscar" con diferentes metodos
