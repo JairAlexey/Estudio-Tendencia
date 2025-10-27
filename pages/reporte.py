@@ -96,6 +96,23 @@ def mostrar_pagina_presentacion(id):
                                 conn.commit()
                             st.info(f"✨ Presentación de {tipo} encolada para regeneración.")
                             st.rerun()
+            
+            # Mostrar botón para generar el tipo de presentación faltante
+            tipos_posibles = {"viabilidad": "Reporte de Viabilidad", "mercado": "Investigación de Mercado"}
+            faltantes = [t for t in tipos_posibles if t not in reportes]
+            if faltantes:
+                st.subheader("Generar presentación faltante:")
+                for tipo_faltante in faltantes:
+                    nombre = tipos_posibles[tipo_faltante]
+                    if st.button(f"✨ Generar {nombre}", key=f"generar_{tipo_faltante}_faltante_{id}", use_container_width=True):
+                        with conn.cursor() as cur:
+                            cur.execute("""
+                                INSERT INTO presentation_queue (proyecto_id, status, tries, created_at, tipo_reporte)
+                                VALUES (%s, 'queued', 0, CURRENT_TIMESTAMP, %s)
+                            """, (id, tipo_faltante))
+                            conn.commit()
+                        st.info(f"✨ {nombre} encolado para generación.")
+                        st.rerun()
     else:
         st.info("📄 No hay presentaciones disponibles para este proyecto.")
         
