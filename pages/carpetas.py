@@ -144,7 +144,7 @@ def mostrar_pagina_carpetas():
         return
 
     tipo_seleccionado = st.selectbox(
-        "Selecciona el tipo de carpeta:",
+        "🔍 Busqueda en base al tipo de carpeta:",
         tipos_carpeta
     )
 
