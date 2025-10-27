@@ -61,13 +61,13 @@ graph TB
 
 ### 🧩 Componentes Principales
 
-| Componente | Descripción | Tecnología |
-|------------|-------------|------------|
-| **Frontend** | Interfaz web interactiva | 🚀 Streamlit |
-| **Backend** | Lógica de negocio y API | 🐍 Python |
-| **Base de Datos** | Almacenamiento persistente | 🐘 PostgreSQL |
-| **Scrapers** | Automatización web | 🌐 Selenium + Undetected ChromeDriver |
-| **Análisis** | Procesamiento de datos | 📊 Pandas + NumPy |
+| Componente              | Descripción               | Tecnología                           |
+| ----------------------- | -------------------------- | ------------------------------------- |
+| **Frontend**      | Interfaz web interactiva   | 🚀 Streamlit                          |
+| **Backend**       | Lógica de negocio y API   | 🐍 Python                             |
+| **Base de Datos** | Almacenamiento persistente | 🐘 PostgreSQL                         |
+| **Scrapers**      | Automatización web        | 🌐 Selenium + Undetected ChromeDriver |
+| **Análisis**     | Procesamiento de datos     | 📊 Pandas + NumPy                     |
 
 ---
 
@@ -105,12 +105,14 @@ graph TB
 ### 🔧 Instalación Paso a Paso
 
 1. **📥 Clonar el repositorio**
+
 ```bash
 git clone https://github.com/tu-usuario/estudio-tendencia.git
 cd estudio-tendencia
 ```
 
 2. **🐍 Crear entorno virtual**
+
 ```bash
 python -m venv venv
 venv\Scripts\activate  # Windows
@@ -118,17 +120,20 @@ source venv/bin/activate  # Linux/Mac
 ```
 
 3. **📦 Instalar dependencias**
+
 ```bash
 pip install -r requirements.txt
 ```
 
 4. **🗄️ Configurar base de datos**
+
 ```bash
 # Crear base de datos en PostgreSQL
 createdb estudio_tendencias
 ```
 
 5. **📄 Ejecutar scripts SQL**
+
 ```bash
 psql -d estudio_tendencias -f database/schema.sql
 ```
@@ -164,6 +169,7 @@ WORKER_POLL_SECONDS=5
 ### 🛠️ Configuración de Chrome
 
 El sistema utiliza un perfil de Chrome personalizado ubicado en:
+
 ```
 C:\Users\User\Documents\TRABAJO - UDLA\Estudio-Tendencia\profile
 ```
@@ -183,6 +189,7 @@ La aplicación estará disponible en: `http://localhost:8501`
 ### 📝 Flujo de Trabajo
 
 #### 1. **📋 Crear Proyecto**
+
 - Acceder a la sección "Formulario"
 - Completar datos del proyecto:
   - 📁 Tipo de carpeta (Pregrado/Posgrado)
@@ -193,11 +200,13 @@ La aplicación estará disponible en: `http://localhost:8501`
   - 📈 Tendencias de Google
 
 #### 2. **⚡ Procesamiento Automático**
+
 - El sistema encola automáticamente el proyecto
 - Los scrapers procesan la información
 - Se puede monitorear el estado en tiempo real
 
 #### 3. **📊 Análisis de Resultados**
+
 - Ver tabla de evaluación
 - Generar reportes visuales
 - Exportar presentaciones
@@ -220,12 +229,14 @@ El worker principal coordina todo el proceso de scraping:
 ### 🔗 LinkedIn Scraper
 
 **Funcionalidades:**
+
 - 🔐 Login automático
 - 📁 Navegación por carpetas
 - 📊 Extracción de datos de reportes
 - 🌍 Análisis por regiones (Ecuador, América Latina)
 
 **Datos extraídos:**
+
 - 👥 Número de profesionales
 - 💼 Anuncios de empleo
 - 📈 Porcentaje de demanda
@@ -233,11 +244,13 @@ El worker principal coordina todo el proceso de scraping:
 ### 🔍 SEMrush Scraper
 
 **Funcionalidades:**
+
 - 🔐 Login automático
 - 🔍 Búsqueda de palabras clave
 - 📊 Extracción de métricas SEO
 
 **Datos extraídos:**
+
 - 👁️ Visión general de búsquedas
 - 🔤 Número de palabras clave
 - 📊 Volumen de búsqueda
@@ -292,22 +305,22 @@ Análisis económico sectorial:
 
 ### 📋 Tablas Principales
 
-| Tabla | Descripción | Campos Clave |
-|-------|-------------|--------------|
+| Tabla                    | Descripción             | Campos Clave                                  |
+| ------------------------ | ------------------------ | --------------------------------------------- |
 | `proyectos_tendencias` | 📊 Proyectos principales | `id`, `carrera_estudio`, `tipo_carpeta` |
-| `linkedin` | 🔗 Datos de LinkedIn | `profesionales`, `anuncios_empleo` |
-| `semrush` | 🔍 Datos de SEMrush | `vision_general`, `palabras`, `volumen` |
-| `tendencias` | 📈 Google Trends | `palabra`, `promedio` |
-| `scraper_queue` | ⚡ Cola de procesamiento | `status`, `priority`, `proyecto_id` |
+| `linkedin`             | 🔗 Datos de LinkedIn     | `profesionales`, `anuncios_empleo`        |
+| `semrush`              | 🔍 Datos de SEMrush      | `vision_general`, `palabras`, `volumen` |
+| `tendencias`           | 📈 Google Trends         | `palabra`, `promedio`                     |
+| `scraper_queue`        | ⚡ Cola de procesamiento | `status`, `priority`, `proyecto_id`     |
 
 ### 🔄 Estados de Procesamiento
 
-| Estado | Descripción | Icono |
-|--------|-------------|-------|
-| `queued` | En cola | ⏳ |
-| `running` | Procesando | 🟡 |
-| `completed` | Completado | 🟢 |
-| `failed` | Error | 🔴 |
+| Estado        | Descripción | Icono |
+| ------------- | ------------ | ----- |
+| `queued`    | En cola      | ⏳    |
+| `running`   | Procesando   | 🟡    |
+| `completed` | Completado   | 🟢    |
+| `failed`    | Error        | 🔴    |
 
 ---
 
@@ -324,11 +337,11 @@ Muestra resultados por modalidad:
 
 ### 📋 Rangos de Evaluación
 
-| Rango | Evaluación | Color |
-|-------|------------|-------|
-| 0% - 60% | ❌ No Viable | 🔴 |
-| 61% - 70% | ⚠️ Revisión Adicional | 🟡 |
-| 71% - 100% | ✅ Viable | 🟢 |
+| Rango      | Evaluación              | Color |
+| ---------- | ------------------------ | ----- |
+| 0% - 60%   | ❌ No Viable             | 🔴    |
+| 61% - 70%  | ⚠️ Revisión Adicional | 🟡    |
+| 71% - 100% | ✅ Viable                | 🟢    |
 
 ### 📊 Reportes Visuales
 
@@ -346,6 +359,7 @@ Muestra resultados por modalidad:
 
 **Síntomas**: Timeout o bloqueo de acceso
 **Solución**:
+
 ```bash
 # 🧹 Limpiar perfil de Chrome
 python -c "from scrapers.linkedin_modules.driver_config import limpiar_perfil_completo; limpiar_perfil_completo('profile', 'Default')"
@@ -355,6 +369,7 @@ python -c "from scrapers.linkedin_modules.driver_config import limpiar_perfil_co
 
 **Síntomas**: "Connection refused" o errores SQL
 **Solución**:
+
 ```bash
 # ✅ Verificar conexión
 pg_isready -h localhost -p 5432
@@ -365,6 +380,7 @@ pg_isready -h localhost -p 5432
 
 **Síntomas**: Estado "running" por más de 10 minutos
 **Solución**:
+
 - El sistema automáticamente reintenta trabajos atascados
 - Verificar logs del worker para más detalles
 
@@ -434,11 +450,10 @@ python tests/test_linkedin.py
 
 ---
 
-## 📞 Soporte
+## 😊Soporte
 
 Para soporte técnico o preguntas:
 
-- 📧 **Email**: soporte@udla.edu.ec
 - 📚 **Documentación**: Ver sección de troubleshooting
 - 🐛 **Reportar bugs**: Crear issue en el repositorio
 
