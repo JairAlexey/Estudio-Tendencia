@@ -1,7 +1,7 @@
 import streamlit as st
 import sys
 sys.path.append("..")
-from conexion import conn
+from conexion import get_connection
 from components.loading import show_loading_spinner, loading_complete
 import time
 
@@ -17,6 +17,9 @@ def mostrar_formulario_datos_solicitud(proyecto_id):
             st.session_state["page"] = "proyectos"
             st.rerun()
     
+    # Obtener la conexión a la base de datos
+    conn = get_connection()
+
     # Obtener el nombre del proyecto
     try:
         with conn.cursor() as cur:

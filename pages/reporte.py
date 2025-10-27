@@ -31,7 +31,8 @@ def mostrar_pagina_presentacion(id):
         rows = cur.fetchall()
     
     # Botón para actualizar el estado de las presentaciones
-    st.button("🔄 Actualizar Estado", key=f"actualizar_estado_{id}", use_container_width=True, on_click=lambda: st.rerun())
+    if st.button("🔄 Actualizar Estado", key=f"actualizar_estado_{id}", use_container_width=True):
+        st.rerun()
 
     if rows:
         # Organizar por tipo de reporte
