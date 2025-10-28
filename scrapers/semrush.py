@@ -256,6 +256,18 @@ def extraer_datos_semrush(driver, carrera):
     return vision_general, palabras, volumen
 
 
+def obtener_db_semrush_por_tipo_carpeta(proyecto_id):
+    from conexion import conn
+    cur = conn.cursor()
+    cur.execute("SELECT tipo_carpeta FROM proyectos_tendencias WHERE id=%s", (proyecto_id,))
+    row = cur.fetchone()
+    cur.close()
+    # Si el tipo_carpeta es exactamente "CARRERAS PREGRADO CR" (ignora mayúsculas/minúsculas)
+    if row and row[0] and row[0].strip().lower() == "carreras pregrado cr":
+        return "cr"
+    else:
+        return "ec"
+
 def semrush_scraper():
     # -----------------------------------------------------------------------------
     # CONFIGURACION: Cargar variables de entorno y definir parametros iniciales
@@ -340,8 +352,18 @@ def semrush_scraper():
 
         # 3. PROCESAR LA PALABRA CLAVE
         try:
+            # Determinar la base de datos (ec/cr) según configuracion del proyecto
+            try:
+                db_semrush = obtener_db_semrush_por_tipo_carpeta(proyecto_id)
+            except Exception:
+                db_semrush = None
+
+            # Asegurar un valor por defecto si no se obtuvo db_semrush
+            if not db_semrush:
+                db_semrush = "ec"
+
             # 4. IR A LA PAGINA DE KEYWORD OVERVIEW
-            driver.get("https://es.semrush.com/analytics/keywordoverview/?db=ec")
+            driver.get(f"https://es.semrush.com/analytics/keywordoverview/?db={db_semrush}")
             time.sleep(2)
 
             # 5. BUSCAR LA PALABRA CLAVE

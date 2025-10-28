@@ -41,6 +41,19 @@ TIEMPO_ESPERA_BANNER = 60 # espera cuando aparece el banner de error (reducido c
 TIEMPO_ESPERA_PAGINA = 6  # espera larga para recarga de página
 
 
+def obtener_ubicaciones_por_tipo_carpeta(proyecto_id):
+    # Trae el tipo_carpeta desde la BD y retorna ubicaciones según el tipo
+    from conexion import conn
+    cur = conn.cursor()
+    cur.execute("SELECT tipo_carpeta FROM proyectos_tendencias WHERE id=%s", (proyecto_id,))
+    row = cur.fetchone()
+    cur.close()
+    # Si el tipo_carpeta es exactamente "CARRERAS PREGRADO CR" (ignora mayúsculas/minúsculas)
+    if row and row[0] and row[0].strip().lower() == "carreras pregrado cr":
+        return ["Costa Rica", "América Latina"]
+    else:
+        return ["Ecuador", "América Latina"]
+
 def linkedin_scraper(limpiar_perfil_al_inicio=False):
     # -----------------------------------------------------------------------------
     # CONFIGURACIÓN: Cargar variables de entorno y definir parámetros iniciales
@@ -59,8 +72,7 @@ def linkedin_scraper(limpiar_perfil_al_inicio=False):
         print("Uso: python linkedin.py <proyecto_id>")
         return
     proyecto_id = int(sys.argv[1])
-
-    UBICACIONES = ["Ecuador", "América Latina"]
+    UBICACIONES = obtener_ubicaciones_por_tipo_carpeta(proyecto_id)
     user_data_dir = r"C:\Users\User\Documents\TRABAJO - UDLA\Estudio-Tendencia\profile"
     profile_directory = "Default"
     
@@ -107,92 +119,115 @@ def linkedin_scraper(limpiar_perfil_al_inicio=False):
         if not reportes:
             print(f"❌ No se encontraron datos para el proyecto {proyecto_id}")
             return
-        resultados_finales = []
-        elementos_fallidos = []
+        max_reintentos = 5
+        intento = 0
+        datos_completos = False
 
-        def normalizar_resultado(datos, tipo, ubicacion):
-            def to_int(val):
-                if val is None or str(val).strip() in ["", "--"]:
-                    return None
-                return int(str(val).replace('.', '').replace(',', '').strip())
-            profesionales = to_int(datos.get("profesionales"))
-            anuncios = to_int(datos.get("anuncios_empleo") or datos.get("anuncios"))
-            # Normalizar anuncios: si es None o 0, poner 1
-            if anuncios is None or anuncios == 0:
-                anuncios = 1
-            # Evitar división por cero
-            if profesionales and profesionales > 0 and anuncios is not None:
-                porcentaje = round((anuncios / profesionales) * 100, 2)
-            else:
-                porcentaje = 0
-            return {
-                "Tipo": tipo,
-                "Region": ubicacion,
-                "Profesionales": profesionales,
-                "AnunciosEmpleo": anuncios,
-                "PorcentajeAnunciosProfesionales": porcentaje,
-                "DemandaContratacion": datos.get("demanda_contratacion"),
-            }
+        while intento < max_reintentos and not datos_completos:
+            if intento > 0:
+                print(f"\n🔄 Reintento {intento+1}/{max_reintentos}: reiniciando driver y reintentando ubicaciones faltantes...")
+                try:
+                    driver.quit()
+                except Exception:
+                    pass
+                options = crear_opciones_chrome(user_data_dir, profile_directory)
+                driver = iniciar_driver(options)
+                if not login_linkedin(driver, EMAIL, PASSWORD):
+                    print("❌ Falló el login en reintento")
+                    break
+                driver.get(url)
+                time.sleep(TIEMPO_ESPERA_MEDIO)
+
+            resultados_finales = []
+            elementos_fallidos = []
+
+            def normalizar_resultado(datos, tipo, ubicacion):
+                def to_int(val):
+                    if val is None or str(val).strip() in ["", "--"]:
+                        return None
+                    return int(str(val).replace('.', '').replace(',', '').strip())
+                profesionales = to_int(datos.get("profesionales"))
+                anuncios = to_int(datos.get("anuncios_empleo") or datos.get("anuncios"))
+                # Normalizar anuncios: si es None o 0, poner 1
+                if anuncios is None or anuncios == 0:
+                    anuncios = 1
+                # Evitar división por cero
+                if profesionales and profesionales > 0 and anuncios is not None:
+                    porcentaje = round((anuncios / profesionales) * 100, 2)
+                else:
+                    porcentaje = 0
+                return {
+                    "Tipo": tipo,
+                    "Region": ubicacion,
+                    "Profesionales": profesionales,
+                    "AnunciosEmpleo": anuncios,
+                    "PorcentajeAnunciosProfesionales": porcentaje,
+                    "DemandaContratacion": datos.get("demanda_contratacion"),
+                }
 
         
-        for elemento in reportes:
-            carpeta_buscar = elemento.get("Carpeta")
-            carrera_linkedin = elemento.get("CarreraLinkedin") if "CarreraLinkedin" in elemento else elemento.get("carrera_linkedin")
-            if not carrera_linkedin:
-                carrera_linkedin = elemento.get("ProyectoReferencia")
-            for tipo, carrera in [("Referencia", carrera_linkedin), ("Estudio", elemento.get("ProyectoEstudio"))]:
-                time.sleep(TIEMPO_ESPERA_MEDIO)
-                print(f"\n=== Buscando carpeta '{carpeta_buscar}' y proyecto '{carrera}' ({tipo}) ===")
-                encontrada = paginar_y_buscar_carpeta(driver, carpeta_buscar, buscar_carpeta_en_pagina, url, TIEMPO_ESPERA_CORTO, TIEMPO_ESPERA_MEDIO)
-                if not encontrada:
-                    print(f"❌ No se encontró la carpeta '{carpeta_buscar}'")
-                    elementos_fallidos.append({
-                        'elemento': elemento,
-                        'carpeta': carpeta_buscar,
-                        'proyecto': carrera,
-                        'razon': f"Carpeta '{carpeta_buscar}' no encontrada"
-                    })
+            ubicaciones_procesadas = set()
+            for elemento in reportes:
+                carpeta_buscar = elemento.get("Carpeta")
+                carrera_linkedin = elemento.get("CarreraLinkedin") if "CarreraLinkedin" in elemento else elemento.get("carrera_linkedin")
+                if not carrera_linkedin:
+                    carrera_linkedin = elemento.get("ProyectoReferencia")
+                for tipo, carrera in [("Referencia", carrera_linkedin), ("Estudio", elemento.get("ProyectoEstudio"))]:
+                    time.sleep(TIEMPO_ESPERA_MEDIO)
+                    print(f"\n=== Buscando carpeta '{carpeta_buscar}' y proyecto '{carrera}' ({tipo}) ===")
+                    encontrada = paginar_y_buscar_carpeta(driver, carpeta_buscar, buscar_carpeta_en_pagina, url, TIEMPO_ESPERA_CORTO, TIEMPO_ESPERA_MEDIO)
+                    if not encontrada:
+                        print(f"❌ No se encontró la carpeta '{carpeta_buscar}'")
+                        elementos_fallidos.append({
+                            'elemento': elemento,
+                            'carpeta': carpeta_buscar,
+                            'proyecto': carrera,
+                            'razon': f"Carpeta '{carpeta_buscar}' no encontrada"
+                        })
+                        driver.get(url)
+                        time.sleep(TIEMPO_ESPERA_CORTO)
+                        continue
+
+                    # Usar paginar_y_buscar_proyecto para buscar y extraer datos
+                    resultados_temp = []
+                    proyecto_encontrado = paginar_y_buscar_proyecto(
+                        driver, carrera, UBICACIONES, carpeta_buscar, resultados_temp,
+                        buscar_proyecto_en_pagina,
+                        extraer_datos_reporte,
+                        TIEMPO_ESPERA_CORTO, 
+                        TIEMPO_ESPERA_PAGINA,
+                        proyecto_id,
+                        tipo  # <-- Añadir aquí el tipo ("Referencia" o "Estudio")
+                    )
+                    if not proyecto_encontrado:
+                        print(f"❌ No se encontró el proyecto '{carrera}' dentro de la carpeta '{carpeta_buscar}'.")
+                        elementos_fallidos.append({
+                            'elemento': elemento,
+                            'carpeta': carpeta_buscar,
+                            'proyecto': carrera,
+                            'razon': f"Proyecto '{carrera}' no encontrado en carpeta '{carpeta_buscar}'"
+                        })
+                    else:
+                        # Normalizar los resultados extraídos antes de guardar
+                        for ubicacion, datos in zip(UBICACIONES, resultados_temp):
+                            if datos:
+                                resultado = normalizar_resultado(datos, tipo, ubicacion)
+                                resultados_finales.append(resultado)
+                                ubicaciones_procesadas.add((tipo, ubicacion))
+                            else:
+                                print(f"❌ No se obtuvieron datos para {carrera} - {ubicacion}")
                     driver.get(url)
-                    time.sleep(TIEMPO_ESPERA_CORTO)
-                    continue
+                    time.sleep(TIEMPO_ESPERA_PAGINA)
 
-                # Usar paginar_y_buscar_proyecto para buscar y extraer datos
-                resultados_temp = []
-                proyecto_encontrado = paginar_y_buscar_proyecto(
-                    driver, carrera, UBICACIONES, carpeta_buscar, resultados_temp,
-                    buscar_proyecto_en_pagina,
-                    extraer_datos_reporte,
-                    TIEMPO_ESPERA_CORTO, 
-                    TIEMPO_ESPERA_PAGINA,
-                    proyecto_id,
-                    tipo  # <-- Añadir aquí el tipo ("Referencia" o "Estudio")
-                )
-                if not proyecto_encontrado:
-                    print(f"❌ No se encontró el proyecto '{carrera}' dentro de la carpeta '{carpeta_buscar}'.")
-                    elementos_fallidos.append({
-                        'elemento': elemento,
-                        'carpeta': carpeta_buscar,
-                        'proyecto': carrera,
-                        'razon': f"Proyecto '{carrera}' no encontrado en carpeta '{carpeta_buscar}'"
-                    })
-                else:
-                    # Normalizar los resultados extraídos antes de guardar
-                    for ubicacion, datos in zip(UBICACIONES, resultados_temp):
-                        if datos:
-                            resultado = normalizar_resultado(datos, tipo, ubicacion)
-                            resultados_finales.append(resultado)
-                        else:
-                            print(f"❌ No se obtuvieron datos para {carrera} - {ubicacion}")
-                driver.get(url)
-                time.sleep(TIEMPO_ESPERA_PAGINA)
+            # Verifica si todas las ubicaciones requeridas están procesadas
+            datos_completos = True
+            for tipo in ["Referencia", "Estudio"]:
+                for ubicacion in UBICACIONES:
+                    if (tipo, ubicacion) not in ubicaciones_procesadas:
+                        datos_completos = False
+                        print(f"⚠️ Faltan datos para {tipo} - {ubicacion}")
 
-        # Reintento de elementos fallidos
-        reintentar_elementos_fallidos(
-            driver, elementos_fallidos, url, UBICACIONES,
-            buscar_carpeta_en_pagina, buscar_proyecto_en_pagina, extraer_datos_reporte,
-            TIEMPO_ESPERA_CORTO, TIEMPO_ESPERA_MEDIO, TIEMPO_ESPERA_PAGINA,
-            proyecto_id, tipo
-        )
+            intento += 1
 
         # Guardar resultados en la base de datos
         print(f"[DEBUG] resultados_finales: {resultados_finales}")

@@ -5,9 +5,19 @@ from scrapers.linkedin_modules.linkedin_database import extraer_datos_tabla
 ECU = 0.15
 LATAM = 0.10
 
+def obtener_ubicaciones_por_tipo_carpeta(proyecto_id):
+    from conexion import conn
+    cur = conn.cursor()
+    cur.execute("SELECT tipo_carpeta FROM proyectos_tendencias WHERE id=%s", (proyecto_id,))
+    row = cur.fetchone()
+    cur.close()
+    if row and row[0] and "pregrado cr" in row[0].lower():
+        return ["Costa Rica", "América Latina"]
+    else:
+        return ["Ecuador", "América Latina"]
+
 def calc_linkedin(proyecto_id):
     print(f"[LinkedIn] Calculando desde base de datos (proyecto_id={proyecto_id})")
-    
     try:
         # Obtener datos desde la base de datos
         data = extraer_datos_tabla("linkedin", proyecto_id)
@@ -19,8 +29,7 @@ def calc_linkedin(proyecto_id):
         print(f"[DEBUG] DataFrame LinkedIn shape: {df.shape}")
         print(f"[DEBUG] Columnas disponibles: {df.columns.tolist()}")
 
-        # Verificar que tenemos los datos necesarios
-        required_regions = ["Ecuador", "América Latina"]
+        required_regions = obtener_ubicaciones_por_tipo_carpeta(proyecto_id)
         required_types = ["Referencia", "Estudio"]
         
         for region in required_regions:
@@ -30,41 +39,38 @@ def calc_linkedin(proyecto_id):
                     print(f"ERROR: Falta datos para {region} - {tipo}")
                     return 0
 
-        # ECUADOR
-        filtroEC = df["region"] == "Ecuador"
-        data_ecuador = df[filtroEC]
+        # ECUADOR o COSTA RICA
+        region1 = required_regions[0]
+        filtroR1 = df["region"] == region1
+        data_r1 = df[filtroR1]
+        data_r1Ref = data_r1.loc[data_r1["tipo"] == "Referencia"].reset_index(drop=True)
+        data_r1Con = data_r1.loc[data_r1["tipo"] == "Estudio"].reset_index(drop=True)
 
+        profesionalesRefR1 = float(data_r1Ref["profesionales"][0])
+        empleoRefR1 = float(data_r1Ref["anunciosempleo"][0])
+        if empleoRefR1 is None or empleoRefR1 == 0:
+            empleoRefR1 = 1
+        anuncios_profesionalesRefR1 = float(data_r1Ref["porcentajeanunciosprofesionales"][0])
+        if anuncios_profesionalesRefR1 is None or anuncios_profesionalesRefR1 == 0:
+            anuncios_profesionalesRefR1 = 1
 
-        data_ecuadorRef = data_ecuador.loc[data_ecuador["tipo"] == "Referencia"].reset_index(drop=True)
-        data_ecuadorCon = data_ecuador.loc[data_ecuador["tipo"] == "Estudio"].reset_index(drop=True)
+        profesionalesConR1 = float(data_r1Con["profesionales"][0])
+        empleoConR1 = float(data_r1Con["anunciosempleo"][0])
+        if empleoConR1 is None or empleoConR1 == 0:
+            empleoConR1 = 1
+        anuncios_profesionalesConR1 = float(data_r1Con["porcentajeanunciosprofesionales"][0])
+        if anuncios_profesionalesConR1 is None or anuncios_profesionalesConR1 == 0:
+            anuncios_profesionalesConR1 = 1
 
-        # Convertir todos los valores a float
-        profesionalesRefEc = float(data_ecuadorRef["profesionales"][0])
-        empleoRefEc = float(data_ecuadorRef["anunciosempleo"][0])
-        if empleoRefEc is None or empleoRefEc == 0:
-            empleoRefEc = 1
-        anuncios_profesionalesRefEc = float(data_ecuadorRef["porcentajeanunciosprofesionales"][0])
-        if anuncios_profesionalesRefEc is None or anuncios_profesionalesRefEc == 0:
-            anuncios_profesionalesRefEc = 1
+        peso_r1 = ECU if region1 == "Ecuador" else LATAM if region1 == "América Latina" else 0.15 if region1 == "Costa Rica" else 0.15
+        resProfesionalesR1 = ((profesionalesConR1 * peso_r1) / profesionalesRefR1) * 100
+        resEmpleoR1 = ((empleoConR1 * peso_r1) / empleoRefR1) * 100
+        resAnunEmpR1 = ((anuncios_profesionalesConR1 * peso_r1) / anuncios_profesionalesRefR1) * 100
+        resPromedioR1 = round((resProfesionalesR1 + resEmpleoR1 + resAnunEmpR1) / 3, 2)
 
-        profesionalesConEc = float(data_ecuadorCon["profesionales"][0])
-        empleoConEc = float(data_ecuadorCon["anunciosempleo"][0])
-        if empleoConEc is None or empleoConEc == 0:
-            empleoConEc = 1
-        anuncios_profesionalesConEc = float(data_ecuadorCon["porcentajeanunciosprofesionales"][0])
-        if anuncios_profesionalesConEc is None or anuncios_profesionalesConEc == 0:
-            anuncios_profesionalesConEc = 1
-
-        resProfesionalesEc = ((profesionalesConEc * ECU) / profesionalesRefEc) * 100
-        resEmpleoEc = ((empleoConEc * ECU) / empleoRefEc) * 100
-        resAnunEmpEc = ((anuncios_profesionalesConEc * ECU) / anuncios_profesionalesRefEc) * 100
-
-        resPromedioEc = round((resProfesionalesEc + resEmpleoEc + resAnunEmpEc) / 3, 2)
-
-        # LATAM
+        # AMÉRICA LATINA
         filtroLATAM = df["region"] == "América Latina"
         data_latam = df[filtroLATAM]
-
         data_latamRef = data_latam.loc[data_latam["tipo"] == "Referencia"].reset_index(drop=True)
         data_latamCon = data_latam.loc[data_latam["tipo"] == "Estudio"].reset_index(drop=True)
 
@@ -87,19 +93,17 @@ def calc_linkedin(proyecto_id):
         resProfesionalesLat = ((profesionalesConLat * LATAM) / profesionalesRefLat) * 100
         resEmpleoLat = ((empleoConLat * LATAM) / empleoRefLat) * 100
         resAnunEmpLat = ((anuncios_profesionalesConLat * LATAM) / anuncios_profesionalesRefLat) * 100
-
         resPromedioLat = round((resProfesionalesLat + resEmpleoLat + resAnunEmpLat) / 3, 2)
 
-        if resPromedioEc >= 15:
-            resPromedioEc = 15
-
+        # Limitar los valores máximos
+        if resPromedioR1 >= 15:
+            resPromedioR1 = 15
         if resPromedioLat >= 10:
             resPromedioLat = 10
 
-        promGeneral = resPromedioEc + resPromedioLat
-
+        promGeneral = resPromedioR1 + resPromedioLat
         return promGeneral
-    
+
     except Exception as e:
         print(f"ERROR en calc_linkedin: {e}")
         return 0
