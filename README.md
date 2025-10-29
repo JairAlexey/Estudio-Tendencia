@@ -21,7 +21,7 @@
 - [📦 Instalación](#-instalación)
 - [⚙️ Configuración](#️-configuración)
 - [🖥️ Uso del Sistema](#️-uso-del-sistema)
-- [🤖 Sistema de Scrapers](#-sistema-de-scrapers)
+- [🤖 Sistema de Workers y Scrapers](#-sistema-de-workers-y-scrapers)
 - [📊 Módulos de Análisis](#-módulos-de-análisis)
 - [🗄️ Base de Datos](#️-base-de-datos)
 - [📈 Generación de Reportes](#-generación-de-reportes)
@@ -51,12 +51,17 @@ graph TB
     B --> C[🗄️ Base de Datos PostgreSQL]
     C --> D[⚡ Cola de Scrapers]
     D --> E[🤖 Worker Scraper]
-    E --> F[🔗 LinkedIn Scraper]
-    E --> G[🔍 SEMrush Scraper]
-    F --> H[📊 Análisis de Datos]
-    G --> H
-    H --> I[📈 Generación de Reportes]
-    I --> A
+    D --> F[🗂️ Worker Carpetas]
+    D --> G[📑 Worker Presentación]
+    E --> H[🔗 LinkedIn Scraper]
+    E --> I[🔍 SEMrush Scraper]
+    F --> J[📁 Scraper Carpetas LinkedIn]
+    H --> K[📊 Análisis de Datos]
+    I --> K
+    J --> K
+    K --> L[📈 Generación de Reportes]
+    L --> G
+    L --> A
 ```
 
 ### 🧩 Componentes Principales
@@ -66,6 +71,7 @@ graph TB
 | **Frontend**      | Interfaz web interactiva   | 🚀 Streamlit                          |
 | **Backend**       | Lógica de negocio y API   | 🐍 Python                             |
 | **Base de Datos** | Almacenamiento persistente | 🐘 PostgreSQL                         |
+| **Workers**       | Automatización y procesamiento | 🤖 Python (3 workers)                 |
 | **Scrapers**      | Automatización web        | 🌐 Selenium + Undetected ChromeDriver |
 | **Análisis**     | Procesamiento de datos     | 📊 Pandas + NumPy                     |
 
@@ -213,18 +219,15 @@ La aplicación estará disponible en: `http://localhost:8501`
 
 ---
 
-## 🤖 Sistema de Scrapers
+## 🤖 Sistema de Workers y Scrapers
 
-### 🔄 Worker Principal (`worker_scraper.py`)
+### 🔄 Workers Principales
 
-El worker principal coordina todo el proceso de scraping:
+El sistema ahora cuenta con **tres workers** especializados:
 
-```python
-# 🧹 Limpieza de perfil por proyecto
-# 🔗 Ejecución de LinkedIn scraper
-# 🔍 Ejecución de SEMrush scraper
-# 📊 Manejo de errores y reintentos
-```
+- **worker_scraper.py**: Coordina el scraping de LinkedIn y SEMrush para cada proyecto.
+- **worker_presentacion.py**: Genera presentaciones PPTX y reportes visuales a partir de los datos procesados.
+- **worker_carpetas.py**: Procesa y actualiza carpetas de LinkedIn, permitiendo análisis por tipo de carpeta.
 
 ### 🔗 LinkedIn Scraper
 
@@ -254,6 +257,131 @@ El worker principal coordina todo el proceso de scraping:
 - 👁️ Visión general de búsquedas
 - 🔤 Número de palabras clave
 - 📊 Volumen de búsqueda
+
+### 🗂️ Scraper Carpetas LinkedIn
+
+Procesa y actualiza carpetas específicas de LinkedIn para análisis comparativo.
+
+---
+
+## 📦 Instalación
+
+### 📋 Requisitos del Sistema
+
+- **🐍 Python**: 3.8 o superior
+- **🐘 PostgreSQL**: 13 o superior
+- **🌐 Google Chrome**: Última versión
+- **💾 RAM**: Mínimo 8GB recomendado
+- **💿 Espacio**: 5GB libres
+
+### 🔧 Instalación Paso a Paso
+
+1. **📥 Clonar el repositorio**
+
+```bash
+git clone https://github.com/tu-usuario/estudio-tendencia.git
+cd estudio-tendencia
+```
+
+2. **🐍 Crear entorno virtual**
+
+```bash
+python -m venv venv
+venv\Scripts\activate  # Windows
+source venv/bin/activate  # Linux/Mac
+```
+
+3. **📦 Instalar dependencias**
+
+```bash
+pip install -r requirements.txt
+```
+
+4. **🗄️ Configurar base de datos**
+
+```bash
+# Crear base de datos en PostgreSQL
+createdb estudio_tendencias
+```
+
+5. **📄 Ejecutar scripts SQL**
+
+```bash
+psql -d estudio_tendencias -f database/schema.sql
+```
+
+---
+
+## ⚙️ Configuración
+
+### 🔐 Variables de Entorno
+
+Crear archivo `.env` en la raíz del proyecto:
+
+```env
+# 🗄️ Base de Datos
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=estudio_tendencias
+DB_USER=tu_usuario
+DB_PASSWORD=tu_password
+
+# 🔗 LinkedIn
+LINKEDIN_USER=tu_email@example.com
+LINKEDIN_PASS=tu_password
+
+# 🔍 SEMrush
+SEMRUSH_USER=tu_email@example.com
+SEMRUSH_PASS=tu_password
+
+# ⚡ Worker Configuration
+WORKER_POLL_SECONDS=5
+```
+
+### 🛠️ Configuración de Chrome
+
+El sistema utiliza un perfil de Chrome personalizado ubicado en:
+
+```
+C:\Users\User\Documents\TRABAJO - UDLA\Estudio-Tendencia\profile
+```
+
+---
+
+## 🖥️ Uso del Sistema
+
+### 🚀 Iniciar la Aplicación
+
+```bash
+streamlit run app.py
+```
+
+La aplicación estará disponible en: `http://localhost:8501`
+
+### 📝 Flujo de Trabajo
+
+#### 1. **📋 Crear Proyecto**
+
+- Acceder a la sección "Formulario"
+- Completar datos del proyecto:
+  - 📁 Tipo de carpeta (Pregrado/Posgrado)
+  - 🎯 Carrera de referencia
+  - 📚 Carrera de estudio
+  - 🔍 Palabra clave SEMrush
+  - 📊 Código CIIU
+  - 📈 Tendencias de Google
+
+#### 2. **⚡ Procesamiento Automático**
+
+- El sistema encola automáticamente el proyecto
+- Los scrapers procesan la información
+- Se puede monitorear el estado en tiempo real
+
+#### 3. **📊 Análisis de Resultados**
+
+- Ver tabla de evaluación
+- Generar reportes visuales
+- Exportar presentaciones
 
 ---
 
@@ -404,7 +532,9 @@ python scrapers/semrush.py [proyecto_id]
 ```
 📁 Estudio-Tendencia/
 ├── 📄 app.py                     # Aplicación principal Streamlit
-├── 🤖 worker_scraper.py          # Worker de scrapers
+├── 🤖 worker_scraper.py          # Worker de scrapers (LinkedIn y SEMrush)
+├── 📑 worker_presentacion.py     # Worker de generación de presentaciones
+├── 🗂️ worker_carpetas.py         # Worker de carpetas LinkedIn
 ├── 📁 scrapers/                  # Módulos de scraping
 │   ├── 🔗 linkedin.py
 │   ├── 🔍 semrush.py
@@ -416,6 +546,7 @@ python scrapers/semrush.py [proyecto_id]
 │   └── 🏢 competencia.py
 ├── 📁 forms/                     # Formularios web
 ├── 📁 pages/                     # Páginas de la aplicación
+├── 📁 database/                  # Scripts de carga y schema
 └── 📁 profile/                   # Perfil de Chrome
 ```
 
