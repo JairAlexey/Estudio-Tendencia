@@ -23,6 +23,7 @@ def crear_tablas():
             carrera_linkedin VARCHAR(200),
             id_ticket VARCHAR(100),
             mensaje_error TEXT,
+            inteligencia_artificial_entrada FLOAT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
         ''',

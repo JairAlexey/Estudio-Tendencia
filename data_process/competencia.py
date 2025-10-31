@@ -1,6 +1,19 @@
 import pandas as pd
-from data_process.busquedaWeb import calc_busquedaWeb
+# from data_process.busquedaWeb import calc_busquedaWeb  # COMENTADO: Ahora se guarda manualmente desde el form
 from scrapers.linkedin_modules.linkedin_database import extraer_datos_tabla
+from conexion import conn
+
+# Función para obtener valor_busqueda desde la base de datos
+def obtener_valor_busqueda_desde_bd(proyecto_id):
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT inteligencia_artificial_entrada FROM proyectos_tendencias WHERE id=%s", (proyecto_id,))
+        row = cursor.fetchone()
+        cursor.close()
+        return float(row[0]) if row and row[0] is not None else 0.0
+    except Exception as e:
+        print(f"ERROR obteniendo inteligencia_artificial_entrada desde BD: {e}")
+        return 0.0
 
 # Calcular resultado para competencia virtual y presencial
 def obtener_resultado(busqueda, competencia):
@@ -18,8 +31,8 @@ def obtener_resultado(busqueda, competencia):
 
 def calc_competencia_virtual(proyecto_id):
     try:
-        # Cálculo búsqueda web para este proyecto
-        busquedaWeb = calc_busquedaWeb(proyecto_id)
+        # Obtener búsqueda web desde la base de datos (ya no se calcula)
+        busquedaWeb = obtener_valor_busqueda_desde_bd(proyecto_id)
         
         # Extrayendo ofertas desde la base de datos
         dataOfertas = extraer_datos_tabla("modalidad_oferta", proyecto_id)
@@ -45,8 +58,8 @@ def calc_competencia_virtual(proyecto_id):
 
 def calc_competencia_presencial(proyecto_id):
     try:
-        # Cálculo búsqueda web para este proyecto
-        busquedaWeb = calc_busquedaWeb(proyecto_id)
+        # Obtener búsqueda web desde la base de datos (ya no se calcula)
+        busquedaWeb = obtener_valor_busqueda_desde_bd(proyecto_id)
         
         # Extrayendo ofertas desde la base de datos
         dataOfertas = extraer_datos_tabla("modalidad_oferta", proyecto_id)

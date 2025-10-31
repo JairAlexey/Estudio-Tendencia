@@ -2,6 +2,8 @@ import os
 import sys
 import time
 import traceback
+from conexion import conn
+from scrapers.carpetas_linkedin import scraper_carpetas
 
 # Configurar variables de entorno para evitar conflictos de rutas en Windows
 os.environ["STREAMLIT_BROWSER_GATHER_USAGE_STATS"] = "false"
@@ -20,9 +22,6 @@ def reset_profile_dir():
 
 # Llamar a la función al inicio del script
 # reset_profile_dir()
-
-from conexion import conn
-from scrapers.carpetas_linkedin import scraper_carpetas
 
 SLEEP_SECONDS = int(os.getenv("WORKER_POLL_SECONDS", "5"))
 

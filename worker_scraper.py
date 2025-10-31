@@ -126,10 +126,10 @@ def process_job(job):
         if rc1 != 0:
             raise RuntimeError(f"linkedin.py fallo rc={rc1}: {err1[:500]}")
         
-        print(f"🔍 Paso 3: Ejecutando SEMrush scraper...")
-        rc2, out2, err2 = run_subprocess(os.path.join("scrapers", "semrush.py"), proyecto_id)
-        if rc2 != 0:
-            raise RuntimeError(f"semrush.py fallo rc={rc2}: {err2[:500]}")
+        # print(f"🔍 Paso 3: Ejecutando SEMrush scraper...")
+        # rc2, out2, err2 = run_subprocess(os.path.join("scrapers", "semrush.py"), proyecto_id)
+        # if rc2 != 0:
+        #     raise RuntimeError(f"semrush.py fallo rc={rc2}: {err2[:500]}")
         
         mark_job_completed(job_id)
         print(f"\n✅ PROYECTO {proyecto_id} COMPLETADO EXITOSAMENTE")

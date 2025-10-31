@@ -43,7 +43,9 @@ def calcular_distribucion(parametro):
 def calcular_valor_general(parametro, proyecto_id):
     try:
         if parametro == "Búsqueda Web":
-            return calc_busquedaWeb(proyecto_id)
+            # Ya no calculamos búsqueda web, se toma desde la base de datos
+            # return calc_busquedaWeb(proyecto_id)  # COMENTADO: Ahora se guarda manualmente desde el form
+            return 0  # Retornar 0 por defecto, el valor real se obtiene desde BD
         elif parametro == "LinkedIN":
             return calc_linkedin(proyecto_id)
         elif parametro == "Mercado":
@@ -73,8 +75,18 @@ def calcular_virtual_competencia(proyecto_id):
 def procesar_proyecto(proyecto_id, nombre_archivo):
     presencialidad_resultados = []
     virtualidad_resultados = []
-    # Calcular todos los valores requeridos una sola vez
-    valor_busqueda = float(calcular_valor_general("Búsqueda Web", proyecto_id))
+    # Obtener inteligencia_artificial_entrada desde la base de datos
+    try:
+        cur = conn.cursor()
+        cur.execute("SELECT inteligencia_artificial_entrada FROM proyectos_tendencias WHERE id=%s", (proyecto_id,))
+        row = cur.fetchone()
+        valor_busqueda = float(row[0]) if row and row[0] is not None else 0.0
+        cur.close()
+    except Exception as e:
+        st.warning(f"Error obteniendo inteligencia_artificial_entrada desde BD: {e}")
+        valor_busqueda = 0.0
+    
+    # Calcular los demás valores requeridos una sola vez
     valor_linkedin = float(calcular_valor_general("LinkedIN", proyecto_id))
     valor_mercado = float(calcular_valor_general("Mercado", proyecto_id))
     valor_competencia_presencial = float(calcular_presencial_competencia(proyecto_id))
@@ -98,17 +110,18 @@ def procesar_proyecto(proyecto_id, nombre_archivo):
             presencialidad_resultados.append(valor_mercado)
             virtualidad_resultados.append(valor_mercado)
     # Guardar/actualizar en grafico_radar_datos
+    # NOTA: valor_busqueda ya no se actualiza aquí, se guarda manualmente desde el formulario
     try:
         cur = conn.cursor()
         cur.execute("SELECT id FROM grafico_radar_datos WHERE proyecto_id=%s", (proyecto_id,))
         existe = cur.fetchone()
         if existe:
+            # Solo actualizar los valores calculados, no valor_busqueda
             cur.execute("""
                 UPDATE grafico_radar_datos SET
-                    valor_busqueda=%s, valor_competencia_presencialidad=%s, valor_competencia_virtualidad=%s, valor_linkedin=%s, valor_mercado=%s, updated_at=CURRENT_TIMESTAMP
+                    valor_competencia_presencialidad=%s, valor_competencia_virtualidad=%s, valor_linkedin=%s, valor_mercado=%s, updated_at=CURRENT_TIMESTAMP
                 WHERE proyecto_id=%s
             """, (
-                float(valor_busqueda),
                 float(valor_competencia_presencial),
                 float(valor_competencia_virtual),
                 float(valor_linkedin),
@@ -116,10 +129,17 @@ def procesar_proyecto(proyecto_id, nombre_archivo):
                 proyecto_id
             ))
         else:
+            # Si no existe el registro, insertarlo con manejo de duplicados
             cur.execute("""
                 INSERT INTO grafico_radar_datos (
                     proyecto_id, valor_busqueda, valor_competencia_presencialidad, valor_competencia_virtualidad, valor_linkedin, valor_mercado
                 ) VALUES (%s, %s, %s, %s, %s, %s)
+                ON CONFLICT (proyecto_id) DO UPDATE SET
+                    valor_competencia_presencialidad=EXCLUDED.valor_competencia_presencialidad,
+                    valor_competencia_virtualidad=EXCLUDED.valor_competencia_virtualidad,
+                    valor_linkedin=EXCLUDED.valor_linkedin,
+                    valor_mercado=EXCLUDED.valor_mercado,
+                    updated_at=CURRENT_TIMESTAMP;
             """, (
                 proyecto_id,
                 float(valor_busqueda),

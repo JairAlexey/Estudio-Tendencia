@@ -200,6 +200,16 @@ def mostrar_formulario():
         st.subheader("Palabra a consultar en SEMRUSH")
         palabra_semrush = st.text_input("Palabra clave")
 
+        # --- Valor Búsqueda Web ---
+        valor_busqueda_web = st.number_input(
+            "Inteligencia Artificial Entrenada", 
+            min_value=0, 
+            max_value=35, 
+            value=0, 
+            step=1,
+            help="Ingresa el valor de la inteligencia artificial entrenada"
+        )
+
         # --- Trends ---
         st.subheader("Trends (palabras y promedios)")
         if "df_trends" not in st.session_state:
@@ -280,8 +290,8 @@ def mostrar_formulario():
                     with conn.cursor() as cur:
                         cur.execute('''
                             INSERT INTO proyectos_tendencias (
-                                tipo_carpeta, carrera_referencia, carrera_estudio, palabra_semrush, codigo_ciiu, carrera_linkedin, id_ticket
-                            ) VALUES (%s, %s, %s, %s, %s, %s, %s)
+                                tipo_carpeta, carrera_referencia, carrera_estudio, palabra_semrush, codigo_ciiu, carrera_linkedin, id_ticket, inteligencia_artificial_entrada
+                            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
                             RETURNING id
                         ''', (
                             tipo_carpeta,
@@ -290,7 +300,8 @@ def mostrar_formulario():
                             palabra_semrush_norm,
                             codigo_ciiu,
                             carrera_linkedin_input_norm,
-                            id_ticket.strip()
+                            id_ticket.strip(),
+                            float(valor_busqueda_web)
                         ))
                         proyecto_id_row = cur.fetchone()
                         if proyecto_id_row is None or proyecto_id_row[0] is None:
@@ -318,6 +329,8 @@ def mostrar_formulario():
                             INSERT INTO seguimiento_proyecto (proyecto_id)
                             VALUES (%s)
                         ''', (proyecto_id,))
+
+
 
                         conn.commit()
 
@@ -366,13 +379,13 @@ def mostrar_formulario_edicion(id):
     try:
         conn_proyecto = get_connection()
         with conn_proyecto.cursor() as cur:
-            cur.execute("SELECT tipo_carpeta, carrera_referencia, carrera_estudio, palabra_semrush, codigo_ciiu, carrera_linkedin, id_ticket FROM proyectos_tendencias WHERE id=%s", (id,))
+            cur.execute("SELECT tipo_carpeta, carrera_referencia, carrera_estudio, palabra_semrush, codigo_ciiu, carrera_linkedin, id_ticket, inteligencia_artificial_entrada FROM proyectos_tendencias WHERE id=%s", (id,))
             proyecto = cur.fetchone()
             if not proyecto:
                 st.error("Proyecto no encontrado.")
                 conn_proyecto.close()
                 return
-            tipo_carpeta_original, carrera_referencia_original, carrera_estudio_original, palabra_semrush_original, codigo_ciiu_original, carrera_linkedin_original, id_ticket_actual = proyecto
+            tipo_carpeta_original, carrera_referencia_original, carrera_estudio_original, palabra_semrush_original, codigo_ciiu_original, carrera_linkedin_original, id_ticket_actual, inteligencia_artificial_entrada_actual = proyecto
         conn_proyecto.close()
     except Exception as e:
         st.error(f"Error obteniendo datos del proyecto: {e}")
@@ -389,6 +402,9 @@ def mostrar_formulario_edicion(id):
     except Exception as e:
         st.error(f"Error obteniendo prioridad: {e}")
         prioridad_actual = PRIORITY_DEFAULT
+
+    # Obtener valor_busqueda_web actual
+    valor_busqueda_web_actual = inteligencia_artificial_entrada_actual if inteligencia_artificial_entrada_actual is not None else 0
 
     # ID Ticket
     id_ticket = st.text_input("ID del Ticket", value=id_ticket_actual, key=f"id_ticket_{id}")
@@ -451,7 +467,12 @@ def mostrar_formulario_edicion(id):
     elif "posgrado" in tipo_carpeta_lower or "maestria" in tipo_carpeta_lower:
         carreras_filtradas = obtener_carreras_por_nivel("Posgrado")
     if carreras_filtradas:
-        nombre_proyecto_1 = st.selectbox("Nombre de la Carrera Referencia", carreras_filtradas, index=carreras_filtradas.index(carrera_referencia_original) if carrera_referencia_original in carreras_filtradas else 0)
+        if carrera_referencia_original in carreras_filtradas:
+            carrera_ref_index = carreras_filtradas.index(carrera_referencia_original)
+        else:
+            carreras_filtradas = [carrera_referencia_original] + [c for c in carreras_filtradas if c != carrera_referencia_original]
+            carrera_ref_index = 0
+        nombre_proyecto_1 = st.selectbox("Nombre de la Carrera Referencia", carreras_filtradas, index=carrera_ref_index)
     else:
         nombre_proyecto_1 = st.selectbox("Nombre de la Carrera Referencia", [carrera_referencia_original])
     
@@ -481,6 +502,17 @@ def mostrar_formulario_edicion(id):
     # --- SEMRUSH ---
     st.subheader("Palabra a consultar en SEMRUSH")
     palabra_semrush = st.text_input("Palabra clave", value=palabra_semrush_original)
+
+    # --- Valor Búsqueda Web ---
+    valor_busqueda_web = st.number_input(
+        "Valor de Búsqueda Web", 
+        min_value=0, 
+        max_value=35, 
+        value=int(valor_busqueda_web_actual), 
+        step=1,
+        help="Ingrese el valor de búsqueda web (0-35)",
+        key=f"valor_busqueda_web_{id}"
+    )
 
     # --- Trends ---
     st.subheader("Trends (palabras y promedios)")
@@ -557,9 +589,9 @@ def mostrar_formulario_edicion(id):
                 with conn_guardar.cursor() as cur:
                     cur.execute('''
                         UPDATE proyectos_tendencias SET
-                            tipo_carpeta=%s, carrera_referencia=%s, carrera_estudio=%s, palabra_semrush=%s, codigo_ciiu=%s, carrera_linkedin=%s, id_ticket=%s
+                            tipo_carpeta=%s, carrera_referencia=%s, carrera_estudio=%s, palabra_semrush=%s, codigo_ciiu=%s, carrera_linkedin=%s, id_ticket=%s, inteligencia_artificial_entrada=%s
                         WHERE id=%s
-                    ''', (tipo_carpeta, nombre_proyecto_1_norm, nombre_proyecto_2_norm, palabra_semrush_norm, codigo_ciiu, carrera_linkedin_input_norm, id_ticket.strip(), id))
+                    ''', (tipo_carpeta, nombre_proyecto_1_norm, nombre_proyecto_2_norm, palabra_semrush_norm, codigo_ciiu, carrera_linkedin_input_norm, id_ticket.strip(), int(valor_busqueda_web), id))
 
                 # Eliminar tendencias
                 with conn_guardar.cursor() as cur:
@@ -586,6 +618,14 @@ def mostrar_formulario_edicion(id):
                             INSERT INTO modalidad_oferta (proyecto_id, presencial, virtual)
                             VALUES (%s, %s, %s)
                         ''', (id, presencial, virtual))
+
+                # Actualizar valor_busqueda_web en grafico_radar_datos
+                with conn_guardar.cursor() as cur:
+                    cur.execute('''
+                        UPDATE grafico_radar_datos 
+                        SET valor_busqueda=%s, updated_at=CURRENT_TIMESTAMP
+                        WHERE proyecto_id=%s
+                    ''', (float(valor_busqueda_web), id))
 
                 # Commit all changes
                 conn_guardar.commit()
