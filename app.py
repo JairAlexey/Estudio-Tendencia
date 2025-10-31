@@ -335,12 +335,12 @@ def pagina_inicio():
             if not disabled and st.session_state.get(f"eliminar_{id}"):
                 st.session_state["confirmar_eliminar_id"] = id
                 st.session_state["confirmar_eliminar_nombre"] = nombre
-                st.session_state["confirmar_eliminar_tipo"] = tipo
+                st.session_state["confirmar_eliminar_tipo"] = tipo_carpeta
                 st.session_state["mostrar_confirmacion_eliminar"] = True
 
         # Mostrar advertencia de confirmación si corresponde
         if st.session_state.get("mostrar_confirmacion_eliminar") and st.session_state.get("confirmar_eliminar_id") == id:
-            st.warning(f"¿Está seguro que desea eliminar el proyecto '{nombre}' ({tipo})? Esta acción no se puede deshacer.")
+            st.warning(f"¿Está seguro que desea eliminar el proyecto '{nombre}' ({tipo_carpeta})? Esta acción no se puede deshacer.")
             confirmar = st.button("Sí, eliminar definitivamente", key=f"confirmar_eliminar_{id}")
             cancelar = st.button("Cancelar", key=f"cancelar_eliminar_{id}")
             if confirmar:
