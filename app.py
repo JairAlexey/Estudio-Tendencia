@@ -355,6 +355,9 @@ def pagina_inicio():
                     cur3.execute("DELETE FROM grafico_radar_datos WHERE proyecto_id=%s", (id,))
                     cur3.execute("DELETE FROM presentation_queue WHERE proyecto_id=%s", (id,))
                     cur3.execute("DELETE FROM datos_solicitud WHERE proyecto_id=%s", (id,))
+                    cur3.execute("DELETE FROM seguimiento_proyecto WHERE proyecto_id=%s", (id,))
+                    cur3.execute("DELETE FROM linkedin_aptitudes WHERE proyecto_id=%s", (id,))
+                    cur3.execute("DELETE FROM linkedin_ubicaciones WHERE proyecto_id=%s", (id,))
                     # Eliminar el proyecto principal
                     cur3.execute("DELETE FROM proyectos_tendencias WHERE id=%s", (id,))
                     conn3.commit()
