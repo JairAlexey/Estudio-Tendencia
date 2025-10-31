@@ -503,14 +503,14 @@ def mostrar_formulario_edicion(id):
     st.subheader("Palabra a consultar en SEMRUSH")
     palabra_semrush = st.text_input("Palabra clave", value=palabra_semrush_original)
 
-    # --- Valor Búsqueda Web ---
+    # --- Inteligencia Artificial Entrenada ---
     valor_busqueda_web = st.number_input(
-        "Valor de Búsqueda Web", 
+        "Inteligencia Artificial Entrenada", 
         min_value=0, 
         max_value=35, 
         value=int(valor_busqueda_web_actual), 
         step=1,
-        help="Ingrese el valor de búsqueda web (0-35)",
+        help="Ingrese el valor de inteligencia artificial entrenada",
         key=f"valor_busqueda_web_{id}"
     )
 
