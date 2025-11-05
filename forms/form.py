@@ -286,53 +286,38 @@ def mostrar_formulario():
                     nombre_proyecto_2_norm = normalizar_texto(nombre_proyecto_2)
                     palabra_semrush_norm = normalizar_texto(palabra_semrush)
                     carrera_linkedin_input_norm = normalizar_texto(carrera_linkedin_input)
-                    # Usar un cursor exclusivo para la transacción
-                    with conn.cursor() as cur:
-                        cur.execute('''
-                            INSERT INTO proyectos_tendencias (
-                                tipo_carpeta, carrera_referencia, carrera_estudio, palabra_semrush, codigo_ciiu, carrera_linkedin, id_ticket, inteligencia_artificial_entrada
-                            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-                            RETURNING id
-                        ''', (
-                            tipo_carpeta,
-                            nombre_proyecto_1_norm,
-                            nombre_proyecto_2_norm,
-                            palabra_semrush_norm,
-                            codigo_ciiu,
-                            carrera_linkedin_input_norm,
-                            id_ticket.strip(),
-                            float(valor_busqueda_web)
-                        ))
-                        proyecto_id_row = cur.fetchone()
-                        if proyecto_id_row is None or proyecto_id_row[0] is None:
-                            raise Exception("No se pudo obtener el ID del proyecto insertado.")
-                        proyecto_id = int(proyecto_id_row[0])
-
-                        # Insertar tendencias
-                        for trend in trends_data:
-                            cur.execute('''
-                                INSERT INTO tendencias (proyecto_id, palabra, promedio)
-                                VALUES (%s, %s, %s)
-                            ''', (proyecto_id, trend["palabra"], trend["promedio"]))
-
-                        # Insertar modalidad de oferta (solo una fila)
-                        if df_modalidad.shape[0] > 0:
-                            presencial = df_modalidad.iloc[0].get("Presencial", "")
-                            virtual = df_modalidad.iloc[0].get("Virtual", "")
-                            cur.execute('''
-                                INSERT INTO modalidad_oferta (proyecto_id, presencial, virtual)
-                                VALUES (%s, %s, %s)
-                            ''', (proyecto_id, presencial, virtual))
-
-                        # Insertar registro en seguimiento_proyecto
-                        cur.execute('''
-                            INSERT INTO seguimiento_proyecto (proyecto_id)
-                            VALUES (%s)
-                        ''', (proyecto_id,))
-
-
-
-                        conn.commit()
+                    # Preparar datos para la inserción
+                    from database.db_utils import insertar_proyecto_con_reintentos
+                    
+                    # Preparar los datos del proyecto
+                    datos_proyecto = {
+                        'tipo_carpeta': tipo_carpeta,
+                        'carrera_referencia': nombre_proyecto_1_norm,
+                        'carrera_estudio': nombre_proyecto_2_norm,
+                        'palabra_semrush': palabra_semrush_norm,
+                        'codigo_ciiu': codigo_ciiu,
+                        'carrera_linkedin': carrera_linkedin_input_norm,
+                        'id_ticket': id_ticket.strip(),
+                        'inteligencia_artificial_entrada': float(valor_busqueda_web),
+                        'trends': trends_data,
+                        'modalidad': None
+                    }
+                    
+                    # Añadir modalidad si existe
+                    if df_modalidad.shape[0] > 0:
+                        datos_proyecto['modalidad'] = {
+                            'presencial': df_modalidad.iloc[0].get("Presencial", ""),
+                            'virtual': df_modalidad.iloc[0].get("Virtual", "")
+                        }
+                    
+                    # Intentar insertar el proyecto con reintentos
+                    exito, proyecto_id, error = insertar_proyecto_con_reintentos(datos_proyecto)
+                    
+                    if not exito:
+                        raise Exception(error)
+                    
+                    if proyecto_id is None:
+                        raise Exception("No se pudo obtener el ID del proyecto insertado.")
 
                     # Encolar job para el nuevo proyecto
                     try:
