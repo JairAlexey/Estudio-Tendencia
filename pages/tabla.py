@@ -190,7 +190,7 @@ def mostrar_pagina_tabla(id):
     conn = get_connection()
     cur = conn.cursor()
     try:
-        cur.execute("SELECT carrera_estudio FROM proyectos_tendencias WHERE id=%s", (id,))
+        cur.execute("SELECT palabra_semrush FROM proyectos_tendencias WHERE id=%s", (id,))
         row = cur.fetchone()
         nombre_proyecto = row[0] if row else "Proyecto desconocido"
         nombre_proyecto = " ".join([w.capitalize() for w in nombre_proyecto.split()])
