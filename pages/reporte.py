@@ -14,7 +14,7 @@ def mostrar_pagina_presentacion(id):
     # Obtener nombre del proyecto
     conn = get_connection()
     with conn.cursor() as cur:
-        cur.execute("SELECT carrera_estudio FROM proyectos_tendencias WHERE id=%s", (id,))
+        cur.execute("SELECT palabra_semrush FROM proyectos_tendencias WHERE id=%s", (id,))
         row = cur.fetchone()
         nombre_proyecto = row[0] if row else "Proyecto desconocido"
     

@@ -23,7 +23,7 @@ def mostrar_formulario_datos_solicitud(proyecto_id):
     # Obtener el nombre del proyecto
     try:
         with conn.cursor() as cur:
-            cur.execute("SELECT carrera_estudio FROM proyectos_tendencias WHERE id=%s", (proyecto_id,))
+            cur.execute("SELECT palabra_semrush FROM proyectos_tendencias WHERE id=%s", (proyecto_id,))
             row = cur.fetchone()
             nombre_proyecto = row[0] if row else "Proyecto desconocido"
             nombre_proyecto = " ".join([w.capitalize() for w in nombre_proyecto.split()])
