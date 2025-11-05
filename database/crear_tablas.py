@@ -18,7 +18,7 @@ def crear_tablas():
             tipo_carpeta VARCHAR(100),
             carrera_referencia VARCHAR(200),
             carrera_estudio VARCHAR(200),
-            palabra_semrush VARCHAR(200),
+            palabra_semrush VARCHAR(200) UNIQUE,
             codigo_ciiu VARCHAR(50),
             carrera_linkedin VARCHAR(200),
             id_ticket VARCHAR(100),
