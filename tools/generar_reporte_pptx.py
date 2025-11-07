@@ -4,9 +4,13 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from conexion import conn, cursor
 from pptx import Presentation
 from tools.generar_mapa_latam import generar_mapa_latam
+from tools.pptx_utils import actualizar_texto_preservando_formato
 
 # Obtener el directorio raíz del proyecto
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+# Importar módulo de mensajes de viabilidad
+from tools.mensajes_viabilidad import get_mensaje
 
 
 # ==========================================================
@@ -136,9 +140,56 @@ def generar_reporte(proyecto_id, viabilidad=None):
         except Exception as e:
             print(f"No se pudo reemplazar la viabilidad en el slide 3: {e}")
 
-    # Reemplazar imagen radar (slide 3)
+    # Actualizar los mensajes de viabilidad en el slide 3
     try:
         slide_img = prs.slides[3]
+        cursor.execute('''
+            SELECT valor_busqueda, valor_competencia_presencialidad, valor_competencia_virtualidad, valor_linkedin, valor_mercado
+            FROM grafico_radar_datos
+            WHERE proyecto_id = %s
+        ''', (proyecto_id,))
+        row = cursor.fetchone()
+        
+        if row:
+            from tools.mensajes_viabilidad import get_mensaje
+            
+            # Calcular porcentajes como en generar_grafico_radar_desde_bd
+            valor_busqueda = float(row[0]) if row[0] is not None else 0.0
+            valor_competencia_presencialidad = float(row[1]) if row[1] is not None else 0.0
+            valor_competencia_virtualidad = float(row[2]) if row[2] is not None else 0.0
+            valor_linkedin = float(row[3]) if row[3] is not None else 0.0
+            valor_mercado = float(row[4]) if row[4] is not None else 0.0
+
+            # Calcular porcentajes
+            competencia_avg = (valor_competencia_presencialidad + valor_competencia_virtualidad) / 2
+            busqueda_pct = round((valor_busqueda / 35) * 100)
+            competencia_pct = round((competencia_avg / 25) * 100)
+            linkedin_pct = round((valor_linkedin / 25) * 100)
+            mercado_pct = round((valor_mercado / 15) * 100)
+
+            # Mapear los shapes con sus mensajes correspondientes
+            shape_mensajes = {
+                0: ("Sectores económicos (CIIU)", mercado_pct),
+                1: ("Competencia Académica", competencia_pct),
+                2: ("LinkedIn", linkedin_pct),
+                9: ("Búsqueda Web", busqueda_pct)
+            }
+
+            # Actualizar cada shape con su mensaje correspondiente
+            for shape_idx, (campo, porcentaje) in shape_mensajes.items():
+                try:
+                    shape = slide_img.shapes[shape_idx]
+                    mensaje = get_mensaje(campo, porcentaje)
+                    if shape.has_text_frame:
+                        actualizar_texto_preservando_formato(shape, mensaje)
+                except Exception as e:
+                    print(f"Error actualizando shape {shape_idx}: {e}")
+
+    except Exception as e:
+        print(f"Error actualizando mensajes de viabilidad: {e}")
+
+    # Reemplazar imagen radar (slide 3)
+    try:
         for shape in slide_img.shapes:
             if shape.shape_type == 13:  # Picture
                 left, top, width, height = shape.left, shape.top, shape.width, shape.height

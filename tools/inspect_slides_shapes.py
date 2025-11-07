@@ -1,13 +1,13 @@
 from pptx import Presentation
 
 # Ruta de la plantilla
-TEMPLATE_PATH = '../files/base/InvestigacionMercados.pptx'
+TEMPLATE_PATH = '../files/base/Viable.pptx'
 
 # Cargar la presentación
 prs = Presentation(TEMPLATE_PATH)
 
 
-slide = prs.slides[5]
+slide = prs.slides[3]
 
 print('Textos de cada shape:')
 for i, shape in enumerate(slide.shapes):
