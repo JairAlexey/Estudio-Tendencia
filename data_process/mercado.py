@@ -13,23 +13,52 @@ def calc_mercado(proyecto_id):
     print(f"Proyecto ID: {proyecto_id}")
 
     try:
-        # Obtener datos del proyecto desde la base de datos
-        proyecto = extraer_datos_tabla("reporteLinkedin", proyecto_id)
-        if not proyecto:
+        # Obtener datos del proyecto desde la tabla proyectos_tendencias
+        cursor.execute("SELECT carrera_referencia, codigo_ciiu, tipo_carpeta FROM proyectos_tendencias WHERE id = %s", (proyecto_id,))
+        proyecto_row = cursor.fetchone()
+        if not proyecto_row:
             print("ERROR: No se pudo obtener datos del proyecto.")
             return 0
-        proyecto = proyecto[0]
-        carrera_referencia = proyecto.get("ProyectoReferencia")
-        codigo_ciiu_consultar = proyecto.get("CodigoCIIU")
+        
+        carrera_referencia, codigo_ciiu_consultar, tipo_carpeta = proyecto_row
+        
+        # Determinar qué tabla usar según el tipo de carpeta
+        usar_cr = tipo_carpeta and "pregrado cr" in tipo_carpeta.lower()
+        tabla_mercado = "cr_mercado_datos" if usar_cr else "mercado_datos"
+        
+        print(f"=== DEBUG TIPO DE CARPETA ===")
+        print(f"Tipo de carpeta obtenido: '{tipo_carpeta}'")
+        print(f"Contiene 'pregrado cr': {usar_cr}")
+        print(f"Tabla de mercado seleccionada: {tabla_mercado}")
+        print(f"================================")
 
         print(f"Carrera referencia: {carrera_referencia}")
         print(f"Código CIIU a consultar: {codigo_ciiu_consultar}")
 
         # Obtener ID de la carrera referencia
         try:
-            id_carrera = obtener_id_carrera(carrera_referencia)
-            print(f"ID carrera referencia: {id_carrera}")
-        except ValueError as e:
+            if usar_cr:
+                # Para proyectos CR, buscar específicamente con nivel "Pregrado CR"
+                nivel_buscar = "Pregrado CR"
+                print(f"DEBUG: Proyecto CR - Buscando carrera '{carrera_referencia}' con nivel '{nivel_buscar}'")
+                cursor.execute("SELECT ID FROM carreras_facultad WHERE UPPER(Carrera) = UPPER(%s) AND Nivel = %s", (carrera_referencia, nivel_buscar))
+                carrera_row = cursor.fetchone()
+                if not carrera_row:
+                    print(f"ERROR: No se encontró la carrera '{carrera_referencia}' con nivel '{nivel_buscar}'")
+                    return 0
+            else:
+                # Para proyectos Ecuador, buscar solo por nombre (sin filtrar por nivel) - case insensitive
+                print(f"DEBUG: Proyecto Ecuador - Buscando carrera '{carrera_referencia}' (sin filtro de nivel, case-insensitive)")
+                cursor.execute("SELECT ID, Carrera, Nivel FROM carreras_facultad WHERE UPPER(Carrera) = UPPER(%s)", (carrera_referencia,))
+                carrera_row = cursor.fetchone()
+                if not carrera_row:
+                    print(f"ERROR: No se encontró la carrera '{carrera_referencia}' en Ecuador")
+                    return 0
+                print(f"DEBUG: Carrera encontrada - ID: {carrera_row[0]}, Nombre: '{carrera_row[1]}', Nivel: '{carrera_row[2]}'")
+            
+            id_carrera = carrera_row[0]
+            print(f"ID carrera referencia encontrado: {id_carrera}")
+        except Exception as e:
             print(f"ERROR: No se pudo obtener el ID de la carrera: {e}")
             return 0
 
@@ -37,6 +66,7 @@ def calc_mercado(proyecto_id):
         try:
             codigos_referencia = obtener_codigos_por_id_carrera(id_carrera)
             codigos_referencia = [c.strip() for c in codigos_referencia]
+            print(f"DEBUG: Códigos obtenidos para carrera ID {id_carrera}: {codigos_referencia}")
         except ValueError as e:
             print(f"ERROR: No se pudieron obtener los códigos de la carrera referencia: {e}.")
             return 0
@@ -60,14 +90,20 @@ def calc_mercado(proyecto_id):
 
         for hoja in HOJAS:
             print(f"\n--- Procesando hoja: {hoja} ---")
-            # Obtener todos los registros de la hoja desde la base de datos
+            print(f"DEBUG: Consultando tabla '{tabla_mercado}' para hoja '{hoja}'")
+            # Obtener todos los registros de la hoja desde la base de datos usando la tabla correcta
             cursor.execute(
-                "SELECT actividad_economica, valor_2023 FROM mercado_datos WHERE hoja_origen = %s",
+                f"SELECT actividad_economica, valor_2023 FROM {tabla_mercado} WHERE hoja_origen = %s",
                 (hoja,)
             )
             rows = cursor.fetchall()
             # Convertir a diccionario para fácil acceso
             datos_hoja = {str(row[0]).strip(): row[1] for row in rows if row[0] is not None}
+            print(f"DEBUG: Query ejecutado en tabla '{tabla_mercado}' - Filas obtenidas: {len(rows)}")
+            if len(rows) == 0:
+                print(f"ADVERTENCIA: No se encontraron datos en tabla '{tabla_mercado}' para hoja '{hoja}'")
+            else:
+                print(f"DEBUG: Primeros 3 códigos encontrados: {list(datos_hoja.keys())[:3]}")
             print(f"Filas totales en la hoja: {len(rows)}")
 
             # Mostrar códigos buscados y valores para referencia
