@@ -83,17 +83,26 @@ def guardar_datos_sql(data, plataforma, proyecto_id):
         return
 
     if plataforma.lower() == "linkedin":
-        for item in data:
+        try:
+            # Primero eliminar TODOS los registros del proyecto para evitar conflictos de ID
             cursor.execute("""
-                DELETE FROM linkedin WHERE proyecto_id=%s AND Tipo=%s AND Region=%s
-            """, (proyecto_id, item.get("Tipo"), item.get("Region")))
-            cursor.execute("""
-                INSERT INTO linkedin (proyecto_id, Tipo, Region, Profesionales, AnunciosEmpleo, PorcentajeAnunciosProfesionales, DemandaContratacion)
-                VALUES (%s, %s, %s, %s, %s, %s, %s)
-            """, (proyecto_id, item.get("Tipo"), item.get("Region"), item.get("Profesionales"),
-                  item.get("AnunciosEmpleo"), item.get("PorcentajeAnunciosProfesionales"), item.get("DemandaContratacion")))
-        conn.commit()
-        print("Datos guardados en la tabla 'linkedin'.")
+                DELETE FROM linkedin WHERE proyecto_id=%s
+            """, (proyecto_id,))
+            conn.commit()  # Commit del DELETE por separado
+            
+            # Ahora insertar todos los nuevos datos
+            for item in data:
+                cursor.execute("""
+                    INSERT INTO linkedin (proyecto_id, Tipo, Region, Profesionales, AnunciosEmpleo, PorcentajeAnunciosProfesionales, DemandaContratacion)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s)
+                """, (proyecto_id, item.get("Tipo"), item.get("Region"), item.get("Profesionales"),
+                      item.get("AnunciosEmpleo"), item.get("PorcentajeAnunciosProfesionales"), item.get("DemandaContratacion")))
+            conn.commit()
+            print("Datos guardados en la tabla 'linkedin'.")
+        except Exception as e:
+            conn.rollback()
+            print(f"Error guardando datos en linkedin: {e}")
+            raise
 
     elif plataforma.lower() == "semrush":
         for item in data:

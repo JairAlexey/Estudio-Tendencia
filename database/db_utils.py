@@ -17,6 +17,7 @@ def insertar_proyecto_con_reintentos(datos: dict, max_intentos: int = 3) -> Tupl
     """
     intento = 0
     while intento < max_intentos:
+        conn = None
         try:
             conn = get_connection()
             # Usar el nivel de aislamiento más estricto para evitar condiciones de carrera
@@ -44,12 +45,13 @@ def insertar_proyecto_con_reintentos(datos: dict, max_intentos: int = 3) -> Tupl
                 
                 proyecto_id = cur.fetchone()[0]
                 
-                # Insertar tendencias
-                for trend in datos['trends']:
-                    cur.execute('''
-                        INSERT INTO tendencias (proyecto_id, palabra, promedio)
-                        VALUES (%s, %s, %s)
-                    ''', (proyecto_id, trend["palabra"], trend["promedio"]))
+                # Insertar tendencias (solo si hay datos)
+                if datos.get('trends'):
+                    for trend in datos['trends']:
+                        cur.execute('''
+                            INSERT INTO tendencias (proyecto_id, palabra, promedio)
+                            VALUES (%s, %s, %s)
+                        ''', (proyecto_id, trend["palabra"], trend["promedio"]))
 
                 # Insertar modalidad de oferta
                 if datos.get('modalidad'):
@@ -65,17 +67,38 @@ def insertar_proyecto_con_reintentos(datos: dict, max_intentos: int = 3) -> Tupl
                 ''', (proyecto_id,))
 
                 conn.commit()
+                conn.close()
                 return True, proyecto_id, None
                 
         except psycopg2.Error as e:
-            conn.rollback()
+            if conn:
+                try:
+                    conn.rollback()
+                except:
+                    pass
             if "duplicate key" in str(e).lower():
                 # Esperar un momento antes de reintentar
                 time.sleep(0.5 * (intento + 1))
                 intento += 1
+                if conn:
+                    try:
+                        conn.close()
+                    except:
+                        pass
                 continue
+            if conn:
+                try:
+                    conn.close()
+                except:
+                    pass
             return False, None, f"Error de base de datos: {str(e)}"
-        finally:
-            conn.close()
+        except Exception as e:
+            if conn:
+                try:
+                    conn.rollback()
+                    conn.close()
+                except:
+                    pass
+            return False, None, f"Error inesperado: {str(e)}"
             
     return False, None, "Excedido número máximo de intentos para insertar el proyecto"

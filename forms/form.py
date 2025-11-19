@@ -210,18 +210,9 @@ def mostrar_formulario():
             help="Ingresa el valor de la inteligencia artificial entrenada"
         )
 
-        # --- Trends ---
-        st.subheader("Trends (palabras y promedios)")
-        if "df_trends" not in st.session_state:
-            st.session_state["df_trends"] = pd.DataFrame({"Palabra": [""], "Promedio": [""]})
-        df_trends = st.data_editor(
-            st.session_state["df_trends"],
-            num_rows="dynamic",
-            width="stretch",
-            hide_index=True,
-            key="trends_editor"
-        )
-        st.session_state["df_trends"] = df_trends
+        # --- Trends (OCULTO - mantener para futura reactivación) ---
+        # Crear DataFrame vacío para mantener compatibilidad con la BD
+        df_trends = pd.DataFrame({"Palabra": [""], "Promedio": [""]})
 
         # --- Código CIIU ---
         st.subheader("Código CIIU")
@@ -259,11 +250,8 @@ def mostrar_formulario():
                 errores.append("El campo 'Palabra clave' es obligatorio.")
             if codigo_ciiu == "Seleccione un código...":
                 errores.append("El campo 'Código CIIU' es obligatorio.")
-            # Validar tendencias
-            trends_data, trends_error = validar_trends_data(df_trends)
-            if trends_error:
-                st.error(f"Error en tendencias:\n{trends_error}")
-                return
+            # Validar tendencias (ahora solo envía lista vacía)
+            trends_data = []
             # Validar modalidad de oferta
             modalidad_valida = False
             if df_modalidad.shape[0] > 0:
@@ -499,20 +487,10 @@ def mostrar_formulario_edicion(id):
         key=f"valor_busqueda_web_{id}"
     )
 
-    # --- Trends ---
-    st.subheader("Trends (palabras y promedios)")
-    try:
-        tendencias_limpias = [list(row) for row in tendencias]
-        if tendencias_limpias and all(len(row) == 2 for row in tendencias_limpias):
-            df_trends = pd.DataFrame(tendencias_limpias, columns=["Palabra", "Promedio"])
-        elif tendencias_limpias and all(len(row) == 1 for row in tendencias_limpias):
-            st.warning("Advertencia: Las tendencias tienen solo una columna. Se mostrará solo 'Palabra'.")
-            df_trends = pd.DataFrame([(row[0], "") for row in tendencias_limpias], columns=["Palabra", "Promedio"])
-        else:
-            df_trends = pd.DataFrame({"Palabra": [""], "Promedio": [""]})
-        df_trends = st.data_editor(df_trends, num_rows="dynamic", width="stretch", hide_index=True, key=f"trends_editor_{id}")
-    except Exception as e:
-        st.error(f"ERROR al crear DataFrame de tendencias: {e}")
+    # --- Trends (OCULTO - mantener para futura reactivación) ---
+    # Crear DataFrame vacío para mantener compatibilidad con la BD
+    df_trends = pd.DataFrame({"Palabra": [""], "Promedio": [""]})
+    
     # Código CIIU
     codigos_ciiu = obtener_codigos_ciiu(tipo_carpeta=tipo_carpeta)
     codigo_ciiu = st.selectbox("Seleccione el código CIIU", codigos_ciiu, index=codigos_ciiu.index(codigo_ciiu_original) if codigo_ciiu_original in codigos_ciiu else 0)
@@ -541,11 +519,8 @@ def mostrar_formulario_edicion(id):
             errores.append("El campo 'Palabra clave' es obligatorio.")
         if not codigo_ciiu:
             errores.append("El campo 'Código CIIU' es obligatorio.")
-        # Validar tendencias
-        trends_data, trends_error = validar_trends_data(df_trends)
-        if trends_error:
-            st.error(f"Error en tendencias:\n{trends_error}")
-            return
+        # Validar tendencias (ahora solo envía lista vacía)
+        trends_data = []
         modalidad_valida = False
         if df_modalidad.shape[0] > 0:
             presencial = df_modalidad.iloc[0].get("Presencial", "").strip()
